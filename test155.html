@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>围棋 (Go/Weiqi)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            color: #e8e8e8;
+        }
+
+        .container {
+            display: flex;
+            gap: 30px;
+            max-width: 1400px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .game-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: linear-gradient(90deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .board-container {
+            position: relative;
+            padding: 30px;
+            background: linear-gradient(145deg, #c9a959, #a0853c);
+            border-radius: 15px;
+            box-shadow:
+                0 10px 40px rgba(0,0,0,0.5),
+                inset 0 2px 10px rgba(255,255,255,0.2);
+        }
+
+        .board {
+            position: relative;
+            background: linear-gradient(145deg, #dcb35c, #c9a959);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .grid-line {
+            position: absolute;
+            background: #5c4a2a;
+        }
+
+        .horizontal-line {
+            width: 100%;
+            height: 2px;
+        }
+
+        .vertical-line {
+            height: 100%;
+            width: 2px;
+        }
+
+        .star-point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #3d2b1f;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .stone {
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: transform 0.1s ease, box-shadow 0.2s ease;
+            z-index: 10;
+        }
+
+        .stone:hover:not(.ghost) {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .stone.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
+            box-shadow:
+                2px 2px 5px rgba(0,0,0,0.5),
+                inset 2px 2px 5px rgba(255,255,255,0.1);
+        }
+
+        .stone.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+            box-shadow:
+                2px 2px 5px rgba(0,0,0,0.3),
+                inset 2px 2px 5px rgba(255,255,255,0.5);
+        }
+
+        .stone.last-move::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: inherit;
+            filter: brightness(1.5);
+            opacity: 0.7;
+        }
+
+        .ghost {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .control-panel {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            min-width: 280px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .game-info {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .current-player {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .current-indicator {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .current-indicator.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .current-indicator.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+        }
+
+        .player-label {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .game-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+
+        .stat-value.black { color: #333; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
+        .stat-value.white { color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f5576c, #f093fb);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        .game-history {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-title {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            opacity: 0.7;
+        }
+
+        .history-list {
+            font-size: 0.85em;
+            font-family: monospace;
+            line-height: 1.6;
+        }
+
+        .history-item {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 2px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .history-item.black {
+            background: rgba(0,0,0,0.4);
+        }
+
+        .history-item.white {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .message-box {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .message-box.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .score-panel {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .score-title {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            opacity: 0.7;
+        }
+
+        .score-display {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .score-item {
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+
+        .score-item.black {
+            background: rgba(0,0,0,0.3);
+        }
+
+        .score-item.white {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .score-name {
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 400px;
+        }
+
+        .modal-title {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        .modal-text {
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .rules-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .rules-title {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .rules-list {
+            font-size: 0.85em;
+            line-height: 1.8;
+            opacity: 0.8;
+            text-align: left;
+        }
+
+        .board-size-select {
+            margin-bottom: 15px;
+        }
+
+        select {
+            padding: 10px 15px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            cursor: pointer;
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .capture-count {
+            position: absolute;
+            font-size: 12px;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .control-panel {
+                width: 100%;
+                max-width: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-section">
+            <h1>围棋 (Go)</h1>
+            <div class="board-size-select">
+                <select id="boardSize">
+                    <option value="9">9路棋盘</option>
+                    <option value="13">13路棋盘</option>
+                    <option value="19" selected>19路棋盘</option>
+                </select>
+            </div>
+            <div class="board-container">
+                <div class="board" id="board"></div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="game-info">
+                <div class="current-player">
+                    <div class="current-indicator" id="currentIndicator"></div>
+                    <span class="player-label" id="currentPlayerLabel">黑方执子</span>
+                </div>
+                <div class="game-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">手数</div>
+                        <div class="stat-value" id="moveCount">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">提子</div>
+                        <div class="stat-value">
+                            <span class="stat-value black" id="blackCaptures">0</span> /
+                            <span class="stat-value white" id="whiteCaptures">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary" onclick="game.pass()">停一手 (Pass)</button>
+                <button class="btn-primary" onclick="game.undo()">悔棋 (Undo)</button>
+                <button class="btn-danger" onclick="game.reset()">重新开始 (Reset)</button>
+            </div>
+
+            <div class="score-panel">
+                <div class="score-title">实时点目</div>
+                <div class="score-display">
+                    <div class="score-item black">
+                        <div class="score-name">黑方</div>
+                        <div class="score-value" id="blackScore">0</div>
+                    </div>
+                    <div class="score-item white">
+                        <div class="score-name">白方</div>
+                        <div class="score-value" id="whiteScore">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="message-box" id="messageBox"></div>
+
+            <div class="game-history">
+                <div class="history-title">落子记录</div>
+                <div class="history-list" id="historyList"></div>
+            </div>
+
+            <div class="rules-section">
+                <div class="rules-title">游戏规则</div>
+                <div class="rules-list">
+                    <div>• 黑白双方交替落子</div>
+                    <div>• 气尽提子，无气禁入</div>
+                    <div>• 打劫规则，防止同形</div>
+                    <div>• 19路为标准棋盘</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="gameOverModal">
+        <div class="modal-content">
+            <div class="modal-title">游戏结束</div>
+            <div class="modal-text" id="gameOverText"></div>
+            <button class="btn-primary" onclick="game.reset(); closeModal();">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        class GoGame {
+            constructor() {
+                this.boardSize = 19;
+                this.board = [];
+                this.currentPlayer = 1; // 1: black, 2: white
+                this.moveHistory = [];
+                this.captures = { 1: 0, 2: 0 };
+                this.koPosition = null;
+                this.consecutivePasses = 0;
+                this.lastMove = null;
+
+                this.starPoints = {
+                    19: [[3,3], [3,9], [3,15], [9,3], [9,9], [9,15], [15,3], [15,9], [15,15]],
+                    13: [[3,3], [3,9], [9,3], [9,9]],
+                    9: [[4,4]]
+                };
+
+                this.initBoard();
+                this.setupEventListeners();
+                this.render();
+            }
+
+            initBoard() {
+                this.board = [];
+                for (let i = 0; i < this.boardSize; i++) {
+                    this.board[i] = [];
+                    for (let j = 0; j < this.boardSize; j++) {
+                        this.board[i][j] = 0;
+                    }
+                }
+            }
+
+            setupEventListeners() {
+                const boardElement = document.getElementById('board');
+                boardElement.addEventListener('click', (e) => this.handleClick(e));
+                boardElement.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                boardElement.addEventListener('mouseleave', () => this.hideGhost());
+
+                document.getElementById('boardSize').addEventListener('change', (e) => {
+                    this.boardSize = parseInt(e.target.value);
+                    this.reset();
+                });
+            }
+
+            getCellSize() {
+                return Math.min(600, window.innerWidth - 40) / this.boardSize;
+            }
+
+            render() {
+                const boardElement = document.getElementById('board');
+                const cellSize = this.getCellSize();
+                const padding = cellSize / 2;
+                const boardSize = cellSize * (this.boardSize - 1) + padding * 2;
+
+                boardElement.style.width = boardSize + 'px';
+                boardElement.style.height = boardSize + 'px';
+
+                boardElement.innerHTML = '';
+
+                // Draw grid lines
+                for (let i = 0; i < this.boardSize; i++) {
+                    // Horizontal
+                    const hLine = document.createElement('div');
+                    hLine.className = 'grid-line horizontal-line';
+                    hLine.style.top = (padding + i * cellSize) + 'px';
+                    hLine.style.left = padding + 'px';
+                    hLine.style.width = (boardSize - padding * 2) + 'px';
+                    boardElement.appendChild(hLine);
+
+                    // Vertical
+                    const vLine = document.createElement('div');
+                    vLine.className = 'grid-line vertical-line';
+                    vLine.style.left = (padding + i * cellSize) + 'px';
+                    vLine.style.top = padding + 'px';
+                    vLine.style.height = (boardSize - padding * 2) + 'px';
+                    boardElement.appendChild(vLine);
+                }
+
+                // Draw star points
+                const stars = this.starPoints[this.boardSize] || [];
+                stars.forEach(([row, col]) => {
+                    const star = document.createElement('div');
+                    star.className = 'star-point';
+                    star.style.left = (padding + col * cellSize) + 'px';
+                    star.style.top = (padding + row * cellSize) + 'px';
+                    boardElement.appendChild(star);
+                });
+
+                // Draw stones
+                for (let i = 0; i < this.boardSize; i++) {
+                    for (let j = 0; j < this.boardSize; j++) {
+                        if (this.board[i][j] !== 0) {
+                            const stone = document.createElement('div');
+                            stone.className = `stone ${this.board[i][j] === 1 ? 'black' : 'white'}`;
+                            stone.style.left = (padding + j * cellSize) + 'px';
+                            stone.style.top = (padding + i * cellSize) + 'px';
+                            stone.style.width = (cellSize * 0.9) + 'px';
+                            stone.style.height = (cellSize * 0.9) + 'px';
+                            boardElement.appendChild(stone);
+                        }
+                    }
+                }
+
+                // Highlight last move
+                if (this.lastMove) {
+                    const [row, col] = this.lastMove;
+                    const stoneElements = boardElement.querySelectorAll('.stone');
+                    const index = row * this.boardSize + col;
+                    const offset = this.boardSize + this.boardSize - 1;
+                    let stoneIndex = 0;
+                    for (let i = 0; i < this.boardSize; i++) {
+                        for (let j = 0; j < this.boardSize; j++) {
+                            if (this.board[i][j] !== 0) {
+                                if (i === row && j === col) {
+                                    stoneElements[stoneIndex]?.classList.add('last-move');
+                                }
+                                stoneIndex++;
+                            }
+                        }
+                    }
+                }
+
+                this.updateUI();
+            }
+
+            handleClick(e) {
+                const cellSize = this.getCellSize();
+                const padding = cellSize / 2;
+                const rect = e.target.getBoundingClientRect();
+
+                const x = e.clientX - rect.left - padding;
+                const y = e.clientY - rect.top - padding;
+
+                const col = Math.round(x / cellSize);
+                const row = Math.round(y / cellSize);
+
+                if (row >= 0 && row < this.boardSize && col >= 0 && col < this.boardSize) {
+                    this.placeStone(row, col);
+                }
+            }
+
+            handleMouseMove(e) {
+                this.hideGhost();
+
+                const cellSize = this.getCellSize();
+                const padding = cellSize / 2;
+                const rect = e.target.getBoundingClientRect();
+
+                const x = e.clientX - rect.left - padding;
+                const y = e.clientY - rect.top - padding;
+
+                const col = Math.round(x / cellSize);
+                const row = Math.round(y / cellSize);
+
+                if (row >= 0 && row < this.boardSize && col >= 0 && col < this.boardSize) {
+                    if (this.board[row][col] === 0) {
+                        this.showGhost(row, col, e.clientX, e.clientY);
+                    }
+                }
+            }
+
+            showGhost(row, col, mouseX, mouseY) {
+                let ghost = document.querySelector('.ghost');
+                if (!ghost) {
+                    ghost = document.createElement('div');
+                    ghost.className = 'stone ghost';
+                    document.getElementById('board').appendChild(ghost);
+                }
+
+                const cellSize = this.getCellSize();
+                const padding = cellSize / 2;
+                const boardElement = document.getElementById('board');
+
+                ghost.className = `stone ghost ${this.currentPlayer === 1 ? 'black' : 'white'}`;
+                ghost.style.left = (padding + col * cellSize) + 'px';
+                ghost.style.top = (padding + row * cellSize) + 'px';
+                ghost.style.width = (cellSize * 0.9) + 'px';
+                ghost.style.height = (cellSize * 0.9) + 'px';
+            }
+
+            hideGhost() {
+                const ghost = document.querySelector('.ghost');
+                if (ghost) ghost.remove();
+            }
+
+            placeStone(row, col) {
+                if (this.board[row][col] !== 0) {
+                    this.showMessage('已有棋子');
+                    return;
+                }
+
+                const testBoard = this.board.map(row => [...row]);
+                testBoard[row][col] = this.currentPlayer;
+
+                // Check if move is valid (not suicide unless it captures)
+                const captures = this.getCaptures(testBoard, this.currentPlayer === 1 ? 2 : 1);
+                const ownGroup = this.getGroup(testBoard, row, col);
+
+                if (ownGroup.liberties === 0 && captures.total === 0) {
+                    this.showMessage('禁入点 (无气)");
+                    return;
+                }
+
+                // Check ko rule
+                if (this.koPosition && row === this.koPosition[0] && col === this.koPosition[1]) {
+                    this.showMessage '打劫');
+                    return;
+                }
+
+                // Make the move
+                this.moveHistory.push({
+                    board: this.board.map(r => [...r]),
+                    player: this.currentPlayer,
+                    captures: { ...this.captures },
+                    koPosition: this.koPosition ? [...this.koPosition] : null
+                });
+
+                this.board[row][col] = this.currentPlayer;
+
+                // Check and process captures
+                const opponent = this.currentPlayer === 1 ? 2 : 1;
+                const capturedStones = this.getCaptures(this.board, opponent);
+
+                if (capturedStones.total > 0) {
+                    capturedStones.groups.forEach(group => {
+                        group.stones.forEach(([r, c]) => {
+                            this.board[r][c] = 0;
+                        });
+                    });
+                    this.captures[this.currentPlayer] += capturedStones.total;
+                }
+
+                // Set new ko position (only single stone ko)
+                if (capturedStones.total === 1) {
+                    const capturedGroup = capturedStones.groups[0];
+                    if (capturedGroup.stones.length === 1) {
+                        this.koPosition = capturedGroup.stones[0];
+                    } else {
+                        this.koPosition = null;
+                    }
+                } else {
+                    this.koPosition = null;
+                }
+
+                this.lastMove = [row, col];
+                this.consecutivePasses = 0;
+
+                // Switch player
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+
+                this.render();
+                this.addToHistory(row, col);
+
+                // Check if game should end (two consecutive passes)
+                if (this.moveHistory.length > 0) {
+                    const lastMove = this.moveHistory[this.moveHistory.length - 1];
+                    if (lastMove.player === this.currentPlayer && this.moveHistory.length >= 2) {
+                        const secondLast = this.moveHistory[this.moveHistory.length - 2];
+                        if (secondLast && secondLast.player !== lastMove.player) {
+                            // Two passes in a row
+                        }
+                    }
+                }
+            }
+
+            pass() {
+                this.consecutivePasses++;
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                this.koPosition = null;
+                this.render();
+
+                if (this.consecutivePasses >= 2) {
+                    this.endGame();
+                } else {
+                    this.showMessage(`${this.currentPlayer === 1 ? '黑方' : '白方'} 停一手`);
+                }
+            }
+
+            undo() {
+                if (this.moveHistory.length === 0) {
+                    this.showMessage('没有可悔的棋');
+                    return;
+                }
+
+                const lastState = this.moveHistory.pop();
+                this.board = lastState.board;
+                this.currentPlayer = lastState.player;
+                this.captures = { ...lastState.captures };
+                this.koPosition = lastState.koPosition ? [...lastState.koPosition] : null;
+                this.consecutivePasses = 0;
+
+                if (this.moveHistory.length > 0) {
+                    this.lastMove = this.moveHistory[this.moveHistory.length - 1].lastMove;
+                } else {
+                    this.lastMove = null;
+                }
+
+                this.render();
+                this.updateHistoryDisplay();
+                this.hideMessage();
+            }
+
+            reset() {
+                this.initBoard();
+                this.currentPlayer = 1;
+                this.moveHistory = [];
+                this.captures = { 1: 0, 2: 0 };
+                this.koPosition = null;
+                this.consecutivePasses = 0;
+                this.lastMove = null;
+
+                document.getElementById('historyList').innerHTML = '';
+                this.hideMessage();
+                this.render();
+            }
+
+            getGroup(board, row, col) {
+                const color = board[row][col];
+                if (color === 0) return null;
+
+                const visited = new Set();
+                const stones = [];
+                let liberties = new Set();
+
+                const stack = [[row, col]];
+                while (stack.length > 0) {
+                    const [r, c] = stack.pop();
+                    const key = `${r},${c}`;
+
+                    if (visited.has(key)) continue;
+                    visited.add(key);
+                    stones.push([r, c]);
+
+                    const neighbors = [
+                        [r-1, c], [r+1, c], [r, c-1], [r, c+1]
+                    ];
+
+                    for (const [nr, nc] of neighbors) {
+                        if (nr >= 0 && nr < this.boardSize && nc >= 0 && nc < this.boardSize) {
+                            const neighborColor = board[nr][nc];
+                            if (neighborColor === 0) {
+                                liberties.add(`${nr},${nc}`);
+                            } else if (neighborColor === color && !visited.has(`${nr},${nc}`)) {
+                                stack.push([nr, nc]);
+                            }
+                        }
+                    }
+                }
+
+                return { stones, liberties: liberties.size };
+            }
+
+            getCaptures(board, playerColor) {
+                const visited = new Set();
+                const capturedGroups = [];
+                let totalCaptures = 0;
+
+                for (let i = 0; i < this.boardSize; i++) {
+                    for (let j = 0; j < this.boardSize; j++) {
+                        if (board[i][j] === playerColor && !visited.has(`${i},${j}`)) {
+                            const group = this.getGroup(board, i, j);
+                            if (group && group.liberties === 0) {
+                                group.stones.forEach(s => visited.add(`${s[0]},${s[1]}`));
+                                capturedGroups.push(group);
+                                totalCaptures += group.stones.length;
+                            }
+                        }
+                    }
+                }
+
+                return { groups: capturedGroups, total: totalCaptures };
+            }
+
+            updateUI() {
+                // Update current player indicator
+                const indicator = document.getElementById('currentIndicator');
+                indicator.className = `current-indicator ${this.currentPlayer === 1 ? 'black' : 'white'}`;
+
+                document.getElementById('currentPlayerLabel').textContent =
+                    this.currentPlayer === 1 ? '黑方执子' : '白方执子';
+
+                // Update move count
+                document.getElementById('moveCount').textContent = this.moveHistory.length;
+
+                // Update captures
+                document.getElementById('blackCaptures').textContent = this.captures[1];
+                document.getElementById('whiteCaptures').textContent = this.captures[2];
+
+                // Calculate and update scores
+                const scores = this.calculateTerritory();
+                document.getElementById('blackScore').textContent = scores.black + this.captures[1];
+                document.getElementById('whiteScore').textContent = scores.white + this.captures[2] + 6.5; // Komi
+            }
+
+            calculateTerritory() {
+                const visited = new Set();
+                let black = 0;
+                let white = 0;
+
+                for (let i = 0; i < this.boardSize; i++) {
+                    for (let j = 0; j < this.boardSize; j++) {
+                        if (this.board[i][j] === 0 && !visited.has(`${i},${j}`)) {
+                            const territory = this.getTerritory(i, j, visited);
+                            if (territory.black > 0 && territory.white === 0) {
+                                black += territory.empty;
+                            } else if (territory.white > 0 && territory.black === 0) {
+                                white += territory.empty;
+                            }
+                        }
+                    }
+                }
+
+                return { black, white };
+            }
+
+            getTerritory(row, col, visited) {
+                const stack = [[row, col]];
+                let black = 0;
+                let white = 0;
+                let empty = 0;
+
+                while (stack.length > 0) {
+                    const [r, c] = stack.pop();
+                    const key = `${r},${c}`;
+
+                    if (visited.has(key)) continue;
+                    visited.add(key);
+
+                    if (this.board[r][c] === 0) {
+                        empty++;
+                        const neighbors = [
+                            [r-1, c], [r+1, c], [r, c-1], [r, c+1]
+                        ];
+                        for (const [nr, nc] of neighbors) {
+                            if (nr >= 0 && nr < this.boardSize && nc >= 0 && nc < this.boardSize) {
+                                if (this.board[nr][nc] === 0 && !visited.has(`${nr},${nc}`)) {
+                                    stack.push([nr, nc]);
+                                }
+                            }
+                        }
+                    } else if (this.board[r][c] === 1) {
+                        black++;
+                    } else if (this.board[r][c] === 2) {
+                        white++;
+                    }
+                }
+
+                return { black, white, empty };
+            }
+
+            addToHistory(row, col) {
+                const historyList = document.getElementById('historyList');
+                const item = document.createElement('span');
+                item.className = `history-item ${this.currentPlayer === 1 ? 'black' : 'white'}`;
+                const coords = this.boardSize === 19
+                    ? ['A','B','C','D','E','F','G','H','J','K','L','M','N','O','P','Q','R','S','T'][col] + (19 - row)
+                    : `(${row},${col})`;
+                item.textContent = coords;
+                historyList.appendChild(item);
+            }
+
+            updateHistoryDisplay() {
+                const historyList = document.getElementById('historyList');
+                historyList.innerHTML = '';
+                this.moveHistory.forEach((move, index) => {
+                    const item = document.createElement('span');
+                    item.className = `history-item ${move.player === 1 ? 'black' : 'white'}`;
+                    if (move.lastMove) {
+                        const [row, col] = move.lastMove;
+                        item.textContent = `${index + 1}`;
+                    }
+                    historyList.appendChild(item);
+                });
+            }
+
+            showMessage(msg) {
+                const box = document.getElementById('messageBox');
+                box.textContent = msg;
+                box.classList.add('show');
+                setTimeout(() => this.hideMessage(), 2000);
+            }
+
+            hideMessage() {
+                document.getElementById('messageBox').classList.remove('show');
+            }
+
+            endGame() {
+                const scores = this.calculateTerritory();
+                const blackScore = scores.black + this.captures[1];
+                const whiteScore = scores.white + this.captures[2] + 6.5;
+
+                let resultText;
+                if (blackScore > whiteScore) {
+                    resultText = `黑方胜！<br>黑方：${blackScore.toFixed(1)} 目<br>白方：${whiteScore.toFixed(1)} 目`;
+                } else {
+                    resultText = `白方胜！<br>白方：${whiteScore.toFixed(1)} 目<br>黑方：${blackScore.toFixed(1)} 目`;
+                }
+
+                document.getElementById('gameOverText').innerHTML = resultText;
+                document.getElementById('gameOverModal').classList.add('show');
+            }
+        }
+
+        let game;
+
+        function closeModal() {
+            document.getElementById('gameOverModal').classList.remove('show');
+        }
+
+        // Initialize game
+        document.addEventListener('DOMContentLoaded', () => {
+            game = new GoGame();
+        });
+    </script>
+</body>
+</html>
