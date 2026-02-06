@@ -767,7 +767,8 @@
                     board: this.board.map(r => [...r]),
                     player: this.currentPlayer,
                     captures: { ...this.captures },
-                    koPosition: this.koPosition ? [...this.koPosition] : null
+                    koPosition: this.koPosition ? [...this.koPosition] : null,
+                    lastMove: this.lastMove
                 });
 
                 this.board[row][col] = this.currentPlayer;
@@ -819,9 +820,27 @@
             }
 
             pass() {
+                // Save state before passing
+                this.moveHistory.push({
+                    board: this.board.map(r => [...r]),
+                    player: this.currentPlayer,
+                    captures: { ...this.captures },
+                    koPosition: this.koPosition ? [...this.koPosition] : null,
+                    lastMove: null  // null indicates a pass
+                });
+
                 this.consecutivePasses++;
+                const previousPlayer = this.currentPlayer;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
                 this.koPosition = null;
+
+                // Add pass to history display
+                const historyList = document.getElementById('historyList');
+                const item = document.createElement('span');
+                item.className = `history-item ${previousPlayer === 1 ? 'black' : 'white'}`;
+                item.textContent = 'Pass';
+                historyList.appendChild(item);
+
                 this.render();
 
                 if (this.consecutivePasses >= 2) {
@@ -1006,7 +1025,9 @@
             addToHistory(row, col) {
                 const historyList = document.getElementById('historyList');
                 const item = document.createElement('span');
-                item.className = `history-item ${this.currentPlayer === 1 ? 'black' : 'white'}`;
+                // Use previous player (before switching) for correct color
+                const player = this.currentPlayer === 1 ? 2 : 1;
+                item.className = `history-item ${player === 1 ? 'black' : 'white'}`;
                 const coords = this.boardSize === 19
                     ? ['A','B','C','D','E','F','G','H','J','K','L','M','N','O','P','Q','R','S','T'][col] + (19 - row)
                     : `(${row},${col})`;
@@ -1022,7 +1043,12 @@
                     item.className = `history-item ${move.player === 1 ? 'black' : 'white'}`;
                     if (move.lastMove) {
                         const [row, col] = move.lastMove;
-                        item.textContent = `${index + 1}`;
+                        const coords = this.boardSize === 19
+                            ? ['A','B','C','D','E','F','G','H','J','K','L','M','N','O','P','Q','R','S','T'][col] + (19 - row)
+                            : `(${row},${col})`;
+                        item.textContent = coords;
+                    } else {
+                        item.textContent = 'Pass';
                     }
                     historyList.appendChild(item);
                 });
