@@ -413,7 +413,8 @@
         let moveCount = 0;
         let consecutivePasses = 0;
         let lastMove = null;
-        let koPoint = null; // 劫争点
+        let koPoint = null; // 劫争点（禁止立即回提的位置）
+        let gameOver = false;
 
         // 星位位置 (19路棋盘)
         const starPoints = [
@@ -449,10 +450,12 @@
                         intersection.classList.add('star-point');
                     }
 
-                    // 添加悬停预览
-                    const hoverStone = document.createElement('div');
-                    hoverStone.className = `hover-stone ${currentPlayer === BLACK ? 'black' : 'white'}`;
-                    intersection.appendChild(hoverStone);
+                    // 添加悬停预览（仅当格子为空且游戏未结束时显示）
+                    if (board[row][col] === EMPTY && !gameOver) {
+                        const hoverStone = document.createElement('div');
+                        hoverStone.className = `hover-stone ${currentPlayer === BLACK ? 'black' : 'white'}`;
+                        intersection.appendChild(hoverStone);
+                    }
 
                     // 添加棋子
                     if (board[row][col] !== EMPTY) {
@@ -476,6 +479,11 @@
                 return;
             }
 
+            if (gameOver) {
+                setStatus('游戏已结束！请重新开始。| Game Over! Please restart.');
+                return;
+            }
+
             // 检查劫争
             if (koPoint && koPoint.row === row && koPoint.col === col) {
                 setStatus('劫争中，不能立即回提！| Ko rule: cannot recapture immediately!');
@@ -488,7 +496,8 @@
                 player: currentPlayer,
                 captured: { ...capturedStones },
                 moveCount: moveCount,
-                koPoint: koPoint ? { ...koPoint } : null
+                koPoint: koPoint ? { ...koPoint } : null,
+                lastMove: lastMove ? { ...lastMove } : null
             };
 
             // 尝试落子
@@ -505,15 +514,9 @@
                 return;
             }
 
-            // 检查劫争
-            if (captured.length === 1) {
-                const capturedStone = captured[0];
-                const liberties = countLiberties(row, col);
-                if (liberties === 1 && getGroup(row, col).length === 1) {
-                    koPoint = capturedStone;
-                } else {
-                    koPoint = null;
-                }
+            // 检查劫争：提掉对方一子，自己只剩一气，且只有一颗子
+            if (captured.length === 1 && getGroup(row, col).length === 1 && countLiberties(row, col) === 1) {
+                koPoint = { row: captured[0].row, col: captured[0].col };
             } else {
                 koPoint = null;
             }
@@ -611,13 +614,19 @@
         }
 
         function pass() {
+            if (gameOver) {
+                setStatus('游戏已结束！请重新开始。| Game Over! Please restart.');
+                return;
+            }
+
             consecutivePasses++;
             moveHistory.push({
                 board: board.map(row => [...row]),
                 player: currentPlayer,
                 captured: { ...capturedStones },
                 moveCount: moveCount,
-                koPoint: koPoint ? { ...koPoint } : null
+                koPoint: koPoint ? { ...koPoint } : null,
+                lastMove: lastMove ? { ...lastMove } : null
             });
 
             currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
@@ -646,24 +655,9 @@
             capturedStones = prevState.captured;
             moveCount = prevState.moveCount;
             koPoint = prevState.koPoint;
+            lastMove = prevState.lastMove;
             consecutivePasses = 0;
-
-            // 更新最后一手标记
-            if (moveHistory.length > 0) {
-                const lastState = moveHistory[moveHistory.length - 1];
-                const currentState = lastState.board;
-                for (let row = 0; row < BOARD_SIZE; row++) {
-                    for (let col = 0; col < BOARD_SIZE; col++) {
-                        if (currentState[row][col] !== EMPTY && prevState.board[row][col] === EMPTY) {
-                            lastMove = { row, col };
-                            break;
-                        }
-                    }
-                    if (lastMove) break;
-                }
-            } else {
-                lastMove = null;
-            }
+            gameOver = false;
 
             updateUI();
             setStatus('已悔棋 | Undo successful');
@@ -678,11 +672,13 @@
             consecutivePasses = 0;
             lastMove = null;
             koPoint = null;
+            gameOver = false;
             updateUI();
             setStatus('游戏重新开始 | Game restarted');
         }
 
         function endGame() {
+            gameOver = true;
             // 简单的数子逻辑（实际围棋规则更复杂）
             let blackStones = 0;
             let whiteStones = 0;
