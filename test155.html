@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>围棋 - Go Game</title>
+    <title>围棋游戏 - Go Game</title>
     <style>
         * {
             margin: 0;
@@ -21,21 +21,20 @@
             padding: 20px;
         }
 
-        .game-container {
+        .container {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            padding: 30px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
             max-width: 900px;
-            width: 100%;
         }
 
         h1 {
             text-align: center;
             color: #333;
             margin-bottom: 20px;
-            font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
 
         .game-info {
@@ -46,8 +45,6 @@
             padding: 15px;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             border-radius: 10px;
-            flex-wrap: wrap;
-            gap: 10px;
         }
 
         .player-info {
@@ -55,13 +52,13 @@
             align-items: center;
             gap: 10px;
             padding: 10px 20px;
-            border-radius: 10px;
+            border-radius: 8px;
             transition: all 0.3s ease;
         }
 
         .player-info.active {
-            background: white;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             transform: scale(1.05);
         }
 
@@ -69,31 +66,16 @@
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
-        .stone-icon.black {
+        .stone-black {
             background: radial-gradient(circle at 30% 30%, #555, #000);
         }
 
-        .stone-icon.white {
-            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
-            border: 1px solid #999;
-        }
-
-        .player-details {
-            text-align: left;
-        }
-
-        .player-name {
-            font-weight: bold;
-            color: #333;
-            font-size: 1.1em;
-        }
-
-        .captured-stones {
-            color: #666;
-            font-size: 0.9em;
+        .stone-white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+            border: 1px solid #ccc;
         }
 
         .board-container {
@@ -103,184 +85,130 @@
         }
 
         .board {
-            display: grid;
-            grid-template-columns: repeat(19, 1fr);
-            gap: 0;
-            background: linear-gradient(135deg, #DEB887 0%, #D2691E 100%);
+            background: linear-gradient(135deg, #d4a574 0%, #c19660 100%);
+            border-radius: 8px;
             padding: 20px;
-            border-radius: 10px;
             box-shadow: 
-                inset 0 0 20px rgba(0, 0, 0, 0.2),
-                0 10px 30px rgba(0, 0, 0, 0.3);
+                0 10px 30px rgba(0,0,0,0.3),
+                inset 0 0 20px rgba(0,0,0,0.1);
             position: relative;
         }
 
         .board::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
             background: 
                 repeating-linear-gradient(
                     0deg,
                     transparent,
-                    transparent 28px,
-                    rgba(0, 0, 0, 0.3) 28px,
-                    rgba(0, 0, 0, 0.3) 30px
+                    transparent 34px,
+                    rgba(0,0,0,0.1) 34px,
+                    rgba(0,0,0,0.1) 35px
                 ),
                 repeating-linear-gradient(
                     90deg,
                     transparent,
-                    transparent 28px,
-                    rgba(0, 0, 0, 0.3) 28px,
-                    rgba(0, 0, 0, 0.3) 30px
+                    transparent 34px,
+                    rgba(0,0,0,0.1) 34px,
+                    rgba(0,0,0,0.1) 35px
                 );
             pointer-events: none;
-            border-radius: 10px;
+            border-radius: 4px;
         }
 
-        .intersection {
-            width: 30px;
-            height: 30px;
-            position: relative;
-            cursor: pointer;
+        .grid {
+            display: grid;
+            gap: 0;
+        }
+
+        .cell {
+            width: 35px;
+            height: 35px;
+            border: 1px solid rgba(139, 90, 43, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s ease;
         }
 
-        .intersection::before,
-        .intersection::after {
-            content: '';
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .cell .stone {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
             position: absolute;
-            background: #5D4E37;
+            transition: all 0.2s ease;
+            animation: placeStone 0.3s ease;
         }
 
-        .intersection::before {
-            width: 1px;
-            height: 100%;
+        @keyframes placeStone {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
         }
 
-        .intersection::after {
-            width: 100%;
-            height: 1px;
+        .cell .stone.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.5);
         }
 
-        .intersection.top-edge::before {
-            height: 50%;
-            top: 50%;
+        .cell .stone.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+            border: 1px solid #ccc;
         }
 
-        .intersection.bottom-edge::before {
-            height: 50%;
-            bottom: 50%;
-        }
-
-        .intersection.left-edge::after {
-            width: 50%;
-            left: 50%;
-        }
-
-        .intersection.right-edge::after {
-            width: 50%;
-            right: 50%;
-        }
-
-        .star-point::before {
-            content: '';
-            position: absolute;
+        .cell .star-point {
             width: 8px;
             height: 8px;
-            background: #5D4E37;
+            background: #8b5a2b;
             border-radius: 50%;
-            z-index: 1;
+            position: absolute;
+        }
+
+        .cell.last-move .stone::after {
+            content: '';
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-        }
-
-        .intersection:hover .hover-stone {
-            opacity: 0.5;
-        }
-
-        .stone {
-            width: 26px;
-            height: 26px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            position: absolute;
-            z-index: 10;
-            transition: transform 0.1s ease;
-        }
-
-        .stone.black {
-            background: radial-gradient(circle at 30% 30%, #555, #000);
-            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .stone.white {
-            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
-            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .stone.last-move::after {
-            content: '';
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background: #ff4444;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .hover-stone {
-            opacity: 0;
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            position: absolute;
-            z-index: 5;
-            pointer-events: none;
-        }
-
-        .hover-stone.black {
-            background: radial-gradient(circle at 30% 30%, #555, #000);
-        }
-
-        .hover-stone.white {
-            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+            border: 2px solid #ff6b6b;
         }
 
         .controls {
             display: flex;
+            gap: 10px;
             justify-content: center;
-            gap: 15px;
             flex-wrap: wrap;
         }
 
         button {
-            padding: 12px 30px;
-            font-size: 1em;
-            font-weight: bold;
+            padding: 12px 24px;
+            font-size: 16px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn-restart {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-restart:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .btn-pass {
@@ -290,114 +218,139 @@
 
         .btn-pass:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
+            box-shadow: 0 6px 20px rgba(240, 87, 108, 0.4);
+        }
+
+        .btn-new {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-new:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
         }
 
         .btn-undo {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
             color: white;
         }
 
         .btn-undo:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.4);
+            box-shadow: 0 6px 20px rgba(250, 112, 154, 0.4);
         }
 
-        .game-status {
+        .message {
             text-align: center;
-            margin-top: 20px;
-            padding: 15px;
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            border-radius: 10px;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .message.info {
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+            color: #006064;
+        }
+
+        .message.success {
+            background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
+            color: #1b5e20;
+        }
+
+        .message.warning {
+            background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+            color: #f57f17;
+        }
+
+        .message.error {
+            background: linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%);
+            color: #c62828;
+        }
+
+        .captured {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .captured-count {
+            font-size: 1.2em;
             font-weight: bold;
-            color: #333;
-            font-size: 1.1em;
         }
 
-        .turn-indicator {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            margin-left: 10px;
-            font-size: 0.9em;
+        .small-stone {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
         }
 
-        .turn-indicator.black {
-            background: #333;
-            color: white;
-        }
-
-        .turn-indicator.white {
-            background: #fff;
-            color: #333;
-            border: 1px solid #999;
-        }
-
-        @media (max-width: 768px) {
-            .game-container {
-                padding: 15px;
+        @media (max-width: 600px) {
+            .cell {
+                width: 28px;
+                height: 28px;
             }
-
+            
+            .cell .stone {
+                width: 22px;
+                height: 22px;
+            }
+            
             h1 {
-                font-size: 1.8em;
+                font-size: 1.5em;
             }
-
-            .intersection {
-                width: 18px;
-                height: 18px;
-            }
-
-            .stone, .hover-stone {
-                width: 16px;
-                height: 16px;
-            }
-
-            .board {
-                padding: 10px;
+            
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <h1>🎯 围棋 Go Game</h1>
+    <div class="container">
+        <h1>🎮 围棋游戏</h1>
         
         <div class="game-info">
-            <div class="player-info active" id="black-player">
-                <div class="stone-icon black"></div>
-                <div class="player-details">
-                    <div class="player-name">黑方 Black</div>
-                    <div class="captured-stones">提子: <span id="black-captured">0</span></div>
+            <div class="player-info active" id="blackPlayer">
+                <div class="stone-icon stone-black"></div>
+                <div>
+                    <div>黑方</div>
+                    <div class="captured">
+                        提子: <span class="captured-count" id="blackCaptures">0</span>
+                    </div>
                 </div>
             </div>
             
-            <div style="text-align: center; flex-grow: 1;">
-                <div>手数 Moves: <span id="move-count">0</span></div>
-                <div class="turn-indicator black" id="turn-indicator">黑方落子</div>
-            </div>
-            
-            <div class="player-info" id="white-player">
-                <div class="stone-icon white"></div>
-                <div class="player-details">
-                    <div class="player-name">白方 White</div>
-                    <div class="captured-stones">提子: <span id="white-captured">0</span></div>
+            <div class="player-info" id="whitePlayer">
+                <div class="stone-icon stone-white"></div>
+                <div>
+                    <div>白方</div>
+                    <div class="captured">
+                        提子: <span class="captured-count" id="whiteCaptures">0</span>
+                    </div>
                 </div>
             </div>
         </div>
-
+        
         <div class="board-container">
-            <div class="board" id="board"></div>
+            <div class="board">
+                <div class="grid" id="board"></div>
+            </div>
         </div>
-
+        
         <div class="controls">
-            <button class="btn-undo" onclick="undo()">悔棋 Undo</button>
-            <button class="btn-pass" onclick="pass()">停一手 Pass</button>
-            <button class="btn-restart" onclick="restart()">重新开始 Restart</button>
+            <button class="btn-pass" onclick="pass()">🚫 跳过 (Pass)</button>
+            <button class="btn-undo" onclick="undo()">↩️ 悔棋</button>
+            <button class="btn-new" onclick="newGame()">🔄 新游戏</button>
         </div>
-
-        <div class="game-status" id="game-status">
-            点击棋盘落子 | Click to place a stone
-        </div>
+        
+        <div class="message info" id="message">黑方先行，请点击棋盘落子</div>
     </div>
 
     <script>
@@ -405,327 +358,300 @@
         const EMPTY = 0;
         const BLACK = 1;
         const WHITE = 2;
-
+        
         let board = [];
         let currentPlayer = BLACK;
-        let moveHistory = [];
-        let capturedStones = { black: 0, white: 0 };
-        let moveCount = 0;
-        let consecutivePasses = 0;
+        let blackCaptures = 0;
+        let whiteCaptures = 0;
+        let passCount = 0;
         let lastMove = null;
-        let koPoint = null; // 劫争点（禁止立即回提的位置）
-        let gameOver = false;
-
-        // 星位位置 (19路棋盘)
+        let previousBoard = null;
+        let koPoint = null;
+        let moveHistory = [];
+        
         const starPoints = [
             [3, 3], [3, 9], [3, 15],
             [9, 3], [9, 9], [9, 15],
             [15, 3], [15, 9], [15, 15]
         ];
-
+        
         function initBoard() {
             board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(EMPTY));
             renderBoard();
+            updateDisplay();
         }
-
+        
         function renderBoard() {
             const boardElement = document.getElementById('board');
             boardElement.innerHTML = '';
-
-            for (let row = 0; row < BOARD_SIZE; row++) {
-                for (let col = 0; col < BOARD_SIZE; col++) {
-                    const intersection = document.createElement('div');
-                    intersection.className = 'intersection';
-                    intersection.dataset.row = row;
-                    intersection.dataset.col = col;
-
-                    // 添加边缘标记
-                    if (row === 0) intersection.classList.add('top-edge');
-                    if (row === BOARD_SIZE - 1) intersection.classList.add('bottom-edge');
-                    if (col === 0) intersection.classList.add('left-edge');
-                    if (col === BOARD_SIZE - 1) intersection.classList.add('right-edge');
-
-                    // 添加星位
-                    if (starPoints.some(([r, c]) => r === row && c === col)) {
-                        intersection.classList.add('star-point');
-                    }
-
-                    // 添加悬停预览（仅当格子为空且游戏未结束时显示）
-                    if (board[row][col] === EMPTY && !gameOver) {
-                        const hoverStone = document.createElement('div');
-                        hoverStone.className = `hover-stone ${currentPlayer === BLACK ? 'black' : 'white'}`;
-                        intersection.appendChild(hoverStone);
-                    }
-
-                    // 添加棋子
-                    if (board[row][col] !== EMPTY) {
+            boardElement.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 35px)`;
+            
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    
+                    if (board[i][j] !== EMPTY) {
                         const stone = document.createElement('div');
-                        stone.className = `stone ${board[row][col] === BLACK ? 'black' : 'white'}`;
-                        if (lastMove && lastMove.row === row && lastMove.col === col) {
-                            stone.classList.add('last-move');
-                        }
-                        intersection.appendChild(stone);
+                        stone.className = `stone ${board[i][j] === BLACK ? 'black' : 'white'}`;
+                        cell.appendChild(stone);
                     }
-
-                    intersection.addEventListener('click', () => handleClick(row, col));
-                    boardElement.appendChild(intersection);
+                    
+                    if (lastMove && lastMove.row === i && lastMove.col === j) {
+                        cell.classList.add('last-move');
+                    }
+                    
+                    // 星位点
+                    if (starPoints.some(([r, c]) => r === i && c === j)) {
+                        const starPoint = document.createElement('div');
+                        starPoint.className = 'star-point';
+                        cell.appendChild(starPoint);
+                    }
+                    
+                    cell.addEventListener('click', () => handleCellClick(i, j));
+                    boardElement.appendChild(cell);
                 }
             }
         }
-
-        function handleClick(row, col) {
+        
+        function handleCellClick(row, col) {
             if (board[row][col] !== EMPTY) {
-                setStatus('此处已有棋子！| Stone already exists!');
+                showMessage('该位置已有棋子', 'warning');
                 return;
             }
-
-            if (gameOver) {
-                setStatus('游戏已结束！请重新开始。| Game Over! Please restart.');
-                return;
-            }
-
-            // 检查劫争
+            
+            // 检查打劫
             if (koPoint && koPoint.row === row && koPoint.col === col) {
-                setStatus('劫争中，不能立即回提！| Ko rule: cannot recapture immediately!');
+                showMessage('打劫中，不能立即提回', 'error');
                 return;
             }
-
-            // 保存当前状态用于悔棋
-            const prevState = {
-                board: board.map(row => [...row]),
-                player: currentPlayer,
-                captured: { ...capturedStones },
-                moveCount: moveCount,
-                koPoint: koPoint ? { ...koPoint } : null,
-                lastMove: lastMove ? { ...lastMove } : null
-            };
-
+            
+            // 保存之前的状态用于悔棋
+            saveState();
+            
             // 尝试落子
             board[row][col] = currentPlayer;
-
-            // 检查并移除对方死子
+            
+            // 检查提子
             const opponent = currentPlayer === BLACK ? WHITE : BLACK;
-            const captured = checkAndRemoveCaptures(row, col, opponent);
-
-            // 检查自杀（如果没吃到对方棋子，且自己没有气）
-            if (captured.length === 0 && !hasLiberties(row, col)) {
+            const captured = checkCaptures(row, col, opponent);
+            
+            // 检查自杀
+            if (captured.length === 0 && countLiberties(row, col, currentPlayer) === 0) {
                 board[row][col] = EMPTY;
-                setStatus('无效落子（自杀）！| Invalid move (suicide)!');
+                showMessage('不能自杀！', 'error');
+                restoreState();
                 return;
             }
-
-            // 检查劫争：提掉对方一子，自己只剩一气，且只有一颗子
-            if (captured.length === 1 && getGroup(row, col).length === 1 && countLiberties(row, col) === 1) {
-                koPoint = { row: captured[0].row, col: captured[0].col };
+            
+            // 处理打劫
+            if (captured.length === 1) {
+                const liberties = countLiberties(row, col, currentPlayer);
+                const capturedStone = captured[0];
+                const group = getGroup(row, col, currentPlayer);
+                
+                if (liberties === 1 && group.length === 1) {
+                    koPoint = { row: capturedStone.row, col: capturedStone.col };
+                } else {
+                    koPoint = null;
+                }
             } else {
                 koPoint = null;
             }
-
+            
+            // 执行提子
+            for (const stone of captured) {
+                board[stone.row][stone.col] = EMPTY;
+            }
+            
             // 更新提子数
             if (currentPlayer === BLACK) {
-                capturedStones.black += captured.length;
+                blackCaptures += captured.length;
             } else {
-                capturedStones.white += captured.length;
+                whiteCaptures += captured.length;
             }
-
-            // 保存历史
-            moveHistory.push(prevState);
+            
             lastMove = { row, col };
-            moveCount++;
-            consecutivePasses = 0;
-
-            // 切换玩家
-            currentPlayer = opponent;
-            updateUI();
-            setStatus('');
+            passCount = 0;
+            
+            renderBoard();
+            switchPlayer();
+            showMessage(`落子成功！`, 'success');
         }
-
-        function checkAndRemoveCaptures(row, col, color) {
+        
+        function checkCaptures(row, col, color) {
             const captured = [];
             const neighbors = getNeighbors(row, col);
-
-            for (const [r, c] of neighbors) {
-                if (board[r][c] === color) {
-                    if (!hasLiberties(r, c)) {
-                        const group = getGroup(r, c);
-                        for (const [gr, gc] of group) {
-                            board[gr][gc] = EMPTY;
-                            captured.push({ row: gr, col: gc });
+            
+            for (const neighbor of neighbors) {
+                if (board[neighbor.row][neighbor.col] === color) {
+                    const group = getGroup(neighbor.row, neighbor.col, color);
+                    if (countGroupLiberties(group) === 0) {
+                        captured.push(...group);
+                    }
+                }
+            }
+            
+            return captured;
+        }
+        
+        function getGroup(row, col, color) {
+            const group = [];
+            const visited = new Set();
+            const stack = [{ row, col }];
+            
+            while (stack.length > 0) {
+                const pos = stack.pop();
+                const key = `${pos.row},${pos.col}`;
+                
+                if (visited.has(key)) continue;
+                visited.add(key);
+                
+                if (board[pos.row][pos.col] === color) {
+                    group.push(pos);
+                    
+                    const neighbors = getNeighbors(pos.row, pos.col);
+                    for (const neighbor of neighbors) {
+                        if (!visited.has(`${neighbor.row},${neighbor.col}`)) {
+                            stack.push(neighbor);
                         }
                     }
                 }
             }
-
-            return captured;
-        }
-
-        function getNeighbors(row, col) {
-            const neighbors = [];
-            if (row > 0) neighbors.push([row - 1, col]);
-            if (row < BOARD_SIZE - 1) neighbors.push([row + 1, col]);
-            if (col > 0) neighbors.push([row, col - 1]);
-            if (col < BOARD_SIZE - 1) neighbors.push([row, col + 1]);
-            return neighbors;
-        }
-
-        function getGroup(row, col) {
-            const color = board[row][col];
-            if (color === EMPTY) return [];
-
-            const group = [];
-            const visited = new Set();
-            const stack = [[row, col]];
-
-            while (stack.length > 0) {
-                const [r, c] = stack.pop();
-                const key = `${r},${c}`;
-
-                if (visited.has(key)) continue;
-                if (board[r][c] !== color) continue;
-
-                visited.add(key);
-                group.push([r, c]);
-
-                const neighbors = getNeighbors(r, c);
-                stack.push(...neighbors);
-            }
-
+            
             return group;
         }
-
-        function hasLiberties(row, col) {
-            return countLiberties(row, col) > 0;
+        
+        function countLiberties(row, col, color) {
+            const group = getGroup(row, col, color);
+            return countGroupLiberties(group);
         }
-
-        function countLiberties(row, col) {
-            const group = getGroup(row, col);
+        
+        function countGroupLiberties(group) {
             const liberties = new Set();
-
-            for (const [r, c] of group) {
-                const neighbors = getNeighbors(r, c);
-                for (const [nr, nc] of neighbors) {
-                    if (board[nr][nc] === EMPTY) {
-                        liberties.add(`${nr},${nc}`);
+            
+            for (const stone of group) {
+                const neighbors = getNeighbors(stone.row, stone.col);
+                for (const neighbor of neighbors) {
+                    if (board[neighbor.row][neighbor.col] === EMPTY) {
+                        liberties.add(`${neighbor.row},${neighbor.col}`);
                     }
                 }
             }
-
+            
             return liberties.size;
         }
-
-        function pass() {
-            if (gameOver) {
-                setStatus('游戏已结束！请重新开始。| Game Over! Please restart.');
-                return;
-            }
-
-            consecutivePasses++;
-            moveHistory.push({
-                board: board.map(row => [...row]),
-                player: currentPlayer,
-                captured: { ...capturedStones },
-                moveCount: moveCount,
-                koPoint: koPoint ? { ...koPoint } : null,
-                lastMove: lastMove ? { ...lastMove } : null
-            });
-
-            currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
-            koPoint = null;
-            lastMove = null;
-            moveCount++;
-
-            if (consecutivePasses >= 2) {
-                endGame();
-                return;
-            }
-
-            updateUI();
-            setStatus(`${consecutivePasses === 1 ? (currentPlayer === BLACK ? '白方' : '黑方') : '双方'}停一手 | ${consecutivePasses === 1 ? (currentPlayer === BLACK ? 'White' : 'Black') : 'Both'} passed`);
-        }
-
-        function undo() {
-            if (moveHistory.length === 0) {
-                setStatus('无法悔棋！| Cannot undo!');
-                return;
-            }
-
-            const prevState = moveHistory.pop();
-            board = prevState.board;
-            currentPlayer = prevState.player;
-            capturedStones = prevState.captured;
-            moveCount = prevState.moveCount;
-            koPoint = prevState.koPoint;
-            lastMove = prevState.lastMove;
-            consecutivePasses = 0;
-            gameOver = false;
-
-            updateUI();
-            setStatus('已悔棋 | Undo successful');
-        }
-
-        function restart() {
-            board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(EMPTY));
-            currentPlayer = BLACK;
-            moveHistory = [];
-            capturedStones = { black: 0, white: 0 };
-            moveCount = 0;
-            consecutivePasses = 0;
-            lastMove = null;
-            koPoint = null;
-            gameOver = false;
-            updateUI();
-            setStatus('游戏重新开始 | Game restarted');
-        }
-
-        function endGame() {
-            gameOver = true;
-            // 简单的数子逻辑（实际围棋规则更复杂）
-            let blackStones = 0;
-            let whiteStones = 0;
-
-            for (let row = 0; row < BOARD_SIZE; row++) {
-                for (let col = 0; col < BOARD_SIZE; col++) {
-                    if (board[row][col] === BLACK) blackStones++;
-                    else if (board[row][col] === WHITE) whiteStones++;
+        
+        function getNeighbors(row, col) {
+            const neighbors = [];
+            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            
+            for (const [dr, dc] of directions) {
+                const newRow = row + dr;
+                const newCol = col + dc;
+                
+                if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE) {
+                    neighbors.push({ row: newRow, col: newCol });
                 }
             }
-
-            const blackTotal = blackStones + capturedStones.black;
-            const whiteTotal = whiteStones + capturedStones.white + 6.5; // 贴6.5目
-
-            let winner = blackTotal > whiteTotal ? '黑方 Black' : '白方 White';
-            let result = blackTotal > whiteTotal ? blackTotal - whiteTotal : whiteTotal - blackTotal;
-
-            setStatus(`游戏结束！${winner} 胜 ${result.toFixed(1)} 目 | Game Over! ${winner} wins by ${result.toFixed(1)} points`);
+            
+            return neighbors;
         }
-
-        function updateUI() {
-            renderBoard();
-            document.getElementById('move-count').textContent = moveCount;
-            document.getElementById('black-captured').textContent = capturedStones.black;
-            document.getElementById('white-captured').textContent = capturedStones.white;
-
-            const blackPlayer = document.getElementById('black-player');
-            const whitePlayer = document.getElementById('white-player');
-            const turnIndicator = document.getElementById('turn-indicator');
-
+        
+        function switchPlayer() {
+            currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
+            updateDisplay();
+        }
+        
+        function updateDisplay() {
+            const blackPlayer = document.getElementById('blackPlayer');
+            const whitePlayer = document.getElementById('whitePlayer');
+            
             if (currentPlayer === BLACK) {
                 blackPlayer.classList.add('active');
                 whitePlayer.classList.remove('active');
-                turnIndicator.className = 'turn-indicator black';
-                turnIndicator.textContent = '黑方落子';
             } else {
                 whitePlayer.classList.add('active');
                 blackPlayer.classList.remove('active');
-                turnIndicator.className = 'turn-indicator white';
-                turnIndicator.textContent = '白方落子';
             }
+            
+            document.getElementById('blackCaptures').textContent = blackCaptures;
+            document.getElementById('whiteCaptures').textContent = whiteCaptures;
         }
-
-        function setStatus(message) {
-            document.getElementById('game-status').textContent = message;
+        
+        function showMessage(text, type = 'info') {
+            const messageElement = document.getElementById('message');
+            messageElement.textContent = text;
+            messageElement.className = `message ${type}`;
         }
-
+        
+        function pass() {
+            passCount++;
+            showMessage(`${currentPlayer === BLACK ? '黑方' : '白方'}跳过`, 'info');
+            
+            if (passCount >= 2) {
+                showMessage('双方连续跳过，游戏结束！', 'success');
+                return;
+            }
+            
+            koPoint = null;
+            lastMove = null;
+            switchPlayer();
+        }
+        
+        function newGame() {
+            board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(EMPTY));
+            currentPlayer = BLACK;
+            blackCaptures = 0;
+            whiteCaptures = 0;
+            passCount = 0;
+            lastMove = null;
+            koPoint = null;
+            moveHistory = [];
+            
+            renderBoard();
+            updateDisplay();
+            showMessage('新游戏开始，黑方先行', 'info');
+        }
+        
+        function saveState() {
+            previousBoard = board.map(row => [...row]);
+            moveHistory.push({
+                board: previousBoard,
+                player: currentPlayer,
+                blackCaptures,
+                whiteCaptures,
+                lastMove: lastMove ? { ...lastMove } : null
+            });
+        }
+        
+        function restoreState() {
+            if (moveHistory.length === 0) return;
+            
+            const state = moveHistory.pop();
+            board = state.board;
+            currentPlayer = state.player;
+            blackCaptures = state.blackCaptures;
+            whiteCaptures = state.whiteCaptures;
+            lastMove = state.lastMove;
+            koPoint = null;
+            
+            renderBoard();
+            updateDisplay();
+        }
+        
+        function undo() {
+            if (moveHistory.length === 0) {
+                showMessage('没有可以悔棋的步骤', 'warning');
+                return;
+            }
+            
+            restoreState();
+            showMessage('已悔棋', 'info');
+        }
+        
         // 初始化游戏
         initBoard();
     </script>
