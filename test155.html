@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>围棋</title>
+    <title>围棋 - Go Game</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -20,661 +21,525 @@
             justify-content: center;
             padding: 20px;
         }
+
         .game-container {
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 30px;
-            max-width: 800px;
+            max-width: 700px;
             width: 100%;
         }
-        .game-header {
+
+        h1 {
             text-align: center;
-            margin-bottom: 20px;
-        }
-        .game-header h1 {
-            font-size: 2.5em;
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 2.5em;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         .game-info {
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .info-card {
+            padding: 15px;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 15px 25px;
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            min-width: 150px;
-            text-align: center;
         }
-        .info-card h3 {
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-        .info-card p {
-            font-size: 1.5em;
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
             font-weight: bold;
-            color: #333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
         }
-        .black-stone { color: #000; }
-        .white-stone { color: #888; }
-        .board-container {
+
+        .player-info.active {
+            background: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: scale(1.05);
+        }
+
+        .stone-indicator {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .stone-indicator.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
+        }
+
+        .stone-indicator.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+            border: 1px solid #ccc;
+        }
+
+        .board-wrapper {
             display: flex;
             justify-content: center;
             margin-bottom: 20px;
         }
-        #goBoard {
-            background: linear-gradient(135deg, #dcb35c 0%, #d4a84b 100%);
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+
+        .board {
+            position: relative;
+            background: linear-gradient(135deg, #d4a574 0%, #c49464 100%);
+            border-radius: 5px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             cursor: pointer;
         }
+
+        canvas {
+            display: block;
+            border-radius: 5px;
+        }
+
         .controls {
             display: flex;
+            gap: 10px;
             justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
         }
-        .btn {
-            padding: 12px 30px;
+
+        button {
+            padding: 12px 25px;
             font-size: 1em;
             font-weight: bold;
             border: none;
-            border-radius: 25px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
-        .btn:hover {
+
+        button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+
+        button:active {
+            transform: translateY(0);
         }
-        .btn-secondary {
+
+        .btn-pass {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
         }
-        .btn-warning {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            color: #333;
+
+        .btn-reset {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
         }
-        .game-message {
+
+        .message {
             text-align: center;
             margin-top: 15px;
             padding: 10px;
-            border-radius: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
             font-weight: bold;
-            min-height: 40px;
+            color: #333;
+            min-height: 45px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .message-info {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        .message-warning {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-        .message-error {
-            background: #ffebee;
-            color: #d32f2f;
-        }
-        @media (max-width: 768px) {
-            .game-header h1 {
-                font-size: 1.8em;
-            }
-            .info-card {
-                min-width: 120px;
-            }
-            .btn {
-                padding: 10px 20px;
-                font-size: 0.9em;
-            }
+
+        .captured {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <div class="game-header">
-            <h1>🎮 围棋</h1>
-        </div>
+        <h1>围棋 Go Game</h1>
         
         <div class="game-info">
-            <div class="info-card">
-                <h3>当前执子</h3>
-                <p id="currentPlayer" class="black-stone">⚫ 黑棋</p>
+            <div class="player-info active" id="black-player">
+                <span class="stone-indicator black"></span>
+                <span>Black</span>
+                <div class="captured" id="black-captured">Captured: 0</div>
             </div>
-            <div class="info-card">
-                <h3>当前手数</h3>
-                <p id="moveCount">0</p>
-            </div>
-            <div class="info-card">
-                <h3>黑棋提子</h3>
-                <p id="blackCaptures">0</p>
-            </div>
-            <div class="info-card">
-                <h3>白棋提子</h3>
-                <p id="whiteCaptures">0</p>
+            <div class="player-info" id="white-player">
+                <span class="stone-indicator white"></span>
+                <span>White</span>
+                <div class="captured" id="white-captured">Captured: 0</div>
             </div>
         </div>
-        
-        <div class="board-container">
-            <canvas id="goBoard"></canvas>
+
+        <div class="board-wrapper">
+            <div class="board">
+                <canvas id="go-board" width="570" height="570"></canvas>
+            </div>
         </div>
-        
+
         <div class="controls">
-            <button class="btn btn-primary" onclick="undoMove()">↩️ 悔棋</button>
-            <button class="btn btn-warning" onclick="passMove()">⏭️ 虚着</button>
-            <button class="btn btn-secondary" onclick="resetGame()">🔄 重新开始</button>
+            <button class="btn-pass" onclick="pass()">Pass</button>
+            <button class="btn-reset" onclick="resetGame()">Reset Game</button>
         </div>
-        
-        <div id="gameMessage" class="game-message message-info">
-            点击棋盘交叉点落子
-        </div>
+
+        <div class="message" id="message">Black's turn - Click to place a stone</div>
     </div>
 
     <script>
-        // 游戏状态
-        const BOARD_SIZE = 19;
-        let CELL_SIZE = 32;
-        const PADDING = 35;
-        let STONE_RADIUS = 14;
-        
-        let board = [];
-        let currentPlayer = 1; // 1: 黑棋, 2: 白棋
-        let moveCount = 0;
-        let blackCaptures = 0;
-        let whiteCaptures = 0;
-        let moveHistory = [];
-        let lastMove = null;
-        let koPoint = null; // 打劫点
-        let consecutivePasses = 0;
-        let hoverPos = null; // 鼠标悬停位置
-        
-        const canvas = document.getElementById('goBoard');
+        const canvas = document.getElementById('go-board');
         const ctx = canvas.getContext('2d');
-        
-        // 初始化棋盘
+        const BOARD_SIZE = 19;
+        const CELL_SIZE = 30;
+        const PADDING = 15;
+        const STONE_RADIUS = 13;
+
+        let board = [];
+        let currentPlayer = 'black';
+        let blackCaptured = 0;
+        let whiteCaptured = 0;
+        let passCount = 0;
+        let lastBoard = null;
+        let gameOver = false;
+
         function initBoard() {
-            canvas.width = CELL_SIZE * (BOARD_SIZE - 1) + PADDING * 2;
-            canvas.height = CELL_SIZE * (BOARD_SIZE - 1) + PADDING * 2;
-            
-            board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
-            currentPlayer = 1;
-            moveCount = 0;
-            blackCaptures = 0;
-            whiteCaptures = 0;
-            moveHistory = [];
-            lastMove = null;
-            koPoint = null;
-            consecutivePasses = 0;
-            
-            updateUI();
-            drawBoard();
-            showMessage('点击棋盘交叉点落子', 'info');
+            board = [];
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                board[i] = [];
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    board[i][j] = null;
+                }
+            }
         }
-        
-        // 绘制棋盘
+
         function drawBoard() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 绘制棋盘线
+            // Draw grid lines
             ctx.strokeStyle = '#000';
             ctx.lineWidth = 1;
             
             for (let i = 0; i < BOARD_SIZE; i++) {
-                // 横线
+                // Horizontal lines
                 ctx.beginPath();
                 ctx.moveTo(PADDING, PADDING + i * CELL_SIZE);
-                ctx.lineTo(canvas.width - PADDING, PADDING + i * CELL_SIZE);
+                ctx.lineTo(PADDING + (BOARD_SIZE - 1) * CELL_SIZE, PADDING + i * CELL_SIZE);
                 ctx.stroke();
                 
-                // 竖线
+                // Vertical lines
                 ctx.beginPath();
                 ctx.moveTo(PADDING + i * CELL_SIZE, PADDING);
-                ctx.lineTo(PADDING + i * CELL_SIZE, canvas.height - PADDING);
+                ctx.lineTo(PADDING + i * CELL_SIZE, PADDING + (BOARD_SIZE - 1) * CELL_SIZE);
                 ctx.stroke();
             }
             
-            // 绘制星位
-            const starPoints = BOARD_SIZE === 19 ? 
-                [[3, 3], [3, 9], [3, 15], [9, 3], [9, 9], [9, 15], [15, 3], [15, 9], [15, 15]] :
-                BOARD_SIZE === 13 ? [[3, 3], [3, 9], [6, 6], [9, 3], [9, 9]] :
-                [];
+            // Draw star points (hoshi)
+            const starPoints = [3, 9, 15];
+            ctx.fillStyle = '#000';
+            for (let i of starPoints) {
+                for (let j of starPoints) {
+                    ctx.beginPath();
+                    ctx.arc(PADDING + i * CELL_SIZE, PADDING + j * CELL_SIZE, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
             
-            starPoints.forEach(([x, y]) => {
-                ctx.fillStyle = '#000';
-                ctx.beginPath();
-                ctx.arc(PADDING + x * CELL_SIZE, PADDING + y * CELL_SIZE, 5, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            
-            // 绘制棋子
+            // Draw stones
             for (let i = 0; i < BOARD_SIZE; i++) {
                 for (let j = 0; j < BOARD_SIZE; j++) {
-                    if (board[i][j] !== 0) {
+                    if (board[i][j]) {
                         drawStone(i, j, board[i][j]);
                     }
                 }
             }
-            
-            // 标记最后一步
-            if (lastMove) {
-                ctx.strokeStyle = '#f00';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(
-                    PADDING + lastMove.x * CELL_SIZE,
-                    PADDING + lastMove.y * CELL_SIZE,
-                    STONE_RADIUS - 2,
-                    0, Math.PI * 2
-                );
-                ctx.stroke();
-            }
-
-            // 绘制预览棋子
-            if (hoverPos && board[hoverPos.x][hoverPos.y] === 0) {
-                drawPreviewStone(hoverPos.x, hoverPos.y, currentPlayer);
-            }
         }
-        
-        // 绘制棋子
-        function drawStone(x, y, player) {
+
+        function drawStone(x, y, color) {
             const centerX = PADDING + x * CELL_SIZE;
             const centerY = PADDING + y * CELL_SIZE;
             
-            // 绘制棋子阴影
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.beginPath();
-            ctx.arc(centerX + 2, centerY + 2, STONE_RADIUS, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.arc(centerX, centerY, STONE_RADIUS, 0, Math.PI * 2);
             
-            // 绘制棋子
-            if (player === 1) {
-                // 黑棋渐变
-                const gradient = ctx.createRadialGradient(
-                    centerX - 3, centerY - 3, 0,
-                    centerX, centerY, STONE_RADIUS
-                );
-                gradient.addColorStop(0, '#444');
+            if (color === 'black') {
+                const gradient = ctx.createRadialGradient(centerX - 4, centerY - 4, 0, centerX, centerY, STONE_RADIUS);
+                gradient.addColorStop(0, '#555');
                 gradient.addColorStop(1, '#000');
                 ctx.fillStyle = gradient;
             } else {
-                // 白棋渐变
-                const gradient = ctx.createRadialGradient(
-                    centerX - 3, centerY - 3, 0,
-                    centerX, centerY, STONE_RADIUS
-                );
+                const gradient = ctx.createRadialGradient(centerX - 4, centerY - 4, 0, centerX, centerY, STONE_RADIUS);
                 gradient.addColorStop(0, '#fff');
                 gradient.addColorStop(1, '#ddd');
                 ctx.fillStyle = gradient;
             }
             
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, STONE_RADIUS, 0, Math.PI * 2);
             ctx.fill();
-            
-            // 棋子边框
-            ctx.strokeStyle = player === 1 ? '#333' : '#ccc';
+            ctx.strokeStyle = color === 'white' ? '#ccc' : '#000';
             ctx.lineWidth = 1;
             ctx.stroke();
         }
 
-        // 绘制预览棋子（半透明）
-        function drawPreviewStone(x, y, player) {
-            const centerX = PADDING + x * CELL_SIZE;
-            const centerY = PADDING + y * CELL_SIZE;
-
-            ctx.globalAlpha = 0.5;
-
-            // 绘制棋子
-            if (player === 1) {
-                const gradient = ctx.createRadialGradient(
-                    centerX - 3, centerY - 3, 0,
-                    centerX, centerY, STONE_RADIUS
-                );
-                gradient.addColorStop(0, '#444');
-                gradient.addColorStop(1, '#000');
-                ctx.fillStyle = gradient;
-            } else {
-                const gradient = ctx.createRadialGradient(
-                    centerX - 3, centerY - 3, 0,
-                    centerX, centerY, STONE_RADIUS
-                );
-                gradient.addColorStop(0, '#fff');
-                gradient.addColorStop(1, '#ddd');
-                ctx.fillStyle = gradient;
-            }
-
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, STONE_RADIUS, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = player === 1 ? '#333' : '#ccc';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            ctx.globalAlpha = 1.0;
-        }
-
-        // 获取点击位置
-        function getClickPosition(event) {
+        function getIntersection(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
             
-            const boardX = Math.round((x - PADDING) / CELL_SIZE);
-            const boardY = Math.round((y - PADDING) / CELL_SIZE);
+            const gridX = Math.round((x - PADDING) / CELL_SIZE);
+            const gridY = Math.round((y - PADDING) / CELL_SIZE);
             
-            if (boardX >= 0 && boardX < BOARD_SIZE && boardY >= 0 && boardY < BOARD_SIZE) {
-                return { x: boardX, y: boardY };
+            if (gridX >= 0 && gridX < BOARD_SIZE && gridY >= 0 && gridY < BOARD_SIZE) {
+                return { x: gridX, y: gridY };
             }
             return null;
         }
-        
-        // 落子
-        function placeStone(x, y) {
-            if (board[x][y] !== 0) {
-                showMessage('此处已有棋子', 'warning');
-                return false;
-            }
+
+        function getLiberties(x, y, color, visited) {
+            const key = `${x},${y}`;
+            if (visited.has(key)) return [];
+            visited.add(key);
             
-            // 检查打劫
-            if (koPoint && koPoint.x === x && koPoint.y === y) {
-                showMessage('打劫中，不能立即提回', 'error');
-                return false;
-            }
+            const liberties = [];
+            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
             
-            // 保存当前状态用于悔棋
-            const previousState = {
-                board: board.map(row => [...row]),
-                currentPlayer,
-                moveCount,
-                blackCaptures,
-                whiteCaptures,
-                koPoint,
-                lastMove,
-                consecutivePasses
-            };
-            
-            // 尝试落子
-            board[x][y] = currentPlayer;
-            
-            // 检查提子
-            const captured = checkCaptures(x, y, currentPlayer);
-            if (captured.total > 0) {
-                blackCaptures += currentPlayer === 1 ? captured.total : 0;
-                whiteCaptures += currentPlayer === 2 ? captured.total : 0;
-            } else {
-                // 检查自杀
-                if (!hasLiberties(x, y, currentPlayer)) {
-                    board[x][y] = 0;
-                    showMessage('禁入点：此处落子无气', 'error');
-                    return false;
-                }
-            }
-            
-            // 检查打劫
-            if (captured.total === 1) {
-                const stone = board[x][y];
-                const liberties = countLiberties(x, y);
-                if (liberties === 1) {
-                    koPoint = { x, y };
-                } else {
-                    koPoint = null;
-                }
-            } else {
-                koPoint = null;
-            }
-            
-            // 更新状态
-            moveHistory.push(previousState);
-            lastMove = { x, y };
-            moveCount++;
-            consecutivePasses = 0;
-            currentPlayer = currentPlayer === 1 ? 2 : 1;
-            
-            updateUI();
-            drawBoard();
-            showMessage(`落子：(${x + 1}, ${y + 1})`, 'info');
-            return true;
-        }
-        
-        // 检查提子
-        function checkCaptures(x, y, player) {
-            const opponent = player === 1 ? 2 : 1;
-            let captured = { black: [], white: [], total: 0 };
-            
-            const neighbors = [
-                { dx: -1, dy: 0 },
-                { dx: 1, dy: 0 },
-                { dx: 0, dy: -1 },
-                { dx: 0, dy: 1 }
-            ];
-            
-            for (const { dx, dy } of neighbors) {
+            for (const [dx, dy] of directions) {
                 const nx = x + dx;
                 const ny = y + dy;
                 
                 if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
-                    if (board[nx][ny] === opponent) {
-                        if (!hasLiberties(nx, ny, opponent)) {
-                            const group = getGroup(nx, ny, opponent);
-                            if (opponent === 1) {
-                                captured.black.push(...group);
-                            } else {
-                                captured.white.push(...group);
+                    if (board[nx][ny] === null) {
+                        if (!liberties.some(l => l.x === nx && l.y === ny)) {
+                            liberties.push({ x: nx, y: ny });
+                        }
+                    } else if (board[nx][ny] === color) {
+                        const moreLiberties = getLiberties(nx, ny, color, visited);
+                        for (const lib of moreLiberties) {
+                            if (!liberties.some(l => l.x === lib.x && l.y === lib.y)) {
+                                liberties.push(lib);
                             }
                         }
                     }
                 }
             }
             
-            // 移除被提的棋子
-            captured.black.forEach(({ x, y }) => board[x][y] = 0);
-            captured.white.forEach(({ x, y }) => board[x][y] = 0);
-            captured.total = captured.black.length + captured.white.length;
-            
-            return captured;
+            return liberties;
         }
-        
-        // 检查棋子是否有气
-        function hasLiberties(x, y, player) {
-            return countLiberties(x, y, player) > 0;
-        }
-        
-        // 计算气数
-        function countLiberties(x, y, player) {
-            const group = getGroup(x, y, player);
-            const liberties = new Set();
+
+        function getGroup(x, y, color, visited) {
+            const key = `${x},${y}`;
+            if (visited.has(key)) return [];
+            visited.add(key);
             
-            for (const stone of group) {
-                const neighbors = [
-                    { dx: -1, dy: 0 },
-                    { dx: 1, dy: 0 },
-                    { dx: 0, dy: -1 },
-                    { dx: 0, dy: 1 }
-                ];
-                
-                for (const { dx, dy } of neighbors) {
-                    const nx = stone.x + dx;
-                    const ny = stone.y + dy;
-                    
-                    if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
-                        if (board[nx][ny] === 0) {
-                            liberties.add(`${nx},${ny}`);
-                        }
-                    }
-                }
-            }
+            const group = [{ x, y }];
+            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
             
-            return liberties.size;
-        }
-        
-        // 获取棋子所在的组
-        function getGroup(x, y, player) {
-            const group = [];
-            const visited = new Set();
-            const stack = [{ x, y }];
-            
-            while (stack.length > 0) {
-                const stone = stack.pop();
-                const key = `${stone.x},${stone.y}`;
+            for (const [dx, dy] of directions) {
+                const nx = x + dx;
+                const ny = y + dy;
                 
-                if (visited.has(key)) continue;
-                visited.add(key);
-                
-                if (board[stone.x][stone.y] === player) {
-                    group.push(stone);
-                    
-                    const neighbors = [
-                        { dx: -1, dy: 0 },
-                        { dx: 1, dy: 0 },
-                        { dx: 0, dy: -1 },
-                        { dx: 0, dy: 1 }
-                    ];
-                    
-                    for (const { dx, dy } of neighbors) {
-                        const nx = stone.x + dx;
-                        const ny = stone.y + dy;
-                        
-                        if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
-                            stack.push({ x: nx, y: ny });
-                        }
+                if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+                    if (board[nx][ny] === color) {
+                        const more = getGroup(nx, ny, color, visited);
+                        group.push(...more);
                     }
                 }
             }
             
             return group;
         }
-        
-        // 悔棋
-        function undoMove() {
-            if (moveHistory.length === 0) {
-                showMessage('没有可以悔的棋', 'warning');
+
+        function captureStones(x, y) {
+            const opponent = currentPlayer === 'black' ? 'white' : 'black';
+            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            let captured = 0;
+            
+            for (const [dx, dy] of directions) {
+                const nx = x + dx;
+                const ny = y + dy;
+                
+                if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+                    if (board[nx][ny] === opponent) {
+                        const visited = new Set();
+                        const group = getGroup(nx, ny, opponent, visited);
+                        const liberties = getLiberties(nx, ny, opponent, new Set());
+                        
+                        if (liberties.length === 0) {
+                            for (const stone of group) {
+                                board[stone.x][stone.y] = null;
+                                captured++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return captured;
+        }
+
+        function isValidMove(x, y) {
+            if (board[x][y] !== null) return false;
+            
+            // Temporarily place stone
+            board[x][y] = currentPlayer;
+            
+            // Check if this move captures opponent stones
+            const opponent = currentPlayer === 'black' ? 'white' : 'black';
+            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            let captures = false;
+            
+            for (const [dx, dy] of directions) {
+                const nx = x + dx;
+                const ny = y + dy;
+                
+                if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+                    if (board[nx][ny] === opponent) {
+                        const liberties = getLiberties(nx, ny, opponent, new Set());
+                        if (liberties.length === 0) {
+                            captures = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Check if the placed stone has liberties or captures
+            const liberties = getLiberties(x, y, currentPlayer, new Set());
+            const hasLiberties = liberties.length > 0;
+            
+            // Remove temporary stone
+            board[x][y] = null;
+            
+            // Ko rule check
+            if (!captures && !hasLiberties) return false;
+            
+            return true;
+        }
+
+        function boardEquals(b1, b2) {
+            if (!b2) return false;
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    if (b1[i][j] !== b2[i][j]) return false;
+                }
+            }
+            return true;
+        }
+
+        function cloneBoard(b) {
+            const newBoard = [];
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                newBoard[i] = [...b[i]];
+            }
+            return newBoard;
+        }
+
+        canvas.addEventListener('click', function(e) {
+            if (gameOver) return;
+            
+            const pos = getIntersection(e.clientX, e.clientY);
+            if (!pos) return;
+            
+            if (!isValidMove(pos.x, pos.y)) {
+                setMessage('Invalid move! Try again.');
                 return;
             }
             
-            const previousState = moveHistory.pop();
-            board = previousState.board;
-            currentPlayer = previousState.currentPlayer;
-            moveCount = previousState.moveCount;
-            blackCaptures = previousState.blackCaptures;
-            whiteCaptures = previousState.whiteCaptures;
-            koPoint = previousState.koPoint;
-            lastMove = previousState.lastMove;
-            consecutivePasses = previousState.consecutivePasses;
+            // Save board state for ko rule
+            const beforeBoard = cloneBoard(board);
             
-            updateUI();
+            // Place stone
+            board[pos.x][pos.y] = currentPlayer;
+            
+            // Capture opponent stones
+            const captured = captureStones(pos.x, pos.y);
+            if (captured > 0) {
+                if (currentPlayer === 'black') {
+                    blackCaptured += captured;
+                } else {
+                    whiteCaptured += captured;
+                }
+                updateCaptured();
+            }
+            
+            // Check ko rule
+            if (boardEquals(board, lastBoard)) {
+                board = beforeBoard;
+                setMessage('Ko rule! Cannot repeat board position.');
+                return;
+            }
+            
+            lastBoard = beforeBoard;
+            passCount = 0;
+            
             drawBoard();
-            showMessage('已悔棋', 'info');
+            switchPlayer();
+        });
+
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            updatePlayerInfo();
+            setMessage(`${currentPlayer === 'black' ? 'Black' : 'White'}'s turn - Click to place a stone`);
         }
-        
-        // 虚着
-        function passMove() {
-            moveHistory.push({
-                board: board.map(row => [...row]),
-                currentPlayer,
-                moveCount,
-                blackCaptures,
-                whiteCaptures,
-                koPoint,
-                lastMove,
-                consecutivePasses
-            });
+
+        function updatePlayerInfo() {
+            const blackPlayer = document.getElementById('black-player');
+            const whitePlayer = document.getElementById('white-player');
             
-            consecutivePasses++;
-            koPoint = null;
-            lastMove = null;
-            currentPlayer = currentPlayer === 1 ? 2 : 1;
-            moveCount++;
-            
-            updateUI();
-            drawBoard();
-            
-            if (consecutivePasses >= 2) {
-                showMessage('双方连续虚着，对局结束', 'info');
+            if (currentPlayer === 'black') {
+                blackPlayer.classList.add('active');
+                whitePlayer.classList.remove('active');
             } else {
-                showMessage(`${currentPlayer === 1 ? '黑棋' : '白棋'}虚着`, 'info');
+                whitePlayer.classList.add('active');
+                blackPlayer.classList.remove('active');
             }
         }
-        
-        // 重新开始
+
+        function updateCaptured() {
+            document.getElementById('black-captured').textContent = `Captured: ${blackCaptured}`;
+            document.getElementById('white-captured').textContent = `Captured: ${whiteCaptured}`;
+        }
+
+        function setMessage(msg) {
+            document.getElementById('message').textContent = msg;
+        }
+
+        function pass() {
+            if (gameOver) return;
+            
+            passCount++;
+            
+            if (passCount >= 2) {
+                gameOver = true;
+                const winner = blackCaptured > whiteCaptured ? 'Black' : (whiteCaptured > blackCaptured ? 'White' : 'Tie');
+                setMessage(`Game Over! Both players passed. ${winner === 'Tie' ? "It's a tie!" : winner + ' wins!'}`);
+                return;
+            }
+            
+            switchPlayer();
+            setMessage(`${currentPlayer === 'black' ? 'White' : 'Black'} passed. ${currentPlayer === 'black' ? 'Black' : 'White'}'s turn`);
+        }
+
         function resetGame() {
-            if (moveCount > 0 && !confirm('确定要重新开始吗？')) {
-                return;
-            }
             initBoard();
-        }
-        
-        // 更新UI
-        function updateUI() {
-            const playerText = currentPlayer === 1 ? '⚫ 黑棋' : '⚪ 白棋';
-            const playerClass = currentPlayer === 1 ? 'black-stone' : 'white-stone';
+            currentPlayer = 'black';
+            blackCaptured = 0;
+            whiteCaptured = 0;
+            passCount = 0;
+            lastBoard = null;
+            gameOver = false;
             
-            document.getElementById('currentPlayer').textContent = playerText;
-            document.getElementById('currentPlayer').className = playerClass;
-            document.getElementById('moveCount').textContent = moveCount;
-            document.getElementById('blackCaptures').textContent = blackCaptures;
-            document.getElementById('whiteCaptures').textContent = whiteCaptures;
+            updatePlayerInfo();
+            updateCaptured();
+            drawBoard();
+            setMessage("Black's turn - Click to place a stone");
         }
-        
-        // 显示消息
-        function showMessage(text, type = 'info') {
-            const messageEl = document.getElementById('gameMessage');
-            messageEl.textContent = text;
-            messageEl.className = `game-message message-${type}`;
-        }
-        
-        // 点击事件处理
-        canvas.addEventListener('click', (event) => {
-            const pos = getClickPosition(event);
-            if (pos) {
-                placeStone(pos.x, pos.y);
-            }
-        });
-        
-        // 鼠标移动事件（显示预览）
-        canvas.addEventListener('mousemove', (event) => {
-            const pos = getClickPosition(event);
-            if (pos && board[pos.x][pos.y] === 0) {
-                canvas.style.cursor = 'pointer';
-                if (!hoverPos || hoverPos.x !== pos.x || hoverPos.y !== pos.y) {
-                    hoverPos = pos;
-                    drawBoard();
-                }
-            } else {
-                canvas.style.cursor = 'default';
-                if (hoverPos) {
-                    hoverPos = null;
-                    drawBoard();
-                }
-            }
-        });
 
-        // 鼠标离开事件
-        canvas.addEventListener('mouseleave', () => {
-            if (hoverPos) {
-                hoverPos = null;
-                drawBoard();
-            }
-        });
-
-        // 初始化游戏
+        // Initialize game
         initBoard();
+        drawBoard();
     </script>
 </body>
 </html>
