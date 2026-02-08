@@ -368,7 +368,8 @@
         let previousBoard = null;
         let koPoint = null;
         let moveHistory = [];
-        
+        let gameOver = false;
+
         const starPoints = [
             [3, 3], [3, 9], [3, 15],
             [9, 3], [9, 9], [9, 15],
@@ -417,17 +418,22 @@
         }
         
         function handleCellClick(row, col) {
+            if (gameOver) {
+                showMessage('游戏已结束，请开始新游戏', 'warning');
+                return;
+            }
+
             if (board[row][col] !== EMPTY) {
                 showMessage('该位置已有棋子', 'warning');
                 return;
             }
-            
+
             // 检查打劫
             if (koPoint && koPoint.row === row && koPoint.col === col) {
                 showMessage('打劫中，不能立即提回', 'error');
                 return;
             }
-            
+
             // 保存之前的状态用于悔棋
             saveState();
             
@@ -437,7 +443,7 @@
             // 检查提子
             const opponent = currentPlayer === BLACK ? WHITE : BLACK;
             const captured = checkCaptures(row, col, opponent);
-            
+
             // 检查自杀
             if (captured.length === 0 && countLiberties(row, col, currentPlayer) === 0) {
                 board[row][col] = EMPTY;
@@ -445,22 +451,24 @@
                 restoreState();
                 return;
             }
-            
-            // 处理打劫
+
+            // 处理打劫 - 需要在提子之前检查
+            // 打劫条件：提掉对方一子，且该子所在的棋组提掉前只有1口气
+            koPoint = null;
             if (captured.length === 1) {
-                const liberties = countLiberties(row, col, currentPlayer);
+                // 临时恢复被提的子来检查其所在棋组的气数
                 const capturedStone = captured[0];
-                const group = getGroup(row, col, currentPlayer);
-                
-                if (liberties === 1 && group.length === 1) {
+                board[capturedStone.row][capturedStone.col] = opponent;
+                const opponentGroup = getGroup(capturedStone.row, capturedStone.col, opponent);
+                const opponentLiberties = countGroupLiberties(opponentGroup);
+                board[capturedStone.row][capturedStone.col] = EMPTY; // 恢复为空
+
+                // 如果被提的子所在的棋组提掉前只有1口气（就是我方当前落子的位置），则是打劫
+                if (opponentLiberties === 1) {
                     koPoint = { row: capturedStone.row, col: capturedStone.col };
-                } else {
-                    koPoint = null;
                 }
-            } else {
-                koPoint = null;
             }
-            
+
             // 执行提子
             for (const stone of captured) {
                 board[stone.row][stone.col] = EMPTY;
@@ -588,14 +596,21 @@
         }
         
         function pass() {
+            if (gameOver) {
+                showMessage('游戏已结束，请开始新游戏', 'warning');
+                return;
+            }
+
+            saveState();
             passCount++;
             showMessage(`${currentPlayer === BLACK ? '黑方' : '白方'}跳过`, 'info');
-            
+
             if (passCount >= 2) {
+                gameOver = true;
                 showMessage('双方连续跳过，游戏结束！', 'success');
                 return;
             }
-            
+
             koPoint = null;
             lastMove = null;
             switchPlayer();
@@ -610,7 +625,8 @@
             lastMove = null;
             koPoint = null;
             moveHistory = [];
-            
+            gameOver = false;
+
             renderBoard();
             updateDisplay();
             showMessage('新游戏开始，黑方先行', 'info');
@@ -623,21 +639,24 @@
                 player: currentPlayer,
                 blackCaptures,
                 whiteCaptures,
-                lastMove: lastMove ? { ...lastMove } : null
+                lastMove: lastMove ? { ...lastMove } : null,
+                passCount,
+                koPoint: koPoint ? { ...koPoint } : null
             });
         }
         
         function restoreState() {
             if (moveHistory.length === 0) return;
-            
+
             const state = moveHistory.pop();
             board = state.board;
             currentPlayer = state.player;
             blackCaptures = state.blackCaptures;
             whiteCaptures = state.whiteCaptures;
             lastMove = state.lastMove;
-            koPoint = null;
-            
+            passCount = state.passCount;
+            koPoint = state.koPoint;
+
             renderBoard();
             updateDisplay();
         }
@@ -647,8 +666,9 @@
                 showMessage('没有可以悔棋的步骤', 'warning');
                 return;
             }
-            
+
             restoreState();
+            gameOver = false;
             showMessage('已悔棋', 'info');
         }
         
