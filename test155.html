@@ -189,9 +189,9 @@
     <script>
         // 游戏状态
         const BOARD_SIZE = 19;
-        const CELL_SIZE = 30;
-        const PADDING = 30;
-        const STONE_RADIUS = 13;
+        let CELL_SIZE = 32;
+        const PADDING = 35;
+        let STONE_RADIUS = 14;
         
         let board = [];
         let currentPlayer = 1; // 1: 黑棋, 2: 白棋
@@ -202,6 +202,7 @@
         let lastMove = null;
         let koPoint = null; // 打劫点
         let consecutivePasses = 0;
+        let hoverPos = null; // 鼠标悬停位置
         
         const canvas = document.getElementById('goBoard');
         const ctx = canvas.getContext('2d');
@@ -283,6 +284,11 @@
                 );
                 ctx.stroke();
             }
+
+            // 绘制预览棋子
+            if (hoverPos && board[hoverPos.x][hoverPos.y] === 0) {
+                drawPreviewStone(hoverPos.x, hoverPos.y, currentPlayer);
+            }
         }
         
         // 绘制棋子
@@ -326,7 +332,44 @@
             ctx.lineWidth = 1;
             ctx.stroke();
         }
-        
+
+        // 绘制预览棋子（半透明）
+        function drawPreviewStone(x, y, player) {
+            const centerX = PADDING + x * CELL_SIZE;
+            const centerY = PADDING + y * CELL_SIZE;
+
+            ctx.globalAlpha = 0.5;
+
+            // 绘制棋子
+            if (player === 1) {
+                const gradient = ctx.createRadialGradient(
+                    centerX - 3, centerY - 3, 0,
+                    centerX, centerY, STONE_RADIUS
+                );
+                gradient.addColorStop(0, '#444');
+                gradient.addColorStop(1, '#000');
+                ctx.fillStyle = gradient;
+            } else {
+                const gradient = ctx.createRadialGradient(
+                    centerX - 3, centerY - 3, 0,
+                    centerX, centerY, STONE_RADIUS
+                );
+                gradient.addColorStop(0, '#fff');
+                gradient.addColorStop(1, '#ddd');
+                ctx.fillStyle = gradient;
+            }
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, STONE_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = player === 1 ? '#333' : '#ccc';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.globalAlpha = 1.0;
+        }
+
         // 获取点击位置
         function getClickPosition(event) {
             const rect = canvas.getBoundingClientRect();
@@ -609,11 +652,27 @@
             const pos = getClickPosition(event);
             if (pos && board[pos.x][pos.y] === 0) {
                 canvas.style.cursor = 'pointer';
+                if (!hoverPos || hoverPos.x !== pos.x || hoverPos.y !== pos.y) {
+                    hoverPos = pos;
+                    drawBoard();
+                }
             } else {
                 canvas.style.cursor = 'default';
+                if (hoverPos) {
+                    hoverPos = null;
+                    drawBoard();
+                }
             }
         });
-        
+
+        // 鼠标离开事件
+        canvas.addEventListener('mouseleave', () => {
+            if (hoverPos) {
+                hoverPos = null;
+                drawBoard();
+            }
+        });
+
         // 初始化游戏
         initBoard();
     </script>
