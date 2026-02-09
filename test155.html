@@ -380,20 +380,20 @@
         }
 
         function isValidMove(x, y) {
-            if (board[x][y] !== null) return false;
-            
+            if (board[x][y] !== null) return { valid: false, reason: 'Position already occupied' };
+
             // Temporarily place stone
             board[x][y] = currentPlayer;
-            
+
             // Check if this move captures opponent stones
             const opponent = currentPlayer === 'black' ? 'white' : 'black';
             const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
             let captures = false;
-            
+
             for (const [dx, dy] of directions) {
                 const nx = x + dx;
                 const ny = y + dy;
-                
+
                 if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
                     if (board[nx][ny] === opponent) {
                         const liberties = getLiberties(nx, ny, opponent, new Set());
@@ -404,18 +404,53 @@
                     }
                 }
             }
-            
+
             // Check if the placed stone has liberties or captures
             const liberties = getLiberties(x, y, currentPlayer, new Set());
             const hasLiberties = liberties.length > 0;
-            
+
+            // Ko rule check - simulate the move and check board state
+            let isKo = false;
+            if (captures) {
+                // Temporarily capture stones to check board state
+                const tempBoard = cloneBoard(board);
+                let captureCount = 0;
+                for (const [dx, dy] of directions) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+                        if (tempBoard[nx][ny] === opponent) {
+                            const groupVisited = new Set();
+                            const group = getGroup(nx, ny, opponent, groupVisited);
+                            const lib = getLiberties(nx, ny, opponent, new Set());
+                            if (lib.length === 0) {
+                                for (const stone of group) {
+                                    tempBoard[stone.x][stone.y] = null;
+                                    captureCount++;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (lastBoard && boardEquals(tempBoard, lastBoard)) {
+                    isKo = true;
+                }
+            }
+
             // Remove temporary stone
             board[x][y] = null;
-            
+
+            // Suicide move check
+            if (!captures && !hasLiberties) {
+                return { valid: false, reason: 'Suicide move is not allowed' };
+            }
+
             // Ko rule check
-            if (!captures && !hasLiberties) return false;
-            
-            return true;
+            if (isKo) {
+                return { valid: false, reason: 'Ko rule - cannot repeat board position' };
+            }
+
+            return { valid: true };
         }
 
         function boardEquals(b1, b2) {
@@ -438,21 +473,22 @@
 
         canvas.addEventListener('click', function(e) {
             if (gameOver) return;
-            
+
             const pos = getIntersection(e.clientX, e.clientY);
             if (!pos) return;
-            
-            if (!isValidMove(pos.x, pos.y)) {
-                setMessage('Invalid move! Try again.');
+
+            const validation = isValidMove(pos.x, pos.y);
+            if (!validation.valid) {
+                setMessage(validation.reason || 'Invalid move! Try again.');
                 return;
             }
-            
+
             // Save board state for ko rule
             const beforeBoard = cloneBoard(board);
-            
+
             // Place stone
             board[pos.x][pos.y] = currentPlayer;
-            
+
             // Capture opponent stones
             const captured = captureStones(pos.x, pos.y);
             if (captured > 0) {
@@ -463,17 +499,17 @@
                 }
                 updateCaptured();
             }
-            
-            // Check ko rule
+
+            // Check ko rule (double check - also checked in isValidMove)
             if (boardEquals(board, lastBoard)) {
                 board = beforeBoard;
                 setMessage('Ko rule! Cannot repeat board position.');
                 return;
             }
-            
+
             lastBoard = beforeBoard;
             passCount = 0;
-            
+
             drawBoard();
             switchPlayer();
         });
@@ -508,18 +544,19 @@
 
         function pass() {
             if (gameOver) return;
-            
+
+            const passedPlayer = currentPlayer;
             passCount++;
-            
+
             if (passCount >= 2) {
                 gameOver = true;
                 const winner = blackCaptured > whiteCaptured ? 'Black' : (whiteCaptured > blackCaptured ? 'White' : 'Tie');
                 setMessage(`Game Over! Both players passed. ${winner === 'Tie' ? "It's a tie!" : winner + ' wins!'}`);
                 return;
             }
-            
+
             switchPlayer();
-            setMessage(`${currentPlayer === 'black' ? 'White' : 'Black'} passed. ${currentPlayer === 'black' ? 'Black' : 'White'}'s turn`);
+            setMessage(`${passedPlayer === 'black' ? 'Black' : 'White'} passed. ${currentPlayer === 'black' ? 'Black' : 'White'}'s turn`);
         }
 
         function resetGame() {
