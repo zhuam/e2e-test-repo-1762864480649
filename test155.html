@@ -319,6 +319,7 @@
         let consecutivePasses = 0;
         let gameOver = false;
         let lastMove = null;
+        let previousBoardState = null; // For ko rule
 
         function initBoard() {
             board = [];
@@ -508,14 +509,13 @@
             ];
 
             // Check if we capture any opponent stones
-            let captures = false;
+            let capturedGroups = [];
             for (let n of neighbors) {
                 if (n.x >= 0 && n.x < BOARD_SIZE && n.y >= 0 && n.y < BOARD_SIZE) {
                     if (board[n.x][n.y] === opponent) {
                         const group = getGroup(n.x, n.y, opponent);
                         if (!hasLiberties(group)) {
-                            captures = true;
-                            break;
+                            capturedGroups.push(group);
                         }
                     }
                 }
@@ -525,11 +525,54 @@
             const myGroup = getGroup(x, y, player);
             const hasMyLiberties = hasLiberties(myGroup);
 
+            // Remove captured stones temporarily to check ko rule
+            let capturedPositions = [];
+            for (let group of capturedGroups) {
+                for (let pos of group) {
+                    capturedPositions.push({ x: pos.x, y: pos.y });
+                    board[pos.x][pos.y] = null;
+                }
+            }
+
+            // Check ko rule - cannot recreate previous board state
+            let isKo = false;
+            if (previousBoardState && capturedGroups.length === 1 && capturedGroups[0].length === 1) {
+                isKo = boardsEqual(board, previousBoardState);
+            }
+
+            // Restore captured stones
+            for (let pos of capturedPositions) {
+                board[pos.x][pos.y] = opponent;
+            }
+
             // Remove the temporary stone
             board[x][y] = null;
 
-            // Valid if we have liberties or we capture opponent stones
-            return hasMyLiberties || captures;
+            // Valid if we have liberties or we capture opponent stones (and not ko)
+            return (hasMyLiberties || capturedGroups.length > 0) && !isKo;
+        }
+
+        function boardsEqual(board1, board2) {
+            if (!board1 || !board2) return false;
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    if (board1[i][j] !== board2[i][j]) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function getBoardCopy() {
+            const copy = [];
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                copy[i] = [];
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    copy[i][j] = board[i][j];
+                }
+            }
+            return copy;
         }
 
         function countLiberties(group) {
@@ -564,12 +607,16 @@
                 return;
             }
 
+            // Save previous board state for ko rule check
+            previousBoardState = getBoardCopy();
+
             // Save state for undo
             const previousState = {
                 board: JSON.parse(JSON.stringify(board)),
                 capturedStones: { ...capturedStones },
                 player: currentPlayer,
-                lastMove: lastMove
+                lastMove: lastMove,
+                previousBoardState: previousBoardState
             };
             moveHistory.push(previousState);
 
@@ -621,7 +668,8 @@
                 board: JSON.parse(JSON.stringify(board)),
                 capturedStones: { ...capturedStones },
                 player: currentPlayer,
-                lastMove: lastMove
+                lastMove: lastMove,
+                previousBoardState: previousBoardState
             });
 
             consecutivePasses++;
@@ -633,6 +681,7 @@
 
             currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
             lastMove = null;
+            previousBoardState = null;
 
             updateUI();
             updateStatus(`${currentPlayer === 'black' ? '黑方' : '白方'}落子 | ${currentPlayer === 'black' ? 'Black' : 'White'} to move`);
@@ -646,6 +695,7 @@
             capturedStones = previousState.capturedStones;
             currentPlayer = previousState.player;
             lastMove = previousState.lastMove;
+            previousBoardState = previousState.previousBoardState || null;
             consecutivePasses = 0;
 
             updateUI();
@@ -660,6 +710,7 @@
             consecutivePasses = 0;
             gameOver = false;
             lastMove = null;
+            previousBoardState = null;
 
             document.getElementById('status-message').classList.remove('game-over');
 
