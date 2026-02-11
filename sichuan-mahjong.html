@@ -455,9 +455,11 @@
             currentPlayer: 0,
             lastDiscard: null,
             lastDiscardPlayer: -1,
+            lastDiscardFromDraw: false,
             discardIndex: 0,
             isGameOver: false,
-            round: 1
+            round: 1,
+            pendingAction: null
         };
         
         let selectedCardIndex = -1;
@@ -625,14 +627,14 @@
         
         // 选择牌
         function selectCard(index) {
-            if (gameState.currentPlayer !== 0 || gameState.isGameOver) return;
+            if (gameState.currentPlayer !== 0 || gameState.isGameOver || gameState.pendingAction) return;
             
             const player = gameState.players[0];
             const sortedCards = sortCards(player.cards);
             
             if (selectedCardIndex === index) {
                 // 出牌
-                discardCard(0, sortedCards[index], true);
+                discardCard(0, sortedCards[index], true, true);
                 selectedCardIndex = -1;
             } else {
                 selectedCardIndex = index;
@@ -641,11 +643,12 @@
         }
         
         // 出牌
-        function discardCard(playerIndex, card, fromHand = false) {
+        function discardCard(playerIndex, card, fromHand = false, isDrawDiscard = false) {
             const player = gameState.players[playerIndex];
             
             if (fromHand) {
-                const cardIndex = player.cards.indexOf(card);
+                // 从手牌中找到并移除这张牌
+                const cardIndex = player.cards.findIndex(c => cardsEqual(c, card));
                 if (cardIndex !== -1) {
                     player.cards.splice(cardIndex, 1);
                 }
@@ -654,9 +657,10 @@
             player.discards.push(card);
             gameState.lastDiscard = card;
             gameState.lastDiscardPlayer = playerIndex;
+            gameState.lastDiscardFromDraw = isDrawDiscard;
             
             // 检查其他玩家是否可以胡/碰/杠
-            checkActions(playerIndex);
+            setTimeout(() => checkActions(playerIndex), 100);
         }
         
         // 检查操作（胡/碰/杠）
@@ -666,6 +670,7 @@
             let canPeng = false;
             let canGang = false;
             
+            // 检查所有玩家（除了出牌者）
             for (let i = 0; i < 4; i++) {
                 if (i === discardPlayer) continue;
                 
@@ -676,6 +681,7 @@
                     canHu = true;
                     if (player.isHuman) {
                         showActionButtons(true, false, false);
+                        gameState.pendingAction = 'hu';
                         return;
                     }
                 }
@@ -691,7 +697,7 @@
                 }
             }
             
-            // 人类玩家可以选择碰/杠
+            // 人类玩家可以选择碰/杠（只有当有人打出牌时才能碰杠）
             if (canPeng || canGang) {
                 const humanPlayer = gameState.players[0];
                 if (discardPlayer !== 0) {
@@ -699,6 +705,8 @@
                     const humanCanGang = checkGang(humanPlayer, card);
                     if (humanCanPeng || humanCanGang) {
                         showActionButtons(false, humanCanPeng, humanCanGang);
+                        if (humanCanPeng) gameState.pendingAction = 'peng';
+                        if (humanCanGang) gameState.pendingAction = 'gang';
                         return;
                     }
                 }
@@ -718,11 +726,11 @@
                 for (let i = 0; i < 4; i++) {
                     if (i === discardPlayer) continue;
                     const player = gameState.players[i];
-                    if (checkGang(player, card) && Math.random() > 0.5) {
+                    if (checkGang(player, card)) {
                         aiAction(i, 'gang');
                         return;
                     }
-                    if (checkPeng(player, card) && Math.random() > 0.7) {
+                    if (checkPeng(player, card)) {
                         aiAction(i, 'peng');
                         return;
                     }
@@ -730,6 +738,7 @@
             }
             
             // 下一个玩家摸牌
+            gameState.pendingAction = null;
             nextTurn();
         }
         
@@ -753,10 +762,9 @@
             
             const player = gameState.players[0];
             const card = gameState.lastDiscard;
-            const discardPlayer = gameState.lastDiscardPlayer;
             
             if (action === 'hu') {
-                player.melds.push({ type: 'hu', cards: [...player.cards, card] });
+                player.melds.push({ type: 'hu', cards: [card] });
                 showMessage('🎉 恭喜你胡牌了！ 🎉');
                 player.score += 100;
                 endGame();
@@ -768,6 +776,7 @@
             } else if (action === 'gang') {
                 executeGang(0, card);
             } else {
+                gameState.pendingAction = null;
                 nextTurn();
             }
         }
@@ -778,9 +787,15 @@
             const card = gameState.lastDiscard;
             
             if (action === 'hu') {
-                player.melds.push({ type: 'hu', cards: [...player.cards, card] });
-                showMessage(`😢 ${player.name} 胡牌了！`);
-                player.score += 100;
+                player.melds.push({ type: 'hu', cards: [card] });
+                const isSelfDraw = gameState.lastDiscardFromDraw;
+                if (isSelfDraw) {
+                    showMessage(`🎉 ${player.name} 自摸胡牌！`);
+                    player.score += 150;
+                } else {
+                    showMessage(`😢 ${player.name} 胡牌了！`);
+                    player.score += 100;
+                }
                 endGame();
             } else if (action === 'peng') {
                 executePeng(playerIndex, card);
@@ -794,11 +809,13 @@
             const player = gameState.players[playerIndex];
             const discardPlayerIndex = gameState.lastDiscardPlayer;
 
-            // 从弃牌中移除
-            gameState.players[discardPlayerIndex].discards.pop();
+            // 从弃牌中移除最后一张牌
+            const discardPile = gameState.players[discardPlayerIndex].discards;
+            if (discardPile.length > 0 && cardsEqual(discardPile[discardPile.length - 1], card)) {
+                discardPile.pop();
+            }
             
             // 从手牌中找出两张相同的牌
-            const count = player.cards.filter(c => cardsEqual(c, card)).length;
             let removed = 0;
             player.cards = player.cards.filter(c => {
                 if (cardsEqual(c, card) && removed < 2) {
@@ -811,6 +828,7 @@
             player.melds.push({ type: 'peng', cards: [card, card, card] });
             
             gameState.currentPlayer = playerIndex;
+            gameState.pendingAction = null;
             showMessage(`${player.name} 碰！`);
             
             render();
@@ -818,7 +836,7 @@
             // 碰后需要出牌
             setTimeout(() => {
                 if (player.isHuman) {
-                    hideActionButtons();
+                    showMessage('请出一张牌');
                 } else {
                     aiDiscard(playerIndex);
                 }
@@ -830,8 +848,11 @@
             const player = gameState.players[playerIndex];
             const discardPlayerIndex = gameState.lastDiscardPlayer;
 
-            // 从弃牌中移除
-            gameState.players[discardPlayerIndex].discards.pop();
+            // 从弃牌中移除最后一张牌
+            const discardPile = gameState.players[discardPlayerIndex].discards;
+            if (discardPile.length > 0 && cardsEqual(discardPile[discardPile.length - 1], card)) {
+                discardPile.pop();
+            }
             
             // 从手牌中找出三张相同的牌
             let removed = 0;
@@ -847,16 +868,15 @@
             player.score += 10;
             
             gameState.currentPlayer = playerIndex;
+            gameState.pendingAction = null;
             showMessage(`${player.name} 杠！`);
             
             render();
             
             // 杠后摸牌
             setTimeout(() => {
-                drawCard(playerIndex);
-                if (player.isHuman) {
-                    hideActionButtons();
-                } else {
+                drawCard(playerIndex, true);
+                if (!player.isHuman) {
                     aiDiscard(playerIndex);
                 }
             }, 500);
@@ -884,50 +904,147 @@
         }
         
         // 摸牌
-        function drawCard(playerIndex) {
+        function drawCard(playerIndex, fromGang = false) {
             const player = gameState.players[playerIndex];
+            
+            if (gameState.deck.length === 0) {
+                showMessage('流局！没有牌了');
+                endGame();
+                return;
+            }
+            
             const card = gameState.deck.pop();
             player.cards.push(card);
+            
+            render();
             
             // 检查自摸
             if (checkHu(player, null)) {
                 if (player.isHuman) {
-                    showMessage('🎉 自摸！ 🎉');
+                    showMessage('🎉 自摸胡牌！ 🎉');
                     player.score += 150;
-                    endGame();
                 } else {
-                    showMessage(`😢 ${player.name} 自摸了！`);
+                    showMessage(`😢 ${player.name} 自摸胡牌了！`);
                     player.score += 150;
-                    endGame();
                 }
+                endGame();
                 return;
             }
             
             // 检查暗杠
-            const canGang = checkAnGang(player);
-            if (canGang && player.isHuman) {
-                showActionButtons(false, false, true);
+            const anGangCards = findAnGang(player);
+            if (anGangCards.length > 0) {
+                if (player.isHuman) {
+                    // 暂时不显示杠的选择，简化处理
+                    showMessage('请出牌');
+                } else {
+                    // AI有暗杠时可能会杠
+                    if (Math.random() > 0.5) {
+                        executeAnGang(playerIndex, anGangCards[0]);
+                        return;
+                    }
+                }
             }
+            
+            // 如果是杠后的摸牌，需要出牌
+            if (fromGang) {
+                if (player.isHuman) {
+                    showMessage('请出牌');
+                } else {
+                    setTimeout(() => aiDiscard(playerIndex), 500);
+                }
+            }
+        }
+        
+        // 查找暗杠
+        function findAnGang(player) {
+            const results = [];
+            const counts = {};
+            for (const card of player.cards) {
+                const key = getCardKey(card);
+                counts[key] = (counts[key] || 0) + 1;
+            }
+            for (const key in counts) {
+                if (counts[key] === 4) {
+                    const card = player.cards.find(c => getCardKey(c) === key);
+                    if (card) results.push(card);
+                }
+            }
+            return results;
+        }
+        
+        // 执行暗杠
+        function executeAnGang(playerIndex, card) {
+            const player = gameState.players[playerIndex];
+            
+            // 从手牌中找出四张相同的牌
+            let removed = 0;
+            player.cards = player.cards.filter(c => {
+                if (cardsEqual(c, card) && removed < 4) {
+                    removed++;
+                    return false;
+                }
+                return true;
+            });
+            
+            player.melds.push({ type: 'angang', cards: [card, card, card, card] });
+            player.score += 20;
+            
+            gameState.currentPlayer = playerIndex;
+            gameState.pendingAction = null;
+            showMessage(`${player.name} 暗杠！`);
+            
+            render();
+            
+            // 杠后摸牌
+            setTimeout(() => {
+                drawCard(playerIndex, true);
+                if (!player.isHuman) {
+                    aiDiscard(playerIndex);
+                }
+            }, 500);
         }
         
         // AI出牌
         function aiDiscard(playerIndex) {
             const player = gameState.players[playerIndex];
             
-            // 简单AI：随机出一张牌
-            const randomIndex = Math.floor(Math.random() * player.cards.length);
-            const card = player.cards[randomIndex];
-            
-            discardCard(playerIndex, card, true);
-            render();
+            // 简单AI：优先打出孤张
+            if (player.cards.length > 0) {
+                // 计算每张牌的对子数量
+                const cardCounts = {};
+                for (const card of player.cards) {
+                    const key = getCardKey(card);
+                    cardCounts[key] = (cardCounts[key] || 0) + 1;
+                }
+                
+                // 找到孤张（只有1张的牌）
+                let lonelyCards = player.cards.filter(c => cardCounts[getCardKey(c)] === 1);
+                
+                let cardToDiscard;
+                if (lonelyCards.length > 0) {
+                    // 随机选一张孤张
+                    cardToDiscard = lonelyCards[Math.floor(Math.random() * lonelyCards.length)];
+                } else {
+                    // 没有孤张，随机出一张
+                    const randomIndex = Math.floor(Math.random() * player.cards.length);
+                    cardToDiscard = player.cards[randomIndex];
+                }
+                
+                discardCard(playerIndex, cardToDiscard, true, true);
+                render();
+            }
         }
         
         // 检查胡牌
         function checkHu(player, extraCard) {
             const cards = extraCard ? [...player.cards, extraCard] : [...player.cards];
             
-            // 检查七对子
-            if (checkQiDui(cards)) return true;
+            // 牌数必须为2、5、8、11、14张才能胡
+            if (cards.length % 3 !== 2) return false;
+            
+            // 检查七对子（仅当14张时）
+            if (cards.length === 14 && checkQiDui(cards)) return true;
             
             // 检查标准胡牌（4组+1对）
             return checkStandardHu(cards);
