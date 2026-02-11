@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四川麻将 - 血战到底</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1a472a 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: grid;
+            grid-template-rows: 60px 1fr 140px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: #ffd700;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-info {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+
+        .game-info span {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        /* Game Table */
+        .game-table {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Center Info */
+        .center-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .dice-area {
+            width: 100px;
+            height: 60px;
+            background: rgba(139, 69, 19, 0.8);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .dice {
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #c00;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .river-count {
+            color: #ffd700;
+            font-size: 18px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Player Areas */
+        .player-area {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .player-info {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(5px);
+        }
+
+        .player-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .player-name {
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .player-quiet {
+            background: rgba(255, 0, 0, 0.8);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        /* Tile Rack */
+        .tile-rack {
+            display: flex;
+            gap: 2px;
+            min-height: 50px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Top Player (North) */
+        .player-top {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .player-top .tile-rack {
+            flex-direction: row-reverse;
+        }
+
+        /* Bottom Player (South - Human) */
+        .player-bottom {
+            bottom: 160px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Left Player (East) */
+        .player-left {
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+        }
+
+        /* Right Player (West) */
+        .player-right {
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+        }
+
+        /* Discard Pile */
+        .discard-area {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .discard-top {
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .discard-bottom {
+            bottom: 250px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .discard-left {
+            left: 120px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .discard-right {
+            right: 120px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .discard-tiles {
+            display: flex;
+            flex-wrap: wrap;
+            width: 180px;
+            gap: 2px;
+        }
+
+        /* Tile Styles */
+        .tile {
+            width: 28px;
+            height: 40px;
+            background: linear-gradient(145deg, #fff9e6, #f5e6c8);
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            position: relative;
+        }
+
+        .tile:hover {
+            transform: translateY(-3px);
+            box-shadow: 2px 5px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .tile.selected {
+            transform: translateY(-8px);
+            box-shadow: 2px 8px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .tile.discard {
+            width: 24px;
+            height: 34px;
+            font-size: 16px;
+            cursor: default;
+        }
+
+        .tile.discard:hover {
+            transform: none;
+        }
+
+        /* Tile Colors */
+        .tile.wan { color: #c00; }      // Characters - Red
+        .tile.tiao { color: #080; }     // Bamboo - Green
+        .tile.bing { color: #008; }     // Dots - Blue
+        .tile.dong { color: #006400; }  // East wind - Dark Green
+        .tile.nan { color: #0000cd; }   // South wind - Blue
+        .tile.xi { color: #8b0000; }    // West wind - Dark Red
+        .tile.bei { color: #4b0082; }   // North wind - Indigo
+        .tile.zhong { color: #c00; }    // Red dragon - Red
+        .tile.fa { color: #008000; }    // Green dragon - Green
+        .tile.bai { color: #333; }      // White dragon - Gray
+
+        .tile-back {
+            background: linear-gradient(145deg, #1a5f2a, #0d3d1a);
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .tile-back::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 50%;
+        }
+
+        /* Discarded tile special styles */
+        .tile.discard.wan { color: #d00; }
+        .tile.discard.tiao { color: #0a0; }
+        .tile.discard.bing { color: #006; }
+        .tile.discard.dong { color: #006400; }
+        .tile.discard.nan { color: #0000cd; }
+        .tile.discard.xi { color: #a00; }
+        .tile.discard.bei { color: #4b0082; }
+        .tile.discard.zhong { color: #c00; }
+        .tile.discard.fa { color: #008000; }
+        .tile.discard.bai { color: #666; }
+
+        /* Meld Styles */
+        .meld {
+            display: flex;
+            gap: 1px;
+        }
+
+        .meld.peng {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.1));
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        .meld.kong {
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.3), rgba(255, 0, 0, 0.1));
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        /* Last Tile Indicator */
+        .last-tile-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        /* Footer / Action Panel */
+        .action-panel {
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.4));
+            padding: 10px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .action-btn {
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-hu {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: #fff;
+        }
+
+        .btn-gang {
+            background: linear-gradient(135deg, #ff8800, #cc6600);
+            color: #fff;
+        }
+
+        .btn-peng {
+            background: linear-gradient(135deg, #44aa44, #228b22);
+            color: #fff;
+        }
+
+        .btn-pass {
+            background: linear-gradient(135deg, #888, #666);
+            color: #fff;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2d5a3d, #1a472a);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .modal-content h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content .winner-name {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        .modal-content .score-details {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .modal-content .score-details p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        /* Waiting Modal */
+        .waiting-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .waiting-modal.show {
+            display: flex;
+        }
+
+        .waiting-content {
+            text-align: center;
+            color: #fff;
+        }
+
+        .waiting-content h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 215, 0, 0.3);
+            border-top-color: #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Tiles Left Indicator */
+        .tiles-left {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #ffd700;
+            font-size: 14px;
+        }
+
+        /* Quiet Suit Indicator */
+        .quiet-suit {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        .quiet-suit.wan { background: rgba(204, 0, 0, 0.5); }
+        .quiet-suit.tiao { background: rgba(0, 128, 0, 0.5); }
+        .quiet-suit.bing { background: rgba(0, 0, 204, 0.5); }
+
+        /* Win Animation */
+        .win-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .win-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.5);
+            animation: winPulse 0.5s ease-in-out infinite;
+        }
+
+        @keyframes winPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        /* New Game Button */
+        .btn-new-game {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #333;
+            padding: 15px 40px;
+            font-size: 20px;
+        }
+
+        /* Player indicator */
+        .current-turn {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ffd700;
+            border-radius: 50%;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tile {
+                width: 22px;
+                height: 32px;
+                font-size: 16px;
+            }
+
+            .tile.discard {
+                width: 18px;
+                height: 26px;
+                font-size: 12px;
+            }
+
+            .action-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🀄 四川麻将 - 血战到底</h1>
+            <div class="game-info">
+                <span id="round-info">局: 1/4</span>
+                <span id="dealer-info">庄家: 东风</span>
+                <span id="场次-info">番数: 0</span>
+            </div>
+        </div>
+
+        <!-- Game Table -->
+        <div class="game-table" id="game-table">
+            <!-- Top Player -->
+            <div class="player-area player-top" id="player-top">
+                <div class="player-info">
+                    <div class="player-avatar" style="background: #ff6b6b;">北</div>
+                    <span class="player-name">北风</span>
+                    <span class="player-quiet" id="quiet-top" style="display:none;">定缺</span>
+                </div>
+                <div class="tile-rack" id="rack-top"></div>
+                <div class="discard-area discard-top">
+                    <div class="discard-tiles" id="discard-top"></div>
+                </div>
+            </div>
+
+            <!-- Left Player -->
+            <div class="player-area player-left" id="player-left">
+                <div class="player-info">
+                    <div class="player-avatar" style="background: #4ecdc4;">东</div>
+                    <span class="player-name">东风</span>
+                    <span class="player-quiet" id="quiet-left" style="display:none;">定缺</span>
+                </div>
+                <div class="tile-rack" id="rack-left"></div>
+                <div class="discard-area discard-left">
+                    <div class="discard-tiles" id="discard-left"></div>
+                </div>
+            </div>
+
+            <!-- Right Player -->
+            <div class="player-area player-right" id="player-right">
+                <div class="player-info">
+                    <div class="player-avatar" style="background: #45b7d1;">西</div>
+                    <span class="player-name">西风</span>
+                    <span class="player-quiet" id="quiet-right" style="display:none;">定缺</span>
+                </div>
+                <div class="tile-rack" id="rack-right"></div>
+                <div class="discard-area discard-right">
+                    <div class="discard-tiles" id="discard-right"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Player (Human) -->
+            <div class="player-area player-bottom" id="player-bottom">
+                <div class="player-info">
+                    <div class="player-avatar" style="background: #f9ca24;">你</div>
+                    <span class="player-name">玩家</span>
+                    <span class="player-quiet" id="quiet-bottom" style="display:none;">定缺</span>
+                </div>
+                <div class="tile-rack" id="rack-bottom"></div>
+                <div class="discard-area discard-bottom">
+                    <div class="discard-tiles" id="discard-bottom"></div>
+                </div>
+            </div>
+
+            <!-- Center Info -->
+            <div class="center-info">
+                <div class="dice-area" id="dice-area" style="display:none;">
+                    <div class="dice" id="dice1">5</div>
+                    <div class="dice" id="dice2">3</div>
+                </div>
+                <div class="river-count" id="river-count">牌墙: 136</div>
+            </div>
+
+            <!-- Tiles Left -->
+            <div class="tiles-left" id="tiles-left">剩余: 136</div>
+        </div>
+
+        <!-- Action Panel -->
+        <div class="action-panel" id="action-panel">
+            <button class="action-btn btn-hu" id="btn-hu" disabled>胡</button>
+            <button class="action-btn btn-gang" id="btn-gang" disabled>杠</button>
+            <button class="action-btn btn-peng" id="btn-peng" disabled>碰</button>
+            <button class="action-btn btn-pass" id="btn-pass" disabled>过</button>
+            <button class="action-btn btn-new-game" id="btn-new-game" style="display:none;">新游戏</button>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div class="modal" id="win-modal">
+        <div class="modal-content">
+            <h2>🎉 胡了！</h2>
+            <div class="winner-name" id="winner-name">东风 胡了！</div>
+            <div class="score-details" id="score-details"></div>
+            <button class="action-btn btn-new-game" onclick="newGame()">继续</button>
+        </div>
+    </div>
+
+    <!-- Win Effect -->
+    <div class="win-effect" id="win-effect" style="display:none;">
+        <div class="win-text">胡！</div>
+    </div>
+
+    <!-- Waiting Modal -->
+    <div class="waiting-modal" id="waiting-modal">
+        <div class="waiting-content">
+            <h2>🀄 正在发牌...</h2>
+            <div class="loading-spinner"></div>
+            <p>请稍候</p>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Mahjong Game Engine ====================
+
+        const TILE_TYPES = {
+            // 万子 (Characters) - 1-9
+            '1w': { suit: 'wan', value: 1, name: '一万', symbol: '一' },
+            '2w': { suit: 'wan', value: 2, name: '二万', symbol: '二' },
+            '3w': { suit: 'wan', value: 3, name: '三万', symbol: '三' },
+            '4w': { suit: 'wan', value: 4, name: '四万', symbol: '四' },
+            '5w': { suit: 'wan', value: 5, name: '五万', symbol: '五' },
+            '6w': { suit: 'wan', value: 6, name: '六万', symbol: '六' },
+            '7w': { suit: 'wan', value: 7, name: '七万', symbol: '七' },
+            '8w': { suit: 'wan', value: 8, name: '八万', symbol: '八' },
+            '9w': { suit: 'wan', value: 9, name: '九万', symbol: '九' },
+            // 索子 (Bamboos) - 1-9
+            '1t': { suit: 'tiao', value: 1, name: '一索', symbol: '一' },
+            '2t': { suit: 'tiao', value: 2, name: '二索', symbol: '二' },
+            '3t': { suit: 'tiao', value: 3, name: '三索', symbol: '三' },
+            '4t': { suit: 'tiao', value: 4, name: '四索', symbol: '四' },
+            '5t': { suit: 'tiao', value: 5, name: '五索', symbol: '五' },
+            '6t': { suit: 'tiao', value: 6, name: '六索', symbol: '六' },
+            '7t': { suit: 'tiao', value: 7, name: '七索', symbol: '七' },
+            '8t': { suit: 'tiao', value: 8, name: '八索', symbol: '八' },
+            '9t': { suit: 'tiao', value: 9, name: '九索', symbol: '九' },
+            // 饼子 (Dots) - 1-9
+            '1b': { suit: 'bing', value: 1, name: '一筒', symbol: '一' },
+            '2b': { suit: 'bing', value: 2, name: '二筒', symbol: '二' },
+            '3b': { suit: 'bing', value: 3, name: '三筒', symbol: '三' },
+            '4b': { suit: 'bing', value: 4, name: '四筒', symbol: '四' },
+            '5b': { suit: 'bing', value: 5, name: '五筒', symbol: '五' },
+            '6b': { suit: 'bing', value: 6, name: '六筒', symbol: '六' },
+            '7b': { suit: 'bing', value: 7, name: '七筒', symbol: '七' },
+            '8b': { suit: 'bing', value: 8, name: '八筒', symbol: '八' },
+            '9b': { suit: 'bing', value: 9, name: '九筒', symbol: '九' },
+            // 风牌
+            'dong': { suit: 'dong', value: 1, name: '东风', symbol: '东' },
+            'nan': { suit: 'nan', value: 2, name: '南风', symbol: '南' },
+            'xi': { suit: 'xi', value: 3, name: '西风', symbol: '西' },
+            'bei': { suit: 'bei', value: 4, name: '北风', symbol: '北' },
+            // 箭牌
+            'zhong': { suit: 'zhong', value: 1, name: '红中', symbol: '中' },
+            'fa': { suit: 'fa', value: 2, name: '发财', symbol: '发' },
+            'bai': { suit: 'bai', value: 3, name: '白板', symbol: '白' }
+        };
+
+        const PLAYERS = ['bottom', 'right', 'top', 'left']; // Clockwise order
+        const PLAYER_NAMES = ['玩家', '西风', '北风', '东风'];
+        const PLAYER_AVATARS = ['你', '西', '北', '东'];
+
+        class MahjongGame {
+            constructor() {
+                this.tiles = [];
+                this.wall = [];
+                this.players = [];
+                this.currentPlayer = 0;
+                this.dealer = 0;
+                this.round = 1;
+                this.maxRounds = 4;
+                this.tileIndex = 0;
+                this.discardPiles = [[], [], [], []];
+                this.melds = [[], [], [], []];
+                this.selectedTile = null;
+                this.pendingAction = null;
+                this.winners = [];
+                this.gameOver = false;
+                this.waitingForAction = false;
+                this.luoPaiIndex = 0;
+
+                this.initPlayers();
+                this.bindEvents();
+            }
+
+            initPlayers() {
+                this.players = PLAYERS.map((pos, i) => ({
+                    id: i,
+                    position: pos,
+                    name: PLAYER_NAMES[i],
+                    hand: [],
+                    quietSuit: null,
+                    hasWon: false,
+                    score: 0
+                }));
+            }
+
+            createTiles() {
+                this.tiles = [];
+                const tileKeys = Object.keys(TILE_TYPES);
+                for (const key of tileKeys) {
+                    for (let i = 0; i < 4; i++) {
+                        this.tiles.push({ key, ...TILE_TYPES[key] });
+                    }
+                }
+            }
+
+            shuffleTiles() {
+                // Fisher-Yates shuffle
+                for (let i = this.tiles.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.tiles[i], this.tiles[j]] = [this.tiles[j], this.tiles[i]];
+                }
+            }
+
+            dealTiles() {
+                // Each player gets 13 tiles initially
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 13; j++) {
+                        this.players[i].hand.push(this.tiles[this.tileIndex++]);
+                    }
+                }
+
+                // Sort each player's hand
+                for (const player of this.players) {
+                    this.sortHand(player);
+                }
+            }
+
+            sortHand(player) {
+                const suitOrder = { 'wan': 0, 'tiao': 1, 'bing': 2, 'dong': 3, 'nan': 4, 'xi': 5, 'bei': 6, 'zhong': 7, 'fa': 8, 'bai': 9 };
+                player.hand.sort((a, b) => {
+                    if (a.suit !== b.suit) {
+                        return suitOrder[a.suit] - suitOrder[b.suit];
+                    }
+                    return a.value - b.value;
+                });
+            }
+
+            setQuietSuit() {
+                // Each player selects their quiet suit (must discard all of one suit before winning)
+                for (const player of this.players) {
+                    const suitCounts = { 'wan': 0, 'tiao': 0, 'bing': 0 };
+                    for (const tile of player.hand) {
+                        if (suitCounts.hasOwnProperty(tile.suit)) {
+                            suitCounts[tile.suit]++;
+                        }
+                    }
+                    // Choose suit with fewest tiles
+                    player.quietSuit = Object.keys(suitCounts).reduce((a, b) =>
+                        suitCounts[a] < suitCounts[b] ? a : b
+                    );
+                }
+            }
+
+            drawTile(playerIndex) {
+                if (this.tileIndex >= this.tiles.length) {
+                    return null;
+                }
+                const tile = this.tiles[this.tileIndex++];
+                this.players[playerIndex].hand.push(tile);
+                return tile;
+            }
+
+            discardTile(playerIndex, tileIndex) {
+                const player = this.players[playerIndex];
+                const tile = player.hand.splice(tileIndex, 1)[0];
+                this.discardPiles[playerIndex].push(tile);
+                this.sortHand(player);
+                return tile;
+            }
+
+            canPong(tile, playerIndex) {
+                // Check if player has 2 of the same tile
+                const count = this.countTileInHand(playerIndex, tile.key);
+                return count >= 2;
+            }
+
+            canKong(tile, playerIndex) {
+                // Check if player has 3 of the same tile
+                const count = this.countTileInHand(playerIndex, tile.key);
+                return count >= 3;
+            }
+
+            canHu(tile, playerIndex) {
+                // Check if adding this tile would result in a winning hand
+                const player = this.players[playerIndex];
+                const testHand = [...player.hand];
+
+                // Current player draws a tile, need 14 to check
+                if (player.hand.length === 13) {
+                    testHand.push(tile);
+                } else {
+                    // Someone else discarded, check if replacing a tile would win
+                    for (let i = 0; i < player.hand.length; i++) {
+                        const tempHand = [...player.hand];
+                        tempHand.splice(i, 1);
+                        if (this.checkWin(tempHand)) {
+                            return true;
+                        }
+                    }
+                    // Or check with the discarded tile added
+                    testHand.push(tile);
+                }
+
+                return this.checkWin(testHand);
+            }
+
+            countTileInHand(playerIndex, tileKey) {
+                return this.players[playerIndex].hand.filter(t => t.key === tileKey).length;
+            }
+
+            checkWin(hand) {
+                // Simplified win check: must have 4 melds (pungs/chows) and 1 pair
+                // For Sichuan rules, we check if hand can form valid combinations
+
+                if (hand.length !== 14) return false;
+
+                // Count tiles
+                const counts = {};
+                for (const tile of hand) {
+                    counts[tile.key] = (counts[tile.key] || 0) + 1;
+                }
+
+                // Check for valid winning pattern
+                // First, remove all possible melds
+                const tiles = Object.entries(counts);
+
+                // Try each possible pair
+                for (const [key, count] of tiles) {
+                    if (count >= 2) {
+                        // This could be the pair
+                        const remaining = {};
+                        for (const [k, c] of tiles) {
+                            remaining[k] = c;
+                        }
+                        remaining[key] -= 2;
+                        if (remaining[key] === 0) delete remaining[key];
+
+                        // Check if remaining can form melds
+                        if (this.canFormMelds(remaining)) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            canFormMelds(counts) {
+                const tiles = Object.keys(counts);
+                if (tiles.length === 0) return true;
+
+                const firstKey = tiles[0];
+                const count = counts[firstKey];
+
+                if (count === 0) {
+                    delete counts[firstKey];
+                    return this.canFormMelds(counts);
+                }
+
+                // Try forming a pung (3 of same tile)
+                if (count >= 3) {
+                    const newCounts = { ...counts };
+                    newCounts[firstKey] -= 3;
+                    if (newCounts[firstKey] === 0) delete newCounts[firstKey];
+                    if (this.canFormMelds(newCounts)) return true;
+                }
+
+                // Try forming a chow (sequence) - only for numbered tiles
+                const tile = TILE_TYPES[firstKey];
+                if (['wan', 'tiao', 'bing'].includes(tile.suit)) {
+                    const next1 = this.getTileKey(tile.suit, tile.value + 1);
+                    const next2 = this.getTileKey(tile.suit, tile.value + 2);
+
+                    if (counts[next1] > 0 && counts[next2] > 0) {
+                        const newCounts = { ...counts };
+                        newCounts[firstKey]--;
+                        newCounts[next1]--;
+                        newCounts[next2]--;
+                        Object.keys(newCounts).forEach(k => {
+                            if (newCounts[k] === 0) delete newCounts[k];
+                        });
+                        if (this.canFormMelds(newCounts)) return true;
+                    }
+                }
+
+                return false;
+            }
+
+            getTileKey(suit, value) {
+                const suffix = { 'wan': 'w', 'tiao': 't', 'bing': 'b' }[suit];
+                return suffix ? `${value}${suffix}` : suit;
+            }
+
+            addMeld(playerIndex, meld) {
+                this.melds[playerIndex].push(meld);
+            }
+
+            getHandDisplay(playerIndex) {
+                const player = this.players[playerIndex];
+                return player.hand.map((tile, i) => ({
+                    ...tile,
+                    index: i
+                }));
+            }
+
+            // AI Logic
+            aiDiscard(playerIndex) {
+                const player = this.players[playerIndex];
+
+                // Simple AI: discard tile that's least useful
+                // Priority: keep tiles that can form melds or pairs
+
+                const counts = {};
+                for (const tile of player.hand) {
+                    counts[tile.key] = (counts[tile.key] || 0) + 1;
+                }
+
+                // Find tiles that are useless
+                let discardIndex = 0;
+                let bestScore = -1;
+
+                for (let i = 0; i < player.hand.length; i++) {
+                    const tile = player.hand[i];
+                    let score = 0;
+
+                    // Penalize quiet suit tiles
+                    if (tile.suit === player.quietSuit) {
+                        score += 100;
+                    }
+
+                    // Bonus for tiles that can form pairs/melds
+                    if (counts[tile.key] >= 2) {
+                        score -= 30;
+                    }
+
+                    // Bonus for sequences (consecutive tiles)
+                    if (['wan', 'tiao', 'bing'].includes(tile.suit)) {
+                        const prev = this.getTileKey(tile.suit, tile.value - 1);
+                        const next = this.getTileKey(tile.suit, tile.value + 1);
+                        if (counts[prev] > 0 || counts[next] > 0) {
+                            score -= 20;
+                        }
+                    }
+
+                    // Bonus for tiles with same suit
+                    score += (['wan', 'tiao', 'bing'].indexOf(tile.suit));
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        discardIndex = i;
+                    }
+                }
+
+                return discardIndex;
+            }
+
+            aiAction(playerIndex, discardTile, options) {
+                // Simple AI decision making
+                // Priority: Hu > Gang > Peng
+
+                if (options.canHu) {
+                    return { action: 'hu' };
+                }
+
+                if (options.canGang) {
+                    return { action: 'gang' };
+                }
+
+                if (options.canPeng) {
+                    return { action: 'peng' };
+                }
+
+                return { action: 'pass' };
+            }
+
+            // Game Flow
+            async startGame() {
+                this.createTiles();
+                this.shuffleTiles();
+                this.dealTiles();
+                this.setQuietSuit();
+                this.currentPlayer = this.dealer;
+                this.winners = [];
+                this.gameOver = false;
+                this.tileIndex = 0;
+                this.discardPiles = [[], [], [], []];
+                this.melds = [[], [], [], []];
+
+                this.renderAll();
+                this.updateGameInfo();
+
+                // Show dice
+                this.showDice();
+
+                await this.delay(1500);
+
+                // Start first turn
+                this.startTurn(this.currentPlayer);
+            }
+
+            showDice() {
+                const diceArea = document.getElementById('dice-area');
+                const dice1 = document.getElementById('dice1');
+                const dice2 = document.getElementById('dice2');
+
+                diceArea.style.display = 'flex';
+                dice1.textContent = Math.floor(Math.random() * 6) + 1;
+                dice2.textContent = Math.floor(Math.random() * 6) + 1;
+
+                setTimeout(() => {
+                    diceArea.style.display = 'none';
+                }, 1500);
+            }
+
+            async startTurn(playerIndex) {
+                if (this.gameOver) return;
+
+                const player = this.players[playerIndex];
+
+                // Check if player has already won
+                if (player.hasWon) {
+                    this.nextTurn();
+                    return;
+                }
+
+                this.waitingForAction = true;
+                this.renderAll();
+
+                // Draw tile for current player
+                const drawnTile = this.drawTile(playerIndex);
+
+                if (drawnTile === null) {
+                    // No more tiles - draw
+                    this.showWinModal('流局', '本局流局！');
+                    return;
+                }
+
+                this.updateTilesLeft();
+
+                // AI decision for drawn tile
+                if (playerIndex !== 0) {
+                    await this.delay(500);
+
+                    // Check for self-draw kong
+                    if (this.canKong(drawnTile, playerIndex)) {
+                        // AI always kongs
+                        this.handleKong(playerIndex, drawnTile, true);
+                        return;
+                    }
+
+                    // AI discards
+                    const discardIndex = this.aiDiscard(playerIndex);
+                    this.discardTile(playerIndex, discardIndex);
+                    this.nextTurn();
+                } else {
+                    // Human player - wait for action
+                    this.renderAll();
+                    this.checkPendingActions(null); // Check for self-draw win
+                }
+            }
+
+            handleDiscard(playerIndex, tile) {
+                this.waitingForAction = true;
+
+                // Check other players' pending actions
+                const nextPlayer = (playerIndex + 1) % 4;
+                const others = [(playerIndex + 1) % 4, (playerIndex + 2) % 4, (playerIndex + 3) % 4];
+
+                let hasPendingAction = false;
+
+                // Check in order: next player, then others
+                for (const otherIdx of others) {
+                    if (this.players[otherIdx].hasWon) continue;
+
+                    const options = {
+                        canHu: this.canHu(tile, otherIdx),
+                        canGang: false, // Can't gang from discard
+                        canPeng: this.canPong(tile, otherIdx)
+                    };
+
+                    if (options.canHu || options.canPeng) {
+                        if (otherIdx === 0) {
+                            // Human player - show action buttons
+                            this.showActionButtons(options);
+                            this.currentDiscard = tile;
+                            return;
+                        } else {
+                            // AI decision
+                            setTimeout(async () => {
+                                const decision = this.aiAction(otherIdx, tile, options);
+                                if (decision.action === 'hu') {
+                                    this.handleWin(otherIdx, tile, false);
+                                } else if (decision.action === 'peng') {
+                                    this.handlePeng(otherIdx, tile);
+                                } else {
+                                    this.nextTurn();
+                                }
+                            }, 500 + Math.random() * 500);
+                            return;
+                        }
+                    }
+                }
+
+                // No actions, continue to next player
+                this.nextTurn();
+            }
+
+            handlePeng(playerIndex, tile) {
+                const player = this.players[playerIndex];
+
+                // Find and remove the two tiles from hand
+                let removed = 0;
+                for (let i = player.hand.length - 1; i >= 0 && removed < 2; i--) {
+                    if (player.hand[i].key === tile.key) {
+                        player.hand.splice(i, 1);
+                        removed++;
+                    }
+                }
+
+                this.melds[playerIndex].push({ type: 'peng', tiles: [tile, tile, tile] });
+                this.waitingForAction = false;
+                this.renderAll();
+
+                // Player who peng gets to discard
+                setTimeout(() => {
+                    if (playerIndex === 0) {
+                        // Human needs to select a tile to discard
+                        this.pengComplete = true;
+                        this.renderAll();
+                    } else {
+                        this.aiDiscardAndContinue(playerIndex);
+                    }
+                }, 500);
+            }
+
+            handleKong(playerIndex, tile, isSelfDraw) {
+                const player = this.players[playerIndex];
+
+                if (isSelfDraw) {
+                    // Remove 4 tiles from hand
+                    let removed = 0;
+                    for (let i = player.hand.length - 1; i >= 0 && removed < 4; i--) {
+                        if (player.hand[i].key === tile.key) {
+                            player.hand.splice(i, 1);
+                            removed++;
+                        }
+                    }
+                } else {
+                    // Pong first, then add the konged tile
+                    let removed = 0;
+                    for (let i = player.hand.length - 1; i >= 0 && removed < 2; i--) {
+                        if (player.hand[i].key === tile.key) {
+                            player.hand.splice(i, 1);
+                            removed++;
+                        }
+                    }
+                }
+
+                this.melds[playerIndex].push({ type: 'kong', tiles: [tile, tile, tile, tile] });
+                this.renderAll();
+
+                // Draw replacement tile
+                setTimeout(() => {
+                    const replacement = this.drawTile(playerIndex);
+                    if (replacement === null) {
+                        this.showWinModal('流局', '本局流局！');
+                        return;
+                    }
+                    this.updateTilesLeft();
+                    player.hand.push(replacement);
+                    this.sortHand(player);
+                    this.renderAll();
+
+                    // Check for win after kong
+                    if (this.canHu(replacement, playerIndex)) {
+                        if (playerIndex === 0) {
+                            this.showActionButtons({ canHu: true, canGang: false, canPeng: false });
+                            return;
+                        } else {
+                            this.handleWin(playerIndex, replacement, true);
+                            return;
+                        }
+                    }
+
+                    // Continue turn
+                    if (playerIndex === 0) {
+                        this.waitingForAction = false;
+                        this.renderAll();
+                    } else {
+                        this.aiDiscardAndContinue(playerIndex);
+                    }
+                }, 500);
+            }
+
+            handleWin(playerIndex, tile, isSelfDraw) {
+                const player = this.players[playerIndex];
+                player.hasWon = true;
+                this.winners.push(playerIndex);
+
+                this.showWinEffect();
+                this.renderAll();
+
+                // Check if game should end (3 winners or last tile)
+                if (this.winners.length >= 3 || this.tileIndex >= this.tiles.length) {
+                    setTimeout(() => {
+                        this.endGame();
+                    }, 2000);
+                } else {
+                    // Continue with remaining players
+                    setTimeout(() => {
+                        this.nextTurn();
+                    }, 2000);
+                }
+            }
+
+            aiDiscardAndContinue(playerIndex) {
+                const player = this.players[playerIndex];
+                const discardIndex = this.aiDiscard(playerIndex);
+                const discarded = this.discardTile(playerIndex, discardIndex);
+                this.renderAll();
+
+                this.handleDiscard(playerIndex, discarded);
+            }
+
+            nextTurn() {
+                this.currentPlayer = (this.currentPlayer + 1) % 4;
+
+                // Skip players who have won
+                while (this.players[this.currentPlayer].hasWon) {
+                    this.currentPlayer = (this.currentPlayer + 1) % 4;
+                }
+
+                // Check if all players have won
+                if (this.winners.length === 3 || this.winners.length === 4) {
+                    this.endGame();
+                    return;
+                }
+
+                this.startTurn(this.currentPlayer);
+            }
+
+            endGame() {
+                this.gameOver = true;
+                let message = '';
+
+                if (this.winners.length > 0) {
+                    const winnerNames = this.winners.map(i => this.players[i].name).join('、');
+                    message = `赢家: ${winnerNames}`;
+                } else {
+                    message = '本局流局！';
+                }
+
+                document.getElementById('btn-new-game').style.display = 'inline-block';
+                document.getElementById('action-panel').querySelectorAll('.action-btn:not(.btn-new-game)').forEach(btn => {
+                    btn.style.display = 'none';
+                });
+
+                this.showWinModal('游戏结束', message);
+            }
+
+            // UI Methods
+            renderAll() {
+                for (let i = 0; i < 4; i++) {
+                    this.renderPlayer(i);
+                    this.renderDiscardPile(i);
+                    this.renderMelds(i);
+                    this.renderQuietSuit(i);
+                }
+
+                // Update current player indicator
+                document.querySelectorAll('.current-turn').forEach(el => el.remove());
+
+                if (!this.gameOver && !this.waitingForAction) {
+                    const playerEl = document.getElementById(`player-${PLAYERS[this.currentPlayer]}`);
+                    const indicator = document.createElement('div');
+                    indicator.className = 'current-turn';
+                    indicator.style.cssText = `
+                        position: absolute;
+                        top: -15px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                    `;
+                    playerEl.appendChild(indicator);
+                }
+
+                this.updateTilesLeft();
+            }
+
+            renderPlayer(playerIndex) {
+                const rack = document.getElementById(`rack-${PLAYERS[playerIndex]}`);
+                const player = this.players[playerIndex];
+
+                rack.innerHTML = '';
+
+                if (player.hasWon) {
+                    // Show face-down tiles for winners
+                    for (let i = 0; i < 13; i++) {
+                        const tileEl = this.createTileElement(null, 'discard', playerIndex === 0);
+                        rack.appendChild(tileEl);
+                    }
+                    return;
+                }
+
+                const displayTiles = this.getHandDisplay(playerIndex);
+
+                for (const tile of displayTiles) {
+                    const tileEl = this.createTileElement(tile, playerIndex === 0 ? 'hand' : 'hidden', playerIndex === 0);
+
+                    if (playerIndex === 0) {
+                        tileEl.addEventListener('click', () => {
+                            if (!this.waitingForAction || (this.waitingForAction && this.pengComplete)) {
+                                this.selectTile(tile.index);
+                            }
+                        });
+                    }
+
+                    rack.appendChild(tileEl);
+                }
+
+                // Draw indicator for 14th tile
+                if (player.hand.length === 14 && !this.waitingForAction) {
+                    const lastTile = rack.lastElementChild;
+                    if (lastTile) {
+                        lastTile.style.transform = 'translateY(-8px)';
+                        lastTile.style.boxShadow = '0 8px 15px rgba(0, 0, 0, 0.4)';
+                    }
+                }
+            }
+
+            createTileElement(tile, type, isHuman) {
+                const tileEl = document.createElement('div');
+
+                if (type === 'hidden') {
+                    tileEl.className = 'tile tile-back';
+                } else if (type === 'discard') {
+                    tileEl.className = `tile discard ${tile.suit}`;
+                    tileEl.textContent = tile.symbol;
+                } else {
+                    tileEl.className = `tile ${tile.suit}`;
+                    tileEl.textContent = tile.symbol;
+                }
+
+                return tileEl;
+            }
+
+            renderDiscardPile(playerIndex) {
+                const discardEl = document.getElementById(`discard-${PLAYERS[playerIndex]}`);
+                discardEl.innerHTML = '';
+
+                const tiles = this.discardPiles[playerIndex];
+                for (const tile of tiles) {
+                    const tileEl = document.createElement('div');
+                    tileEl.className = `tile discard ${tile.suit}`;
+                    tileEl.textContent = tile.symbol;
+                    discardEl.appendChild(tileEl);
+                }
+            }
+
+            renderMelds(playerIndex) {
+                // Melds are shown in the player's area - we'll modify renderPlayer to include them
+                const rack = document.getElementById(`rack-${PLAYERS[playerIndex]}`);
+                const player = this.players[playerIndex];
+
+                // Clear and rebuild with melds
+                const meldContainer = document.createElement('div');
+                meldContainer.style.display = 'flex';
+                meldContainer.style.gap = '4px';
+                meldContainer.style.marginBottom = '5px';
+
+                for (const meld of this.melds[playerIndex]) {
+                    const meldEl = document.createElement('div');
+                    meldEl.className = `meld ${meld.type}`;
+
+                    for (let i = 0; i < (meld.type === 'kong' ? 4 : 3); i++) {
+                        const tileEl = document.createElement('div');
+                        tileEl.className = `tile ${meld.tiles[0].suit}`;
+                        tileEl.textContent = meld.tiles[0].symbol;
+                        tileEl.style.width = '24px';
+                        tileEl.style.height = '34px';
+                        tileEl.style.fontSize = '14px';
+                        meldEl.appendChild(tileEl);
+                    }
+
+                    meldContainer.appendChild(meldEl);
+                }
+
+                // Insert before rack
+                const existingMeldContainer = rack.parentElement.querySelector('.meld-container');
+                if (existingMeldContainer) {
+                    existingMeldContainer.remove();
+                }
+                meldContainer.className = 'meld-container';
+                rack.parentElement.insertBefore(meldContainer, rack);
+            }
+
+            renderQuietSuit(playerIndex) {
+                const player = this.players[playerIndex];
+                const quietEl = document.getElementById(`quiet-${PLAYERS[playerIndex]}`);
+
+                if (player.quietSuit) {
+                    quietEl.style.display = 'inline-block';
+                    quietEl.textContent = this.getSuitName(player.quietSuit);
+                    quietEl.className = `quiet-suit ${player.quietSuit}`;
+                }
+            }
+
+            getSuitName(suit) {
+                const names = { 'wan': '万', 'tiao': '索', 'bing': '筒' };
+                return names[suit] || suit;
+            }
+
+            updateTilesLeft() {
+                const remaining = this.tiles.length - this.tileIndex;
+                document.getElementById('tiles-left').textContent = `剩余: ${remaining}`;
+                document.getElementById('river-count').textContent = `牌墙: ${remaining}`;
+            }
+
+            updateGameInfo() {
+                document.getElementById('round-info').textContent = `局: ${this.round}/${this.maxRounds}`;
+                document.getElementById('dealer-info').textContent = `庄家: ${PLAYER_NAMES[this.dealer]}`;
+            }
+
+            selectTile(index) {
+                // Deselect previous
+                document.querySelectorAll('#rack-bottom .tile').forEach((el, i) => {
+                    if (i < this.players[0].hand.length) {
+                        el.classList.remove('selected');
+                    }
+                });
+
+                // Select new
+                const tiles = document.querySelectorAll('#rack-bottom .tile');
+                if (tiles[index]) {
+                    tiles[index].classList.add('selected');
+                    this.selectedTile = index;
+                }
+            }
+
+            confirmDiscard() {
+                if (this.selectedTile === null) {
+                    alert('请先选择要打出的牌');
+                    return;
+                }
+
+                const discarded = this.discardTile(0, this.selectedTile);
+                this.selectedTile = null;
+                this.pengComplete = false;
+                this.waitingForAction = false;
+
+                this.hideActionButtons();
+                this.renderAll();
+
+                this.handleDiscard(0, discarded);
+            }
+
+            showActionButtons(options) {
+                const btnHu = document.getElementById('btn-hu');
+                const btnGang = document.getElementById('btn-gang');
+                const btnPeng = document.getElementById('btn-peng');
+                const btnPass = document.getElementById('btn-pass');
+
+                btnHu.disabled = !options.canHu;
+                btnGang.disabled = !options.canGang;
+                btnPeng.disabled = !options.canPeng;
+                btnPass.disabled = false;
+
+                // Hide normal buttons, show action buttons
+                document.getElementById('action-panel').querySelectorAll('.action-btn').forEach(btn => {
+                    if (!btn.classList.contains('btn-hu') && !btn.classList.contains('btn-gang') &&
+                        !btn.classList.contains('btn-peng') && !btn.classList.contains('btn-pass')) {
+                        btn.style.display = 'none';
+                    }
+                });
+
+                btnHu.style.display = options.canHu ? 'inline-block' : 'none';
+                btnGang.style.display = options.canGang ? 'inline-block' : 'none';
+                btnPeng.style.display = options.canPeng ? 'inline-block' : 'none';
+                btnPass.style.display = 'inline-block';
+            }
+
+            hideActionButtons() {
+                document.querySelectorAll('#action-panel .action-btn').forEach(btn => {
+                    btn.style.display = 'none';
+                });
+                document.getElementById('btn-new-game').style.display = 'none';
+            }
+
+            checkPendingActions(discardedTile) {
+                const player = this.players[0];
+
+                // Check for self-draw win
+                if (discardedTile === null && player.hand.length === 14) {
+                    // Just drew a tile
+                    const lastTile = player.hand[player.hand.length - 1];
+                    if (this.canHu(lastTile, 0)) {
+                        this.showActionButtons({ canHu: true, canGang: false, canPeng: false });
+                        return;
+                    }
+
+                    // Check for self-draw kong
+                    if (this.canKong(lastTile, 0)) {
+                        // Show option to kong
+                        if (confirm('可以杠牌，是否杠牌？')) {
+                            this.handleKong(0, lastTile, true);
+                            return;
+                        }
+                    }
+                }
+
+                // Normal discard
+                this.showActionButtons({ canHu: false, canGang: false, canPeng: false });
+            }
+
+            showWinModal(title, message) {
+                const modal = document.getElementById('win-modal');
+                document.getElementById('winner-name').textContent = message;
+                modal.classList.add('show');
+            }
+
+            hideWinModal() {
+                document.getElementById('win-modal').classList.remove('show');
+            }
+
+            showWinEffect() {
+                const effect = document.getElementById('win-effect');
+                effect.style.display = 'block';
+                setTimeout(() => {
+                    effect.style.display = 'none';
+                }, 2000);
+            }
+
+            bindEvents() {
+                // Human player actions
+                document.getElementById('btn-hu').addEventListener('click', () => {
+                    if (!document.getElementById('btn-hu').disabled) {
+                        const tile = this.currentDiscard || this.players[0].hand[this.players[0].hand.length - 1];
+                        this.handleWin(0, tile, this.currentDiscard === null);
+                        this.hideActionButtons();
+                    }
+                });
+
+                document.getElementById('btn-gang').addEventListener('click', () => {
+                    if (!document.getElementById('btn-gang').disabled) {
+                        const tile = this.currentDiscard;
+                        this.handleKong(0, tile, false);
+                        this.hideActionButtons();
+                    }
+                });
+
+                document.getElementById('btn-peng').addEventListener('click', () => {
+                    if (!document.getElementById('btn-peng').disabled) {
+                        this.handlePeng(0, this.currentDiscard);
+                        // Now need to select a tile to discard
+                        this.pendingAction = 'peng-complete';
+                    }
+                });
+
+                document.getElementById('btn-pass').addEventListener('click', () => {
+                    this.hideActionButtons();
+                    if (this.pengComplete) {
+                        // Just completed a peng, now discard
+                        this.pengComplete = false;
+                        this.waitingForAction = false;
+                        this.renderAll();
+                        // Auto-select first tile
+                        this.selectTile(0);
+                    } else {
+                        this.nextTurn();
+                    }
+                });
+
+                document.getElementById('btn-new-game').addEventListener('click', () => {
+                    this.newGame();
+                });
+
+                // Double-click to discard
+                document.getElementById('rack-bottom').addEventListener('dblclick', () => {
+                    if (this.selectedTile !== null && !this.waitingForAction) {
+                        this.confirmDiscard();
+                    }
+                });
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            newGame() {
+                this.hideWinModal();
+                this.hideActionButtons();
+
+                document.querySelectorAll('#action-panel .action-btn').forEach(btn => {
+                    btn.style.display = 'none';
+                });
+
+                this.startGame();
+            }
+        }
+
+        // Initialize game
+        let game;
+
+        window.onload = function() {
+            game = new MahjongGame();
+
+            // Show start button
+            const startBtn = document.createElement('button');
+            startBtn.className = 'action-btn btn-new-game';
+            startBtn.textContent = '开始游戏';
+            startBtn.style.display = 'inline-block';
+            startBtn.onclick = () => {
+                startBtn.remove();
+                game.newGame();
+            };
+            document.getElementById('action-panel').appendChild(startBtn);
+        };
+    </script>
+</body>
+</html>
