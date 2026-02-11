@@ -630,15 +630,13 @@
                 return false;
             }
 
-            const newBoardState = boardToString();
+            // Save current state for potential rollback and for ko rule checking
+            const stateBeforeMove = boardToString();
 
-            if (previousBoardState === newBoardState) {
-                setMessage('禁手：全局同型再现 (Ko)', 'error');
-                return false;
-            }
-
+            // Place the stone
             board[row][col] = currentPlayer;
 
+            const opponent = currentPlayer === BLACK ? WHITE : BLACK;
             const capturedGroups = checkCaptures(row, currentPlayer);
 
             if (capturedGroups.length > 0) {
@@ -657,6 +655,20 @@
                 } else {
                     blackCaptures += totalCaptured;
                 }
+
+                // Ko rule: after placing stone and capturing, check if we've returned to previous state
+                const stateAfterMove = boardToString();
+                if (previousBoardState === stateAfterMove) {
+                    // Rollback: restore captured stones and remove placed stone
+                    capturedGroups.forEach(group => {
+                        group.forEach(stone => {
+                            board[stone.row][stone.col] = opponent;
+                        });
+                    });
+                    board[row][col] = EMPTY;
+                    setMessage('禁手：全局同型再现 (Ko)', 'error');
+                    return false;
+                }
             } else {
                 // 没有提子时，检查是否是自杀
                 const liberties = getLiberties(row, col, currentPlayer);
@@ -665,9 +677,15 @@
                     setMessage('禁手：自杀', 'error');
                     return false;
                 }
-            }
 
-            previousBoardState = newBoardState;
+                // Check Ko rule when no capture occurred
+                const stateAfterMove = boardToString();
+                if (previousBoardState === stateAfterMove) {
+                    board[row][col] = EMPTY;
+                    setMessage('禁手：全局同型再现 (Ko)', 'error');
+                    return false;
+                }
+            }
 
             if (lastMove) {
                 const lastStone = document.getElementById(`stone-${lastMove.row}-${lastMove.col}`);
@@ -676,6 +694,9 @@
 
             addStoneVisual(row, col, currentPlayer);
             lastMove = {row, col};
+
+            // Save the state before this move for ko rule checking next turn
+            previousBoardState = stateBeforeMove;
 
             currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
             consecutivePasses = 0;
