@@ -792,10 +792,10 @@
         // 执行碰
         function executePeng(playerIndex, card) {
             const player = gameState.players[playerIndex];
-            const discardPlayer = gameState.lastDiscardPlayer;
-            
+            const discardPlayerIndex = gameState.lastDiscardPlayer;
+
             // 从弃牌中移除
-            discardPlayer.discards.pop();
+            gameState.players[discardPlayerIndex].discards.pop();
             
             // 从手牌中找出两张相同的牌
             const count = player.cards.filter(c => cardsEqual(c, card)).length;
@@ -828,10 +828,10 @@
         // 执行杠
         function executeGang(playerIndex, card) {
             const player = gameState.players[playerIndex];
-            const discardPlayer = gameState.lastDiscardPlayer;
-            
+            const discardPlayerIndex = gameState.lastDiscardPlayer;
+
             // 从弃牌中移除
-            discardPlayer.discards.pop();
+            gameState.players[discardPlayerIndex].discards.pop();
             
             // 从手牌中找出三张相同的牌
             let removed = 0;
