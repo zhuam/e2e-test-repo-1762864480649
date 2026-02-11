@@ -951,6 +951,11 @@
                 if (player.isHuman) {
                     showMessage('请出牌');
                 } else {
+                    aiDiscard(playerIndex);
+                }
+            } else {
+                // 普通摸牌后AI出牌
+                if (!player.isHuman) {
                     setTimeout(() => aiDiscard(playerIndex), 500);
                 }
             }
