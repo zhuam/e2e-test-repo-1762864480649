@@ -642,6 +642,7 @@
             const capturedGroups = checkCaptures(row, currentPlayer);
 
             if (capturedGroups.length > 0) {
+                // 提子
                 let totalCaptured = 0;
                 capturedGroups.forEach(group => {
                     group.forEach(stone => {
@@ -657,6 +658,7 @@
                     blackCaptures += totalCaptured;
                 }
             } else {
+                // 没有提子时，检查是否是自杀
                 const liberties = getLiberties(row, col, currentPlayer);
                 if (liberties === 0) {
                     board[row][col] = EMPTY;
