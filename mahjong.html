@@ -397,6 +397,11 @@
             color: #fff;
         }
 
+        .btn-discard {
+            background: linear-gradient(135deg, #4CAF50, #388E3C);
+            color: #fff;
+        }
+
         /* Modal */
         .modal {
             position: fixed;
@@ -675,10 +680,11 @@
 
         <!-- Action Panel -->
         <div class="action-panel" id="action-panel">
-            <button class="action-btn btn-hu" id="btn-hu" disabled>胡</button>
-            <button class="action-btn btn-gang" id="btn-gang" disabled>杠</button>
-            <button class="action-btn btn-peng" id="btn-peng" disabled>碰</button>
-            <button class="action-btn btn-pass" id="btn-pass" disabled>过</button>
+            <button class="action-btn btn-hu" id="btn-hu" disabled style="display:none;">胡</button>
+            <button class="action-btn btn-gang" id="btn-gang" disabled style="display:none;">杠</button>
+            <button class="action-btn btn-peng" id="btn-peng" disabled style="display:none;">碰</button>
+            <button class="action-btn btn-pass" id="btn-pass" disabled style="display:none;">过</button>
+            <button class="action-btn btn-discard" id="btn-discard" style="display:none;">打出</button>
             <button class="action-btn btn-new-game" id="btn-new-game" style="display:none;">新游戏</button>
         </div>
     </div>
@@ -774,6 +780,8 @@
                 this.gameOver = false;
                 this.waitingForAction = false;
                 this.luoPaiIndex = 0;
+                this.isSelfDrawKong = false;
+                this.pengComplete = false;
 
                 this.initPlayers();
                 this.bindEvents();
@@ -1121,7 +1129,10 @@
                     return;
                 }
 
-                this.waitingForAction = true;
+                this.currentPlayer = playerIndex;
+                this.waitingForAction = false; // Reset - allow player to discard
+                this.selectedTile = null;
+                this.pengComplete = false;
                 this.renderAll();
 
                 // Draw tile for current player
@@ -1134,10 +1145,17 @@
                 }
 
                 this.updateTilesLeft();
+                this.sortHand(player);
 
                 // AI decision for drawn tile
                 if (playerIndex !== 0) {
                     await this.delay(500);
+
+                    // Check for self-draw win
+                    if (this.canHu(drawnTile, playerIndex)) {
+                        this.handleWin(playerIndex, drawnTile, true);
+                        return;
+                    }
 
                     // Check for self-draw kong
                     if (this.canKong(drawnTile, playerIndex)) {
@@ -1148,8 +1166,9 @@
 
                     // AI discards
                     const discardIndex = this.aiDiscard(playerIndex);
-                    this.discardTile(playerIndex, discardIndex);
-                    this.nextTurn();
+                    const discarded = this.discardTile(playerIndex, discardIndex);
+                    this.renderAll();
+                    this.handleDiscard(playerIndex, discarded);
                 } else {
                     // Human player - wait for action
                     this.renderAll();
@@ -1216,16 +1235,16 @@
                 }
 
                 this.melds[playerIndex].push({ type: 'peng', tiles: [tile, tile, tile] });
+                this.currentPlayer = playerIndex;
                 this.waitingForAction = false;
-                this.renderAll();
+                this.selectedTile = null;
+                this.hideActionButtons();
+                this.pengComplete = (playerIndex === 0); // Track if this is a player's peng
 
                 // Player who peng gets to discard
                 setTimeout(() => {
-                    if (playerIndex === 0) {
-                        // Human needs to select a tile to discard
-                        this.pengComplete = true;
-                        this.renderAll();
-                    } else {
+                    this.renderAll();
+                    if (playerIndex !== 0) {
                         this.aiDiscardAndContinue(playerIndex);
                     }
                 }, 500);
@@ -1401,13 +1420,16 @@
 
                 const displayTiles = this.getHandDisplay(playerIndex);
 
-                for (const tile of displayTiles) {
+                for (let i = 0; i < displayTiles.length; i++) {
+                    const tile = displayTiles[i];
                     const tileEl = this.createTileElement(tile, playerIndex === 0 ? 'hand' : 'hidden', playerIndex === 0);
 
                     if (playerIndex === 0) {
                         tileEl.addEventListener('click', () => {
-                            if (!this.waitingForAction || (this.waitingForAction && this.pengComplete)) {
-                                this.selectTile(tile.index);
+                            // Allow selection if it's player's turn and not waiting for action buttons
+                            // Also allow if just completed a peng
+                            if ((this.currentPlayer === 0 && !this.isShowingActionButtons()) || this.pengComplete) {
+                                this.selectTile(i);
                             }
                         });
                     }
@@ -1416,7 +1438,7 @@
                 }
 
                 // Draw indicator for 14th tile
-                if (player.hand.length === 14 && !this.waitingForAction) {
+                if (player.hand.length === 14 && !this.isShowingActionButtons()) {
                     const lastTile = rack.lastElementChild;
                     if (lastTile) {
                         lastTile.style.transform = 'translateY(-8px)';
@@ -1507,6 +1529,15 @@
                 return names[suit] || suit;
             }
 
+            isShowingActionButtons() {
+                const btnHu = document.getElementById('btn-hu');
+                const btnGang = document.getElementById('btn-gang');
+                const btnPeng = document.getElementById('btn-peng');
+                return (btnHu.style.display !== 'none' && !btnHu.disabled) ||
+                       (btnGang.style.display !== 'none' && !btnGang.disabled) ||
+                       (btnPeng.style.display !== 'none' && !btnPeng.disabled);
+            }
+
             updateTilesLeft() {
                 const remaining = this.tiles.length - this.tileIndex;
                 document.getElementById('tiles-left').textContent = `剩余: ${remaining}`;
@@ -1531,6 +1562,11 @@
                 if (tiles[index]) {
                     tiles[index].classList.add('selected');
                     this.selectedTile = index;
+
+                    // Show discard button if it's player's turn or just completed peng
+                    if ((this.currentPlayer === 0 && !this.isShowingActionButtons()) || this.pengComplete) {
+                        document.getElementById('btn-discard').style.display = 'inline-block';
+                    }
                 }
             }
 
@@ -1543,9 +1579,11 @@
                 const discarded = this.discardTile(0, this.selectedTile);
                 this.selectedTile = null;
                 this.pengComplete = false;
-                this.waitingForAction = false;
+                this.waitingForAction = true; // Set to true to prevent further actions
 
+                // Hide all buttons
                 this.hideActionButtons();
+                document.getElementById('btn-discard').style.display = 'none';
                 this.renderAll();
 
                 this.handleDiscard(0, discarded);
@@ -1562,12 +1600,9 @@
                 btnPeng.disabled = !options.canPeng;
                 btnPass.disabled = false;
 
-                // Hide normal buttons, show action buttons
-                document.getElementById('action-panel').querySelectorAll('.action-btn').forEach(btn => {
-                    if (!btn.classList.contains('btn-hu') && !btn.classList.contains('btn-gang') &&
-                        !btn.classList.contains('btn-peng') && !btn.classList.contains('btn-pass')) {
-                        btn.style.display = 'none';
-                    }
+                // Hide all buttons first
+                document.querySelectorAll('#action-panel .action-btn').forEach(btn => {
+                    btn.style.display = 'none';
                 });
 
                 btnHu.style.display = options.canHu ? 'inline-block' : 'none';
@@ -1581,32 +1616,35 @@
                     btn.style.display = 'none';
                 });
                 document.getElementById('btn-new-game').style.display = 'none';
+                document.getElementById('btn-discard').style.display = 'none';
             }
 
-            checkPendingActions(discardedTile) {
+            checkPendingActions(discardTile) {
                 const player = this.players[0];
 
-                // Check for self-draw win
-                if (discardedTile === null && player.hand.length === 14) {
+                // Check for self-draw win (discardTile is null when drawing)
+                if (discardTile === null && player.hand.length === 14) {
                     // Just drew a tile
                     const lastTile = player.hand[player.hand.length - 1];
+
+                    // First check for self-draw kong
+                    if (this.canKong(lastTile, 0)) {
+                        this.showActionButtons({ canHu: false, canGang: true, canPeng: false });
+                        this.currentDiscard = lastTile;
+                        this.isSelfDrawKong = true;
+                        return;
+                    }
+
+                    // Then check for win
                     if (this.canHu(lastTile, 0)) {
                         this.showActionButtons({ canHu: true, canGang: false, canPeng: false });
                         return;
                     }
-
-                    // Check for self-draw kong
-                    if (this.canKong(lastTile, 0)) {
-                        // Show option to kong
-                        if (confirm('可以杠牌，是否杠牌？')) {
-                            this.handleKong(0, lastTile, true);
-                            return;
-                        }
-                    }
                 }
 
-                // Normal discard
-                this.showActionButtons({ canHu: false, canGang: false, canPeng: false });
+                // If here, no special action available - player can discard normally
+                // Hide action buttons, allow player to select and discard
+                this.hideActionButtons();
             }
 
             showWinModal(title, message) {
@@ -1640,30 +1678,27 @@
                 document.getElementById('btn-gang').addEventListener('click', () => {
                     if (!document.getElementById('btn-gang').disabled) {
                         const tile = this.currentDiscard;
-                        this.handleKong(0, tile, false);
+                        const isSelfDraw = this.isSelfDrawKong || false;
+                        this.isSelfDrawKong = false;
                         this.hideActionButtons();
+                        this.handleKong(0, tile, isSelfDraw);
                     }
                 });
 
                 document.getElementById('btn-peng').addEventListener('click', () => {
                     if (!document.getElementById('btn-peng').disabled) {
                         this.handlePeng(0, this.currentDiscard);
-                        // Now need to select a tile to discard
-                        this.pendingAction = 'peng-complete';
                     }
                 });
 
                 document.getElementById('btn-pass').addEventListener('click', () => {
                     this.hideActionButtons();
-                    if (this.pengComplete) {
-                        // Just completed a peng, now discard
-                        this.pengComplete = false;
-                        this.waitingForAction = false;
-                        this.renderAll();
-                        // Auto-select first tile
-                        this.selectTile(0);
-                    } else {
-                        this.nextTurn();
+                    this.nextTurn();
+                });
+
+                document.getElementById('btn-discard').addEventListener('click', () => {
+                    if (this.selectedTile !== null) {
+                        this.confirmDiscard();
                     }
                 });
 
@@ -1673,7 +1708,8 @@
 
                 // Double-click to discard
                 document.getElementById('rack-bottom').addEventListener('dblclick', () => {
-                    if (this.selectedTile !== null && !this.waitingForAction) {
+                    // Allow discard if player's turn and selected a tile, or if just completed peng
+                    if (this.selectedTile !== null && (this.currentPlayer === 0 && !this.isShowingActionButtons()) || this.pengComplete) {
                         this.confirmDiscard();
                     }
                 });
