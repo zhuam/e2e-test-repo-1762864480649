@@ -1088,7 +1088,7 @@
                 this.currentPlayer = this.dealer;
                 this.winners = [];
                 this.gameOver = false;
-                this.tileIndex = 0;
+                // tileIndex is already at 52 after dealTiles(), don't reset it
                 this.discardPiles = [[], [], [], []];
                 this.melds = [[], [], [], []];
 
@@ -1358,21 +1358,40 @@
 
             endGame() {
                 this.gameOver = true;
+                let title = '';
                 let message = '';
+                let btnText = '继续';
 
                 if (this.winners.length > 0) {
                     const winnerNames = this.winners.map(i => this.players[i].name).join('、');
+                    title = '🎉 胡了！';
                     message = `赢家: ${winnerNames}`;
+
+                    // Check if this was the last round
+                    if (this.round >= this.maxRounds) {
+                        title = '🏆 全局结束！';
+                        message = `恭喜 ${winnerNames} 获得最终胜利！\n（共完成 ${this.maxRounds} 局）`;
+                        btnText = '重新开始';
+                    }
                 } else {
+                    title = '📋 流局';
                     message = '本局流局！';
                 }
+
+                // Update modal content
+                document.querySelector('#win-modal h2').textContent = title;
+                document.getElementById('winner-name').textContent = message;
+
+                // Update button
+                const continueBtn = document.querySelector('#win-modal .btn-new-game');
+                continueBtn.textContent = btnText;
 
                 document.getElementById('btn-new-game').style.display = 'inline-block';
                 document.getElementById('action-panel').querySelectorAll('.action-btn:not(.btn-new-game)').forEach(btn => {
                     btn.style.display = 'none';
                 });
 
-                this.showWinModal('游戏结束', message);
+                this.showWinModal(title, message);
             }
 
             // UI Methods
@@ -1649,6 +1668,7 @@
 
             showWinModal(title, message) {
                 const modal = document.getElementById('win-modal');
+                document.querySelector('#win-modal h2').textContent = title;
                 document.getElementById('winner-name').textContent = message;
                 modal.classList.add('show');
             }
@@ -1726,6 +1746,27 @@
                 document.querySelectorAll('#action-panel .action-btn').forEach(btn => {
                     btn.style.display = 'none';
                 });
+
+                // Reset modal button text
+                document.querySelector('#win-modal .btn-new-game').textContent = '继续';
+
+                // Check if we need to fully restart (all rounds completed)
+                if (this.round >= this.maxRounds) {
+                    this.round = 1;
+                    this.dealer = 0;
+                } else {
+                    // Increment round and rotate dealer
+                    this.round++;
+                    // Rotate dealer to next player
+                    this.dealer = (this.dealer + 1) % 4;
+                }
+
+                // Reset players for new round
+                for (const player of this.players) {
+                    player.hand = [];
+                    player.quietSuit = null;
+                    player.hasWon = false;
+                }
 
                 this.startGame();
             }
