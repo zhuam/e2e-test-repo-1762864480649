@@ -324,6 +324,26 @@
             box-shadow: 0 6px 20px rgba(255,152,0,0.5);
         }
 
+        .btn-peng {
+            background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+            color: #fff;
+        }
+
+        .btn-peng:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(156,39,176,0.5);
+        }
+
+        .btn-gang {
+            background: linear-gradient(135deg, #00bcd4, #0097a7);
+            color: #fff;
+        }
+
+        .btn-gang:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0,188,212,0.5);
+        }
+
         /* 游戏结果 */
         .result-overlay {
             position: fixed;
@@ -497,6 +517,8 @@
 
     <!-- 操作按钮 -->
     <div class="action-buttons" id="action-buttons">
+        <button class="btn btn-peng" id="btn-peng" disabled>碰</button>
+        <button class="btn btn-gang" id="btn-gang" disabled>杠</button>
         <button class="btn btn-discard" id="btn-discard" disabled>出牌</button>
         <button class="btn btn-hu" id="btn-hu" disabled>胡牌</button>
     </div>
@@ -538,6 +560,8 @@
                 this.selectedTile = null;
                 this.round = 1;
                 this.gameOver = false;
+                this.pendingHu = false;
+                this.pendingPengGang = null;
 
                 this.init();
             }
@@ -745,16 +769,18 @@
 
             // 检查其他玩家的操作（胡/碰/杠）
             checkActions(tile) {
+                // 优先检查胡牌
                 for (let i = 0; i < 4; i++) {
                     if (i === this.currentPlayer) continue;
-                    
+
                     const player = this.players[i];
-                    
+
                     // 检查胡牌
                     if (this.canHuWithTile(player.hand, tile)) {
                         if (player.isHuman) {
                             this.updateAction(`可以胡牌！`);
                             this.enableHuButton(true);
+                            this.pendingHu = true;
                             return true;
                         } else {
                             // 机器人胡牌
@@ -764,8 +790,133 @@
                         }
                     }
                 }
-                
+
+                // 检查碰牌/杠牌（只有真人玩家才能主动操作）
+                const humanPlayer = this.players[0];
+                if (this.currentPlayer !== 0) {
+                    const canPeng = this.canPengWithTile(humanPlayer.hand, tile);
+                    const canGang = this.canGangWithTile(humanPlayer.hand, tile);
+
+                    if (canPeng || canGang) {
+                        this.enablePengButton(canPeng);
+                        this.enableGangButton(canGang);
+                        this.pendingPengGang = { tile, canPeng, canGang };
+
+                        // 3秒后如果没有操作则继续
+                        setTimeout(() => {
+                            if (this.pendingPengGang) {
+                                this.cancelPengGang();
+                            }
+                        }, 3000);
+                        return true;
+                    }
+                }
+
                 return false;
+            }
+
+            // 检查是否可以碰牌
+            canPengWithTile(hand, tile) {
+                const count = hand.filter(t =>
+                    t.type === tile.type && t.value === tile.value
+                ).length;
+                return count >= 2;
+            }
+
+            // 检查是否可以杠牌
+            canGangWithTile(hand, tile) {
+                const count = hand.filter(t =>
+                    t.type === tile.type && t.value === tile.value
+                ).length;
+                return count >= 3;
+            }
+
+            // 执行碰牌
+            doPeng() {
+                if (!this.pendingPengGang) return;
+
+                const tile = this.pendingPengGang.tile;
+                const player = this.players[0];
+
+                // 从手牌中移除两张相同的牌
+                let removed = 0;
+                const newHand = [];
+                for (let t of player.hand) {
+                    if (t.type === tile.type && t.value === tile.value && removed < 2) {
+                        removed++;
+                    } else {
+                        newHand.push(t);
+                    }
+                }
+                player.hand = newHand;
+
+                // 添加碰牌组合
+                player.melds.push([
+                    { ...tile },
+                    { ...tile },
+                    { ...tile }
+                ]);
+
+                // 从弃牌区移除该牌
+                this.players[this.lastDiscardPlayer].discard.pop();
+
+                this.cancelPengGang();
+                this.currentPlayer = 0;
+                this.updateAction('您碰��了！请选择要出的牌');
+                this.enableDiscardButton(true);
+                this.updateUI();
+            }
+
+            // 执行杠牌
+            doGang() {
+                if (!this.pendingPengGang) return;
+
+                const tile = this.pendingPengGang.tile;
+                const player = this.players[0];
+
+                // 从手牌中移除三张相同的牌
+                let removed = 0;
+                const newHand = [];
+                for (let t of player.hand) {
+                    if (t.type === tile.type && t.value === tile.value && removed < 3) {
+                        removed++;
+                    } else {
+                        newHand.push(t);
+                    }
+                }
+                player.hand = newHand;
+
+                // 添加杠牌组合
+                player.melds.push([
+                    { ...tile },
+                    { ...tile },
+                    { ...tile },
+                    { ...tile }
+                ]);
+
+                // 从弃牌区移除该牌
+                this.players[this.lastDiscardPlayer].discard.pop();
+
+                this.cancelPengGang();
+                this.currentPlayer = 0;
+
+                // 杠牌后摸一张牌
+                if (this.deck.length > 0) {
+                    const newTile = this.deck.pop();
+                    player.hand.push(newTile);
+                    this.sortHand(player.hand);
+                    this.updateAction(`您杠牌了！摸到: ${newTile.display}，请选择要出的牌`);
+                    this.enableDiscardButton(true);
+                }
+
+                this.updateUI();
+            }
+
+            // 取消碰/杠
+            cancelPengGang() {
+                this.pendingPengGang = null;
+                this.enablePengButton(false);
+                this.enableGangButton(false);
             }
 
             // 检查是否可以胡牌（简化版）
@@ -865,13 +1016,29 @@
                         this.enableHuButton(false);
                     }
                 });
-                
+
                 document.getElementById('btn-hu').addEventListener('click', () => {
                     const player = this.players[0];
                     if (this.canHu(player.hand)) {
                         this.showMessage('胡牌！');
                         this.endGame(player, '恭喜！您胡牌了！');
+                    } else if (this.pendingHu && this.lastDiscard) {
+                        // 点炮胡牌
+                        const testHand = [...player.hand, this.lastDiscard];
+                        if (this.checkHuPattern(testHand)) {
+                            this.showMessage('胡牌！');
+                            this.endGame(player, '恭喜！您胡牌了！');
+                        }
                     }
+                    this.pendingHu = false;
+                });
+
+                document.getElementById('btn-peng').addEventListener('click', () => {
+                    this.doPeng();
+                });
+
+                document.getElementById('btn-gang').addEventListener('click', () => {
+                    this.doGang();
                 });
             }
 
@@ -981,6 +1148,14 @@
 
             enableHuButton(enabled) {
                 document.getElementById('btn-hu').disabled = !enabled;
+            }
+
+            enablePengButton(enabled) {
+                document.getElementById('btn-peng').disabled = !enabled;
+            }
+
+            enableGangButton(enabled) {
+                document.getElementById('btn-gang').disabled = !enabled;
             }
 
             showMessage(text) {
