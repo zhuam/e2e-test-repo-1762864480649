@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 用户管理系统</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1 class="auth-title">创建账户</h1>
+                <p class="auth-subtitle">填写以下信息完成注册</p>
+            </div>
+
+            <form id="registerForm" class="auth-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">姓</label>
+                        <input type="text" id="firstName" name="firstName"
+                               placeholder="请输入姓" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">名</label>
+                        <input type="text" id="lastName" name="lastName"
+                               placeholder="请输入名" maxlength="50">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">用户名 <span class="required">*</span></label>
+                    <input type="text" id="username" name="username" required
+                           placeholder="3-50个字符" minlength="3" maxlength="50"
+                           autocomplete="username">
+                    <span class="input-icon">👤</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">邮箱 <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" required
+                           placeholder="请输入邮箱地址" autocomplete="email">
+                    <span class="input-icon">📧</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码 <span class="required">*</span></label>
+                    <input type="password" id="password" name="password" required
+                           placeholder="6-100个字符" minlength="6" maxlength="100"
+                           autocomplete="new-password">
+                    <span class="input-icon">🔒</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码 <span class="required">*</span></label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required
+                           placeholder="请再次输入密码" autocomplete="new-password">
+                    <span class="input-icon">🔒</span>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="agreeTerms" required>
+                        <span>我同意 <a href="#">服务条款</a> 和 <a href="#">隐私政策</a></span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span class="btn-text">注册</span>
+                    <span class="btn-loader hidden"></span>
+                </button>
+            </form>
+
+            <div id="message" class="message hidden"></div>
+
+            <div class="auth-footer">
+                <p>已有账户？ <a href="/login.html">立即登录</a></p>
+            </div>
+        </div>
+
+        <div class="auth-decoration">
+            <div class="decoration-content">
+                <h2>UserSystem</h2>
+                <p>加入我们，开始您的旅程</p>
+                <ul class="features-list">
+                    <li>✓ 免费注册</li>
+                    <li>✓ 数据安全保护</li>
+                    <li>✓ 7x24 小时服务</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', handleRegister);
+    </script>
+</body>
+</html>
