@@ -186,7 +186,6 @@
         .tile[data-type="wan"] { color: #d32f2f; }
         .tile[data-type="tong"] { color: #1976d2; }
         .tile[data-type="tiao"] { color: #388e3c; }
-        .tile[data-type="zi"] { color: #000; }
 
         /* 出牌区域 */
         .discard-area {
@@ -344,6 +343,16 @@
             box-shadow: 0 6px 20px rgba(0,188,212,0.5);
         }
 
+        .btn-skip {
+            background: linear-gradient(135deg, #607d8b, #455a64);
+            color: #fff;
+        }
+
+        .btn-skip:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(96,125,139,0.5);
+        }
+
         /* 游戏结果 */
         .result-overlay {
             position: fixed;
@@ -460,7 +469,7 @@
     <div class="game-info">
         <div>回合: <span id="round">1</span></div>
         <div>庄家: <span id="dealer">您</span></div>
-        <div>规则: <span>108张牌（去条子）</span></div>
+        <div>规则: <span>108张牌（万条筒，无字牌）</span></div>
     </div>
 
     <div class="game-table">
@@ -519,6 +528,7 @@
     <div class="action-buttons" id="action-buttons">
         <button class="btn btn-peng" id="btn-peng" disabled>碰</button>
         <button class="btn btn-gang" id="btn-gang" disabled>杠</button>
+        <button class="btn btn-skip" id="btn-skip" disabled>过</button>
         <button class="btn btn-discard" id="btn-discard" disabled>出牌</button>
         <button class="btn btn-hu" id="btn-hu" disabled>胡牌</button>
     </div>
@@ -539,11 +549,11 @@
         // 四川麻将游戏
         class SichuanMahjong {
             constructor() {
-                // 牌的定义（108张：万、筒、字，去掉条子）
-                this.suits = ['wan', 'tong', 'zi'];
+                // 牌的定义（108张：万、条、筒，去掉字牌 - 标准四川麻将规则）
+                this.suits = ['wan', 'tiao', 'tong'];
                 this.wanTiles = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+                this.tiaoTiles = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
                 this.tongTiles = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'];
-                this.ziTiles = ['东', '南', '西', '北', '中', '发', '白'];
                 
                 // 游戏状态
                 this.deck = [];
@@ -575,25 +585,25 @@
             // 创建牌堆（108张）
             createDeck() {
                 this.deck = [];
-                
+
                 // 万子 (1-9各4张)
                 for (let i = 0; i < 4; i++) {
                     for (let j = 0; j < 9; j++) {
                         this.deck.push({ type: 'wan', value: j + 1, display: this.wanTiles[j] });
                     }
                 }
-                
+
+                // 条子 (1-9各4张)
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        this.deck.push({ type: 'tiao', value: j + 1, display: this.tiaoTiles[j] });
+                    }
+                }
+
                 // 筒子 (1-9各4张)
                 for (let i = 0; i < 4; i++) {
                     for (let j = 0; j < 9; j++) {
                         this.deck.push({ type: 'tong', value: j + 1, display: this.tongTiles[j] });
-                    }
-                }
-                
-                // 字牌 (各4张)
-                for (let i = 0; i < 4; i++) {
-                    for (let j = 0; j < 7; j++) {
-                        this.deck.push({ type: 'zi', value: j + 1, display: this.ziTiles[j] });
                     }
                 }
             }
@@ -739,30 +749,33 @@
 
             // 机器人选择出牌（简单策略）
             robotSelectDiscard(hand) {
-                // 优先打出字牌，然后是孤张
-                for (let i = 0; i < hand.length; i++) {
-                    if (hand[i].type === 'zi') {
-                        const count = hand.filter(t => t.display === hand[i].display).length;
-                        if (count === 1) return i;
-                    }
-                }
-                
-                // 找孤张
+                // 找孤张（优先打出无法组成顺子或刻子的牌）
                 for (let i = 0; i < hand.length; i++) {
                     const tile = hand[i];
-                    const sameTiles = hand.filter(t => 
+                    const sameTiles = hand.filter(t =>
                         t.type === tile.type && t.value === tile.value
                     );
-                    const sequenceTiles = hand.filter(t => 
-                        t.type === tile.type && 
+                    const sequenceTiles = hand.filter(t =>
+                        t.type === tile.type &&
                         Math.abs(t.value - tile.value) === 1
                     );
-                    
+
                     if (sameTiles.length === 1 && sequenceTiles.length === 0) {
                         return i;
                     }
                 }
-                
+
+                // 找边张（1或9）
+                for (let i = 0; i < hand.length; i++) {
+                    const tile = hand[i];
+                    const sameTiles = hand.filter(t =>
+                        t.type === tile.type && t.value === tile.value
+                    );
+                    if ((tile.value === 1 || tile.value === 9) && sameTiles.length === 1) {
+                        return i;
+                    }
+                }
+
                 // 随机出一张
                 return Math.floor(Math.random() * hand.length);
             }
@@ -800,14 +813,15 @@
                     if (canPeng || canGang) {
                         this.enablePengButton(canPeng);
                         this.enableGangButton(canGang);
+                        this.enableSkipButton(true);
                         this.pendingPengGang = { tile, canPeng, canGang };
 
-                        // 3秒后如果没有操作则继续
+                        // 5秒后如果没有操作则继续
                         setTimeout(() => {
                             if (this.pendingPengGang) {
-                                this.cancelPengGang();
+                                this.skipPengGang();
                             }
-                        }, 3000);
+                        }, 5000);
                         return true;
                     }
                 }
@@ -862,7 +876,8 @@
 
                 this.cancelPengGang();
                 this.currentPlayer = 0;
-                this.updateAction('您碰��了！请选择要出的牌');
+                this.selectedTile = null;
+                this.updateAction('您碰牌了！请选择要出的牌');
                 this.enableDiscardButton(true);
                 this.updateUI();
             }
@@ -899,6 +914,7 @@
 
                 this.cancelPengGang();
                 this.currentPlayer = 0;
+                this.selectedTile = null;
 
                 // 杠牌后摸一张牌
                 if (this.deck.length > 0) {
@@ -907,6 +923,7 @@
                     this.sortHand(player.hand);
                     this.updateAction(`您杠牌了！摸到: ${newTile.display}，请选择要出的牌`);
                     this.enableDiscardButton(true);
+                    this.updateDeckCount();
                 }
 
                 this.updateUI();
@@ -917,6 +934,14 @@
                 this.pendingPengGang = null;
                 this.enablePengButton(false);
                 this.enableGangButton(false);
+                this.enableSkipButton(false);
+            }
+
+            // 跳过碰/杠
+            skipPengGang() {
+                this.cancelPengGang();
+                // 继续下一个玩家
+                this.nextPlayer();
             }
 
             // 检查是否可以胡牌（简化版）
@@ -956,47 +981,47 @@
             // 检查剩下的牌是否能组成4个顺子/刻子
             checkMelds(tiles) {
                 if (tiles.length === 0) return true;
-                
+
                 // 尝试刻子
                 if (tiles.length >= 3) {
                     const first = tiles[0];
-                    const same = tiles.filter(t => 
+                    const same = tiles.filter(t =>
                         t.type === first.type && t.value === first.value
                     );
-                    
+
                     if (same.length >= 3) {
                         const remaining = [...tiles];
                         remaining.splice(remaining.indexOf(same[0]), 1);
                         remaining.splice(remaining.indexOf(same[1]), 1);
                         remaining.splice(remaining.indexOf(same[2]), 1);
-                        
+
                         if (this.checkMelds(remaining)) return true;
                     }
                 }
-                
-                // 尝试顺子（只对数字牌）
-                if (tiles.length >= 3 && tiles[0].type !== 'zi') {
+
+                // 尝试顺子（所有牌都是数字牌）
+                if (tiles.length >= 3) {
                     const first = tiles[0];
-                    
+
                     if (first.value <= 7) {
-                        const seq1 = tiles.find(t => 
+                        const seq1 = tiles.find(t =>
                             t.type === first.type && t.value === first.value + 1
                         );
-                        const seq2 = tiles.find(t => 
+                        const seq2 = tiles.find(t =>
                             t.type === first.type && t.value === first.value + 2
                         );
-                        
+
                         if (seq1 && seq2) {
                             const remaining = [...tiles];
                             remaining.splice(remaining.indexOf(first), 1);
                             remaining.splice(remaining.indexOf(seq1), 1);
                             remaining.splice(remaining.indexOf(seq2), 1);
-                            
+
                             if (this.checkMelds(remaining)) return true;
                         }
                     }
                 }
-                
+
                 return false;
             }
 
@@ -1039,6 +1064,10 @@
 
                 document.getElementById('btn-gang').addEventListener('click', () => {
                     this.doGang();
+                });
+
+                document.getElementById('btn-skip').addEventListener('click', () => {
+                    this.skipPengGang();
                 });
             }
 
@@ -1156,6 +1185,10 @@
 
             enableGangButton(enabled) {
                 document.getElementById('btn-gang').disabled = !enabled;
+            }
+
+            enableSkipButton(enabled) {
+                document.getElementById('btn-skip').disabled = !enabled;
             }
 
             showMessage(text) {
