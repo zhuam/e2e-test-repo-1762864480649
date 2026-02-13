@@ -495,7 +495,47 @@
             animation: discardAnim 0.2s ease;
         }
 
-        /* 吃碰杠按钮高亮 */
+        .btn-chi {
+            background: linear-gradient(135deg, #4caf50, #388e3c);
+            color: #fff;
+        }
+
+        .btn-chi:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(76,175,80,0.5);
+        }
+
+        /* 吃牌选择高亮 */
+        .chi-options {
+            position: fixed;
+            bottom: 260px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 15px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 15px;
+            z-index: 100;
+        }
+
+        .chi-options.show {
+            display: flex;
+        }
+
+        .chi-option {
+            display: flex;
+            gap: 2px;
+        }
+
+        .chi-option .tile {
+            cursor: pointer;
+        }
+
+        .chi-option .tile:hover {
+            transform: translateY(-10px);
+            border: 2px solid #4caf50;
+        }
         .btn.highlight {
             animation: pulse 1s infinite;
         }
@@ -648,8 +688,12 @@
         </div>
     </div>
 
+    <!-- 吃牌选项 -->
+    <div class="chi-options" id="chi-options"></div>
+
     <!-- 操作按钮 -->
     <div class="action-buttons" id="action-buttons">
+        <button class="btn btn-chi" id="btn-chi" disabled>吃</button>
         <button class="btn btn-peng" id="btn-peng" disabled>碰</button>
         <button class="btn btn-gang" id="btn-gang" disabled>杠</button>
         <button class="btn btn-skip" id="btn-skip" disabled>过</button>
@@ -1045,12 +1089,15 @@
                 if (this.currentPlayer !== 0) {
                     const canPeng = this.canPengWithTile(humanPlayer.hand, tile);
                     const canGang = this.canGangWithTile(humanPlayer.hand, tile);
+                    // 检查吃牌（只能吃上家的牌）
+                    const chiOptions = this.currentPlayer === 3 ? this.canChiWithTile(humanPlayer.hand, tile) : [];
 
-                    if (canPeng || canGang) {
+                    if (canPeng || canGang || chiOptions.length > 0) {
+                        this.enableChiButton(chiOptions.length > 0);
                         this.enablePengButton(canPeng);
                         this.enableGangButton(canGang);
                         this.enableSkipButton(true);
-                        this.pendingPengGang = { tile, canPeng, canGang };
+                        this.pendingPengGang = { tile, canPeng, canGang, chiOptions };
 
                         // 5秒后如果没有操作则继续
                         setTimeout(() => {
@@ -1180,6 +1227,73 @@
                 }, 1000);
             }
 
+            // 检查是否可以吃牌（只能吃上家的牌）
+            canChiWithTile(hand, tile) {
+                // 只能吃数字牌组成顺子
+                if (tile.value < 1 || tile.value > 9) return false;
+
+                const chiOptions = [];
+
+                // 检查可能的顺子组合
+                // 情况1: tile作为中间牌 (x-1, tile, x+1)
+                if (tile.value >= 2 && tile.value <= 8) {
+                    const hasLeft = hand.some(t => t.type === tile.type && t.value === tile.value - 1);
+                    const hasRight = hand.some(t => t.type === tile.type && t.value === tile.value + 1);
+                    if (hasLeft && hasRight) {
+                        chiOptions.push({
+                            type: 'middle',
+                            tiles: [
+                                { type: tile.type, value: tile.value - 1, display: this.getTileDisplay(tile.type, tile.value - 1) },
+                                { type: tile.type, value: tile.value, display: tile.display },
+                                { type: tile.type, value: tile.value + 1, display: this.getTileDisplay(tile.type, tile.value + 1) }
+                            ]
+                        });
+                    }
+                }
+
+                // 情况2: tile作为左边牌 (tile, x+1, x+2)
+                if (tile.value <= 7) {
+                    const hasMid = hand.some(t => t.type === tile.type && t.value === tile.value + 1);
+                    const hasRight = hand.some(t => t.type === tile.type && t.value === tile.value + 2);
+                    if (hasMid && hasRight) {
+                        chiOptions.push({
+                            type: 'left',
+                            tiles: [
+                                { type: tile.type, value: tile.value, display: tile.display },
+                                { type: tile.type, value: tile.value + 1, display: this.getTileDisplay(tile.type, tile.value + 1) },
+                                { type: tile.type, value: tile.value + 2, display: this.getTileDisplay(tile.type, tile.value + 2) }
+                            ]
+                        });
+                    }
+                }
+
+                // 情况3: tile作为右边牌 (x-2, x-1, tile)
+                if (tile.value >= 3) {
+                    const hasLeft1 = hand.some(t => t.type === tile.type && t.value === tile.value - 2);
+                    const hasLeft2 = hand.some(t => t.type === tile.type && t.value === tile.value - 1);
+                    if (hasLeft1 && hasLeft2) {
+                        chiOptions.push({
+                            type: 'right',
+                            tiles: [
+                                { type: tile.type, value: tile.value - 2, display: this.getTileDisplay(tile.type, tile.value - 2) },
+                                { type: tile.type, value: tile.value - 1, display: this.getTileDisplay(tile.type, tile.value - 1) },
+                                { type: tile.type, value: tile.value, display: tile.display }
+                            ]
+                        });
+                    }
+                }
+
+                return chiOptions;
+            }
+
+            // 获取牌的显示
+            getTileDisplay(type, value) {
+                if (type === 'wan') return this.wanTiles[value - 1];
+                if (type === 'tiao') return this.tiaoTiles[value - 1];
+                if (type === 'tong') return this.tongTiles[value - 1];
+                return '';
+            }
+
             // 检查是否可以碰牌
             canPengWithTile(hand, tile) {
                 const count = hand.filter(t =>
@@ -1283,9 +1397,11 @@
             // 取消碰/杠
             cancelPengGang() {
                 this.pendingPengGang = null;
+                this.enableChiButton(false);
                 this.enablePengButton(false);
                 this.enableGangButton(false);
                 this.enableSkipButton(false);
+                document.getElementById('chi-options').classList.remove('show');
             }
 
             // 跳过碰/杠
@@ -1293,6 +1409,90 @@
                 this.cancelPengGang();
                 // 继续下一个玩家
                 this.nextPlayer();
+            }
+
+            // 显示吃牌选项
+            showChiOptions() {
+                if (!this.pendingPengGang) return;
+
+                const chiOptions = this.pendingPengGang.chiOptions;
+                if (!chiOptions || chiOptions.length === 0) return;
+
+                const container = document.getElementById('chi-options');
+                container.innerHTML = '';
+                container.classList.add('show');
+
+                chiOptions.forEach((option, index) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'chi-option';
+
+                    option.tiles.forEach((tile, tileIndex) => {
+                        const tileDiv = document.createElement('div');
+                        tileDiv.className = 'tile';
+                        tileDiv.dataset.type = tile.type;
+                        tileDiv.textContent = tile.display;
+
+                        // 高亮被吃的牌
+                        if (tileIndex === 0 && option.type === 'left' ||
+                            tileIndex === 1 && option.type === 'middle' ||
+                            tileIndex === 2 && option.type === 'right') {
+                            tileDiv.style.border = '2px solid #ffd700';
+                        }
+
+                        tileDiv.addEventListener('click', () => this.doChi(index));
+                        optionDiv.appendChild(tileDiv);
+                    });
+
+                    container.appendChild(optionDiv);
+                });
+            }
+
+            // 执行吃牌
+            doChi(chiOptionIndex) {
+                if (!this.pendingPengGang || !this.pendingPengGang.chiOptions) return;
+
+                const option = this.pendingPengGang.chiOptions[chiOptionIndex];
+                const tile = this.pendingPengGang.tile;
+                const player = this.players[0];
+
+                // 从手牌中移除用来吃的两张牌
+                const tilesToRemove = option.tiles.filter(t =>
+                    !(t.type === tile.type && t.value === tile.value)
+                );
+
+                const newHand = [];
+                let removedCount = 0;
+
+                for (let t of player.hand) {
+                    let shouldRemove = false;
+                    for (let tr of tilesToRemove) {
+                        if (t.type === tr.type && t.value === tr.value && removedCount < tilesToRemove.length) {
+                            shouldRemove = true;
+                            removedCount++;
+                            break;
+                        }
+                    }
+                    if (!shouldRemove) {
+                        newHand.push(t);
+                    }
+                }
+                player.hand = newHand;
+
+                // 添加吃牌组合（包含被吃的牌）
+                player.melds.push([...option.tiles]);
+
+                // 从弃牌区移除该牌
+                this.players[this.lastDiscardPlayer].discard.pop();
+
+                // 隐藏吃牌选项
+                document.getElementById('chi-options').classList.remove('show');
+
+                this.cancelPengGang();
+                this.currentPlayer = 0;
+                this.selectedTile = null;
+                this.updateAction('您吃牌了！请选择要出的牌');
+                this.enableDiscardButton(true);
+                this.updateUI();
             }
 
             // 检查是否可以胡牌（简化版）
@@ -1420,6 +1620,10 @@
                 document.getElementById('btn-skip').addEventListener('click', () => {
                     this.skipPengGang();
                 });
+
+                document.getElementById('btn-chi').addEventListener('click', () => {
+                    this.showChiOptions();
+                });
             }
 
             // 选择手牌
@@ -1524,6 +1728,10 @@
 
             enableDiscardButton(enabled) {
                 document.getElementById('btn-discard').disabled = !enabled;
+            }
+
+            enableChiButton(enabled) {
+                document.getElementById('btn-chi').disabled = !enabled;
             }
 
             enableHuButton(enabled) {
