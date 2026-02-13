@@ -461,9 +461,133 @@
         .player-bottom .hand-container .meld {
             margin-bottom: 5px;
         }
+
+        /* 摸牌动画 */
+        @keyframes drawTile {
+            0% { transform: translateY(-20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .tile.new-tile {
+            animation: drawTile 0.3s ease;
+        }
+
+        /* 胡牌特效 */
+        @keyframes huEffect {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .hu-effect {
+            animation: huEffect 0.5s ease;
+            box-shadow: 0 0 30px rgba(255,215,0,0.8) !important;
+            border: 2px solid #ffd700 !important;
+        }
+
+        /* 出牌特效 */
+        @keyframes discardAnim {
+            0% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .tile.just-discarded {
+            animation: discardAnim 0.2s ease;
+        }
+
+        /* 吃碰杠按钮高亮 */
+        .btn.highlight {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(255,215,0,0); }
+        }
+
+        /* 玩家指示器 */
+        .player-indicator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ffd700;
+            border-radius: 50%;
+            animation: indicatorPulse 1s infinite;
+        }
+
+        @keyframes indicatorPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.7; }
+        }
+
+        /* 规则说明 */
+        .rules-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .rules-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .rules-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+
+        .rules-modal.show {
+            display: flex;
+        }
+
+        .rules-content {
+            background: linear-gradient(135deg, #2d5016, #1a3009);
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #ffd700;
+            max-width: 500px;
+            color: #fff;
+        }
+
+        .rules-content h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+
+        .rules-content ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .rules-content button {
+            margin-top: 20px;
+            background: #ffd700;
+            color: #333;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+    <button class="rules-btn" onclick="showRules()">游戏规则</button>
     <h1>🀄 四川麻将</h1>
     
     <div class="game-info">
@@ -545,7 +669,28 @@
     <!-- 提示消息 -->
     <div class="message" id="message"></div>
 
+    <!-- 规则说明弹窗 -->
+    <div class="rules-modal" id="rules-modal">
+        <div class="rules-content">
+            <h3>🀄 四川麻将规则</h3>
+            <ul>
+                <li>使用 108 张牌（万、条、筒，去掉字牌）</li>
+                <li>每局 13 张手牌，庄家 14 张</li>
+                <li>胡牌需满足：4组面子（顺子或刻子）+ 1对将牌</li>
+                <li>支持操作：出牌、胡牌、碰牌、杠牌、过牌</li>
+                <li>您（底部）对战 3 个机器人</li>
+            </ul>
+            <button onclick="hideRules()">我知道了</button>
+        </div>
+    </div>
+
     <script>
+        function showRules() {
+            document.getElementById('rules-modal').classList.add('show');
+        }
+        function hideRules() {
+            document.getElementById('rules-modal').classList.remove('show');
+        }
         // 四川麻将游戏
         class SichuanMahjong {
             constructor() {
@@ -723,25 +868,116 @@
                 }
             }
 
+            // 检查机器人是否可以暗杠
+            checkRobotAnGang(playerIndex) {
+                const player = this.players[playerIndex];
+                const hand = player.hand;
+
+                // 检查是否有4张相同的牌
+                const counts = {};
+                for (let tile of hand) {
+                    const key = `${tile.type}_${tile.value}`;
+                    counts[key] = (counts[key] || 0) + 1;
+                }
+
+                for (let key in counts) {
+                    if (counts[key] === 4) {
+                        return key;
+                    }
+                }
+                return null;
+            }
+
+            // 机器人执行暗杠
+            robotAnGang(playerIndex, gangKey) {
+                const player = this.players[playerIndex];
+                const [type, value] = gangKey.split('_');
+                const valueNum = parseInt(value);
+
+                // 从手牌中移除4张相同的牌
+                const newHand = [];
+                const gangTiles = [];
+                for (let t of player.hand) {
+                    if (t.type === type && t.value === valueNum && gangTiles.length < 4) {
+                        gangTiles.push(t);
+                    } else {
+                        newHand.push(t);
+                    }
+                }
+                player.hand = newHand;
+
+                // 添加暗杠组合（显示为背面）
+                player.melds.push([
+                    { ...gangTiles[0], hidden: true },
+                    { ...gangTiles[1], hidden: true },
+                    { ...gangTiles[2], hidden: true },
+                    { ...gangTiles[3], hidden: true }
+                ]);
+
+                this.showMessage(`${player.name} 暗杠！`);
+
+                // 暗杠后摸一张牌
+                if (this.deck.length > 0) {
+                    const newTile = this.deck.pop();
+                    player.hand.push(newTile);
+                    this.sortHand(player.hand);
+                    this.updateDeckCount();
+
+                    // 检查暗杠后是否可以再杠
+                    const anotherGang = this.checkRobotAnGang(playerIndex);
+                    if (anotherGang) {
+                        setTimeout(() => {
+                            this.robotAnGang(playerIndex, anotherGang);
+                        }, 1000);
+                        return;
+                    }
+
+                    // 检查是否可以胡牌
+                    if (this.canHu(player.hand)) {
+                        this.showMessage(`${player.name} 自摸胡牌！`);
+                        setTimeout(() => this.endGame(player, `${player.name} 自摸胡牌！`), 1500);
+                        return;
+                    }
+                }
+
+                this.updateUI();
+
+                // 继续出牌
+                setTimeout(() => {
+                    const tileIndex = this.robotSelectDiscard(player.hand);
+                    this.updateAction(`${player.name} 出牌...`);
+                    setTimeout(() => {
+                        this.discardTile(tileIndex);
+                    }, 500);
+                }, 1000);
+            }
+
             // 机器人出牌
             robotPlay() {
                 if (this.gameOver) return;
-                
+
                 const player = this.players[this.currentPlayer];
-                
-                // 检查是否可以胡牌
-                if (this.canHu(player.hand)) {
-                    this.showMessage(`${player.name} 胡牌！`);
-                    setTimeout(() => this.endGame(player, `${player.name} 胡牌！`), 1500);
+
+                // 检查是否可以暗杠
+                const anGangKey = this.checkRobotAnGang(this.currentPlayer);
+                if (anGangKey) {
+                    this.robotAnGang(this.currentPlayer, anGangKey);
                     return;
                 }
-                
+
+                // 检查是否可以胡牌
+                if (this.canHu(player.hand)) {
+                    this.showMessage(`${player.name} 自摸胡牌！`);
+                    setTimeout(() => this.endGame(player, `${player.name} 自摸胡牌！`), 1500);
+                    return;
+                }
+
                 // 出牌
                 const tileIndex = this.robotSelectDiscard(player.hand);
                 const tile = player.hand[tileIndex];
-                
+
                 this.updateAction(`${player.name} 出牌: ${tile.display}`);
-                
+
                 setTimeout(() => {
                     this.discardTile(tileIndex);
                 }, 500);
@@ -782,7 +1018,7 @@
 
             // 检查其他玩家的操作（胡/碰/杠）
             checkActions(tile) {
-                // 优先检查胡牌
+                // 优先检查胡牌（所有人）
                 for (let i = 0; i < 4; i++) {
                     if (i === this.currentPlayer) continue;
 
@@ -826,7 +1062,122 @@
                     }
                 }
 
+                // 机器人碰杠逻辑（机器人之间）
+                for (let i = 1; i <= 3; i++) {
+                    if (i === this.currentPlayer) continue;
+
+                    const player = this.players[i];
+                    const canPeng = this.canPengWithTile(player.hand, tile);
+                    const canGang = this.canGangWithTile(player.hand, tile);
+
+                    // 优先杠牌
+                    if (canGang) {
+                        setTimeout(() => this.robotGang(i, tile), 800);
+                        return true;
+                    }
+
+                    // 碰牌（30%概率，避免机器人太积极）
+                    if (canPeng && Math.random() < 0.3) {
+                        setTimeout(() => this.robotPeng(i, tile), 800);
+                        return true;
+                    }
+                }
+
                 return false;
+            }
+
+            // 机器人碰牌
+            robotPeng(playerIndex, tile) {
+                const player = this.players[playerIndex];
+
+                // 从手牌中移除两张相同的牌
+                let removed = 0;
+                const newHand = [];
+                for (let t of player.hand) {
+                    if (t.type === tile.type && t.value === tile.value && removed < 2) {
+                        removed++;
+                    } else {
+                        newHand.push(t);
+                    }
+                }
+                player.hand = newHand;
+
+                // 添加碰牌组合
+                player.melds.push([
+                    { ...tile },
+                    { ...tile },
+                    { ...tile }
+                ]);
+
+                // 从弃牌区移除该牌
+                this.players[this.lastDiscardPlayer].discard.pop();
+
+                this.showMessage(`${player.name} 碰牌！`);
+                this.currentPlayer = playerIndex;
+                this.updateUI();
+
+                // 碰牌后需要出一张牌
+                if (player.isHuman) {
+                    this.enableDiscardButton(true);
+                } else {
+                    setTimeout(() => {
+                        const tileIndex = this.robotSelectDiscard(player.hand);
+                        this.updateAction(`${player.name} 出牌...`);
+                        setTimeout(() => {
+                            this.discardTile(tileIndex);
+                        }, 500);
+                    }, 1000);
+                }
+            }
+
+            // 机器人杠牌
+            robotGang(playerIndex, tile) {
+                const player = this.players[playerIndex];
+
+                // 从手牌中移除三张相同的牌
+                let removed = 0;
+                const newHand = [];
+                for (let t of player.hand) {
+                    if (t.type === tile.type && t.value === tile.value && removed < 3) {
+                        removed++;
+                    } else {
+                        newHand.push(t);
+                    }
+                }
+                player.hand = newHand;
+
+                // 添加杠牌组合
+                player.melds.push([
+                    { ...tile },
+                    { ...tile },
+                    { ...tile },
+                    { ...tile }
+                ]);
+
+                // 从弃牌区移除该牌
+                this.players[this.lastDiscardPlayer].discard.pop();
+
+                this.showMessage(`${player.name} 杠牌！`);
+                this.currentPlayer = playerIndex;
+
+                // 杠牌后摸一张牌
+                if (this.deck.length > 0) {
+                    const newTile = this.deck.pop();
+                    player.hand.push(newTile);
+                    this.sortHand(player.hand);
+                    this.updateDeckCount();
+                }
+
+                this.updateUI();
+
+                // 杠牌后需要出一张牌
+                setTimeout(() => {
+                    const tileIndex = this.robotSelectDiscard(player.hand);
+                    this.updateAction(`${player.name} 出牌...`);
+                    setTimeout(() => {
+                        this.discardTile(tileIndex);
+                    }, 500);
+                }, 1000);
             }
 
             // 检查是否可以碰牌
