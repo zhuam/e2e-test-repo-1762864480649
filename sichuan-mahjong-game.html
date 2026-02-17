@@ -159,10 +159,6 @@
             background: linear-gradient(145deg, #e3f2fd 0%, #bbdefb 100%);
         }
 
-        .tile.dragging {
-            opacity: 0.5;
-        }
-
         .tile.hidden {
             background: linear-gradient(145deg, #1565C0 0%, #0D47A1 100%);
             color: transparent;
@@ -185,17 +181,6 @@
         .tile.wan { color: #c41e3a; }
         .tile.tong { color: #1976d2; }
         .tile.tiao { color: #388e3c; }
-
-        .tile .suit-icon {
-            font-size: 0.65em;
-            color: #888;
-            position: absolute;
-            bottom: 2px;
-        }
-
-        .tile.wan .suit-icon { content: '万'; }
-        .tile.tong .suit-icon { content: '筒'; }
-        .tile.tiao .suit-icon { content: '条'; }
 
         /* 玩家位置 */
         .player-top {
@@ -622,7 +607,7 @@
             isGameOver: false,
             waitingForAction: false,
             pendingActions: [],
-            extraTile: null  // 摸到的牌
+            extraTile: null
         };
 
         // ==================== 牌操作 ====================
@@ -636,7 +621,7 @@
                             suit: suit,
                             value: value,
                             symbol: TILE_SYMBOLS[suit][value - 1],
-                            id: `${suit}-${value}-${i}`
+                            id: `${suit}-${value}-${i}-${Date.now()}-${Math.random()}`
                         });
                     }
                 }
@@ -732,7 +717,7 @@
                         endGame(`🎉 ${player.name} 自摸胡牌！`);
                     }, 600);
                 } else {
-                    showMessage('你可以自摸胡牌！');
+                    showTip('你可以自摸胡牌！');
                     document.getElementById('btn-hu').disabled = false;
                     enablePlayerActions();
                 }
@@ -844,12 +829,13 @@
             }
 
             const player = gameState.players[gameState.currentPlayer];
-            const tileIndex = player.hand.indexOf(gameState.selectedTile);
+            const tileIndex = player.hand.findIndex(t => t.id === gameState.selectedTile.id);
 
             if (tileIndex === -1) return;
 
             const tile = player.hand.splice(tileIndex, 1)[0];
             gameState.extraTile = null;
+            gameState.selectedTile = null;
             discardTileInternal(gameState.currentPlayer, tile);
         }
 
@@ -933,12 +919,12 @@
             } else {
                 // 玩家动作
                 if (action.type === 'hu') {
-                    showTip('有人胡牌了！');
+                    showTip('你可以胡牌了！');
                     document.getElementById('btn-hu').disabled = false;
                     document.getElementById('btn-ignore').style.display = 'inline-block';
                     disableDiscardButton();
                 } else if (action.type === 'peng') {
-                    showTip('有人碰牌了！');
+                    showTip('你可以碰牌！');
                     document.getElementById('btn-peng').disabled = false;
                     document.getElementById('btn-ignore').style.display = 'inline-block';
                     disableDiscardButton();
@@ -956,7 +942,7 @@
         function performPeng(playerIndex, tile) {
             const player = gameState.players[playerIndex];
 
-            // 找到两张相同的牌
+            // 找到两张相同的牌（通过ID确保唯一性）
             const tilesToRemove = [];
             for (let i = 0; i < player.hand.length; i++) {
                 if (tilesToRemove.length < 2 &&
@@ -971,18 +957,18 @@
                 player.hand.splice(idx, 1);
             });
 
-            // 添加碰的牌（包括打出的那张）
-            player.hand.push(tile);
-            player.hand.push(tile);
-            sortHand(player.hand);
-
-            // 记录碰副露
+            // 记录碰副露（使用新对象，避免引用问题）
+            const meldTiles = [
+                { ...tile, id: tile.id + '-meld1' },
+                { ...tile, id: tile.id + '-meld2' },
+                { ...tile, id: tile.id + '-meld3' }
+            ];
             player.melds.push({
                 type: 'peng',
-                tiles: [tile, tile, tile]
+                tiles: meldTiles
             });
 
-            // 从弃牌堆移除被碰的牌
+            // 从弃牌池移除被碰的牌
             const discardIdx = gameState.discardPool.findIndex(t =>
                 t.suit === tile.suit && t.value === tile.value
             );
@@ -1013,30 +999,27 @@
             const player = gameState.players[playerIndex];
 
             // 移除四张相同的牌
-            const tilesToRemove = [];
-            for (let i = player.hand.length - 1; i >= 0; i--) {
-                if (tilesToRemove.length < 4 &&
-                    player.hand[i].suit === tile.suit &&
-                    player.hand[i].value === tile.value) {
-                    tilesToRemove.push(i);
+            const remainingHand = [];
+            let removedCount = 0;
+
+            for (const t of player.hand) {
+                if (removedCount < 4 && t.suit === tile.suit && t.value === tile.value) {
+                    removedCount++;
+                } else {
+                    remainingHand.push(t);
                 }
             }
 
-            tilesToRemove.forEach(idx => {
-                player.hand.splice(idx, 1);
-            });
-
-            // 添加杠牌
-            player.hand.push(tile);
-            player.hand.push(tile);
-            player.hand.push(tile);
-            player.hand.push(tile);
-            sortHand(player.hand);
+            player.hand = remainingHand;
 
             // 记录杠副露
+            const meldTiles = [];
+            for (let i = 0; i < 4; i++) {
+                meldTiles.push({ ...tile, id: tile.id + '-gang' + i });
+            }
             player.melds.push({
                 type: 'gang',
-                tiles: [tile, tile, tile, tile]
+                tiles: meldTiles
             });
 
             gameState.currentPlayer = playerIndex;
@@ -1056,20 +1039,7 @@
         function checkHu(hand) {
             if (hand.length % 3 !== 2) return false;
 
-            const sortedHand = [...hand].sort((a, b) => {
-                if (a.suit !== b.suit) {
-                    const suitOrder = { 'wan': 0, 'tong': 1, 'tiao': 2 };
-                    return suitOrder[a.suit] - suitOrder[b.suit];
-                }
-                return a.value - b.value;
-            });
-
-            return canHu(sortedHand);
-        }
-
-        function canHu(hand) {
-            if (hand.length === 0) return true;
-
+            // 创建牌计数
             const tileCounts = {};
             hand.forEach(tile => {
                 const key = `${tile.suit}-${tile.value}`;
@@ -1077,88 +1047,48 @@
             });
 
             // 尝试每种牌作为将牌
-            for (const tile of hand) {
-                const key = `${tile.suit}-${tile.value}`;
+            for (const key of Object.keys(tileCounts)) {
                 if (tileCounts[key] >= 2) {
-                    tileCounts[key] -= 2;
-                    const remainingHand = [];
-                    for (const [k, count] of Object.entries(tileCounts)) {
-                        for (let i = 0; i < count; i++) {
-                            const [suit, value] = k.split('-');
-                            remainingHand.push({ suit, value: parseInt(value) });
-                        }
-                    }
+                    const testCounts = { ...tileCounts };
+                    testCounts[key] -= 2;
 
-                    if (canFormSets(remainingHand)) {
-                        tileCounts[key] += 2;
+                    if (canFormSets(testCounts)) {
                         return true;
                     }
-                    tileCounts[key] += 2;
                 }
             }
 
             return false;
         }
 
-        function canFormSets(hand) {
-            if (hand.length === 0) return true;
+        function canFormSets(tileCounts) {
+            // 深拷贝
+            const counts = { ...tileCounts };
 
-            const tileCounts = {};
-            hand.forEach(tile => {
-                const key = `${tile.suit}-${tile.value}`;
-                tileCounts[key] = (tileCounts[key] || 0) + 1;
-            });
-
-            const sortedHand = [...hand].sort((a, b) => {
-                const suitOrder = { 'wan': 0, 'tong': 1, 'tiao': 2 };
-                if (a.suit !== b.suit) return suitOrder[a.suit] - suitOrder[b.suit];
-                return a.value - b.value;
-            });
-
-            for (const tile of sortedHand) {
-                const key = `${tile.suit}-${tile.value}`;
-                if (tileCounts[key] === 0) continue;
-
-                // 尝试刻子
-                if (tileCounts[key] >= 3) {
-                    tileCounts[key] -= 3;
-                    const remainingHand = [];
-                    for (const [k, count] of Object.entries(tileCounts)) {
-                        for (let i = 0; i < count; i++) {
-                            const [suit, value] = k.split('-');
-                            remainingHand.push({ suit, value: parseInt(value) });
-                        }
-                    }
-                    if (canFormSets(remainingHand)) return true;
-                    tileCounts[key] += 3;
+            // 尝试组成刻子
+            for (const key of Object.keys(counts)) {
+                while (counts[key] >= 3) {
+                    counts[key] -= 3;
                 }
-
-                // 尝试顺子
-                if (tile.value <= 7) {
-                    const key2 = `${tile.suit}-${tile.value + 1}`;
-                    const key3 = `${tile.suit}-${tile.value + 2}`;
-                    if ((tileCounts[key] > 0) && (tileCounts[key2] || 0) > 0 && (tileCounts[key3] || 0) > 0) {
-                        tileCounts[key]--;
-                        tileCounts[key2]--;
-                        tileCounts[key3]--;
-                        const remainingHand = [];
-                        for (const [k, count] of Object.entries(tileCounts)) {
-                            for (let i = 0; i < count; i++) {
-                                const [suit, value] = k.split('-');
-                                remainingHand.push({ suit, value: parseInt(value) });
-                            }
-                        }
-                        if (canFormSets(remainingHand)) return true;
-                        tileCounts[key]++;
-                        tileCounts[key2]++;
-                        tileCounts[key3]++;
-                    }
-                }
-
-                break;
             }
 
-            return false;
+            // 尝试组成顺子
+            for (const suit of ['wan', 'tong', 'tiao']) {
+                for (let value = 1; value <= 7; value++) {
+                    const key1 = `${suit}-${value}`;
+                    const key2 = `${suit}-${value + 1}`;
+                    const key3 = `${suit}-${value + 2}`;
+
+                    while ((counts[key1] || 0) > 0 && (counts[key2] || 0) > 0 && (counts[key3] || 0) > 0) {
+                        counts[key1]--;
+                        counts[key2]--;
+                        counts[key3]--;
+                    }
+                }
+            }
+
+            // 检查是否全部用完
+            return Object.values(counts).every(count => count === 0);
         }
 
         // ==================== 玩家动作 ====================
@@ -1301,6 +1231,11 @@
                         // 玩家可见
                         tileElement.textContent = tile.symbol;
                         tileElement.onclick = () => selectTile(tile, tileElement);
+
+                        // 恢复选中状态
+                        if (gameState.selectedTile && gameState.selectedTile.id === tile.id) {
+                            tileElement.classList.add('selected');
+                        }
                     } else {
                         // 机器人隐藏
                         tileElement.classList.add('hidden');
