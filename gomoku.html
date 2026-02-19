@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>五子棋游戏</title>
+    <title>Gomoku - Five in a Row</title>
     <style>
         * {
             margin: 0;
@@ -12,219 +12,151 @@
         }
 
         body {
-            font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
-            background: linear-gradient(135deg, #f5f5dc 0%, #e8dcc8 50%, #d4c4a8 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             padding: 20px;
+            color: #333;
         }
 
-        .game-container {
-            background: rgba(255, 255, 255, 0.95);
+        .container {
+            background: white;
             border-radius: 20px;
-            padding: 30px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 700px;
+            padding: 30px;
+            max-width: 900px;
             width: 100%;
         }
 
-        .header {
+        h1 {
             text-align: center;
-            margin-bottom: 20px;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .header h1 {
-            font-size: 36px;
-            color: #333;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 10px;
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 20px;
+            font-size: 0.9em;
         }
 
         .game-info {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            gap: 30px;
             margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f8f8;
-            border-radius: 10px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
-        .player-info {
+        .player-indicator {
             display: flex;
             align-items: center;
             gap: 10px;
             padding: 10px 20px;
-            border-radius: 8px;
+            border-radius: 25px;
+            font-weight: bold;
             transition: all 0.3s ease;
         }
 
-        .player-info.active {
-            background: #e3f2fd;
-            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        .player-indicator.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .player-stone {
-            width: 24px;
-            height: 24px;
+        .player-indicator:not(.active) {
+            background: #f0f0f0;
+            color: #999;
+        }
+
+        .stone-preview {
+            width: 25px;
+            height: 25px;
             border-radius: 50%;
-            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
-        .player-stone.black {
+        .stone-preview.black {
             background: radial-gradient(circle at 30% 30%, #666, #000);
         }
 
-        .player-stone.white {
-            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
-            border: 1px solid #bbb;
+        .stone-preview.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+            border: 1px solid #ccc;
         }
 
-        .player-name {
-            font-size: 16px;
+        .status {
+            text-align: center;
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
             font-weight: bold;
-            color: #333;
+            color: #667eea;
         }
 
         .board-container {
             display: flex;
             justify-content: center;
-            margin-bottom: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
         }
 
-        .board {
-            position: relative;
-            background: linear-gradient(135deg, #deb887 0%, #d2a679 50%, #c6956a 100%);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow:
-                0 10px 30px rgba(0, 0, 0, 0.3),
-                inset 0 2px 5px rgba(255, 255, 255, 0.2);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(15, 30px);
-            grid-template-rows: repeat(15, 30px);
-            gap: 0;
-            position: relative;
-        }
-
-        .cell {
-            width: 30px;
-            height: 30px;
-            position: relative;
+        #board {
+            background: linear-gradient(135deg, #DEB887 0%, #D2A679 100%);
+            border: 5px solid #8B4513;
+            border-radius: 5px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             cursor: pointer;
-            z-index: 2;
-        }
-
-        .cell:hover::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
-        }
-
-        .grid-lines {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            bottom: 20px;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .stone {
-            position: absolute;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 3;
-            transition: all 0.1s ease;
-        }
-
-        .stone.black {
-            background: radial-gradient(circle at 30% 30%, #666, #000);
-            box-shadow:
-                2px 2px 4px rgba(0, 0, 0, 0.5),
-                inset -1px -1px 2px rgba(255, 255, 255, 0.2);
-        }
-
-        .stone.white {
-            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
-            box-shadow:
-                2px 2px 4px rgba(0, 0, 0, 0.3),
-                inset -1px -1px 2px rgba(0, 0, 0, 0.1);
-            border: 1px solid #bbb;
-        }
-
-        .stone.last-move::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 6px;
-            height: 6px;
-            background: #ff5722;
-            border-radius: 50%;
-            box-shadow: 0 0 5px #ff5722;
         }
 
         .controls {
             display: flex;
             justify-content: center;
             gap: 15px;
+            margin-top: 20px;
             flex-wrap: wrap;
         }
 
-        .btn {
+        button {
             padding: 12px 30px;
-            font-size: 16px;
-            font-weight: bold;
             border: none;
             border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(102, 126, 234, 0.6);
         }
 
         .btn-secondary {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
         }
 
-        .btn-warning {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            color: #333;
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(245, 87, 108, 0.6);
         }
 
         .modal {
@@ -234,10 +166,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
             justify-content: center;
             align-items: center;
+            z-index: 1000;
         }
 
         .modal.show {
@@ -249,8 +181,8 @@
             padding: 40px;
             border-radius: 20px;
             text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             animation: modalPop 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         @keyframes modalPop {
@@ -264,384 +196,392 @@
             }
         }
 
-        .modal-content h2 {
-            font-size: 32px;
-            margin-bottom: 20px;
-            color: #333;
+        .modal h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 15px;
         }
 
-        .modal-content p {
-            font-size: 18px;
+        .modal p {
             color: #666;
-            margin-bottom: 30px;
+            font-size: 1.2em;
+            margin-bottom: 25px;
         }
 
-        @media (max-width: 600px) {
-            .game-container {
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-item .label {
+            font-size: 0.9em;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .score-item .score {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .container {
                 padding: 15px;
             }
 
-            .header h1 {
-                font-size: 24px;
+            .game-info {
+                justify-content: center;
             }
 
-            .grid {
-                grid-template-columns: repeat(15, 20px);
-                grid-template-rows: repeat(15, 20px);
+            .controls {
+                flex-direction: column;
             }
 
-            .cell {
-                width: 20px;
-                height: 20px;
-            }
-
-            .stone {
-                width: 16px;
-                height: 16px;
-            }
-
-            .btn {
-                padding: 10px 20px;
-                font-size: 14px;
+            button {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="header">
-            <h1>五子棋</h1>
-        </div>
+    <div class="container">
+        <h1>🎮 Gomoku</h1>
+        <p class="subtitle">Five in a Row - Classic Strategy Game</p>
 
         <div class="game-info">
-            <div class="player-info active" id="black-info">
-                <div class="player-stone black"></div>
-                <span class="player-name">黑方</span>
+            <div class="player-indicator active" id="player1">
+                <div class="stone-preview black"></div>
+                <span>Player 1 (Black)</span>
             </div>
-            <div class="player-info" id="white-info">
-                <div class="player-stone white"></div>
-                <span class="player-name">白方</span>
+            <div class="status" id="status">Black's Turn</div>
+            <div class="player-indicator" id="player2">
+                <div class="stone-preview white"></div>
+                <span>Player 2 (White)</span>
+            </div>
+        </div>
+
+        <div class="score-board">
+            <div class="score-item">
+                <div class="label">Black Wins</div>
+                <div class="score" id="blackScore">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">White Wins</div>
+                <div class="score" id="whiteScore">0</div>
             </div>
         </div>
 
         <div class="board-container">
-            <div class="board">
-                <div class="grid" id="grid"></div>
-            </div>
+            <canvas id="board" width="600" height="600"></canvas>
         </div>
 
         <div class="controls">
-            <button class="btn btn-primary" onclick="restartGame()">重新开始</button>
-            <button class="btn btn-warning" onclick="undoMove()">悔棋</button>
+            <button class="btn-primary" onclick="resetGame()">New Game</button>
+            <button class="btn-secondary" onclick="undoMove()">Undo Move</button>
         </div>
     </div>
 
-    <div class="modal" id="game-over-modal">
+    <div class="modal" id="winModal">
         <div class="modal-content">
-            <h2 id="winner-title">游戏结束</h2>
-            <p id="winner-message"></p>
-            <button class="btn btn-primary" onclick="closeModal()">再来一局</button>
+            <h2 id="winnerText">Black Wins!</h2>
+            <p>🎉 Congratulations! 🎉</p>
+            <button class="btn-primary" onclick="resetGame()">Play Again</button>
         </div>
     </div>
 
     <script>
-        // 游戏配置
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        
+        // Game constants
         const BOARD_SIZE = 15;
-        let board = []; // 棋盘状态，0=空，1=黑，2=白
-        let currentPlayer = 1; // 当前玩家，1=黑，2=白
-        let gameOver = false;
-        let moveHistory = []; // 历史记录，用于悔棋
+        const CELL_SIZE = 40;
+        const PADDING = 20;
+        const STONE_RADIUS = 16;
 
-        // 初始化游戏
-        function initGame() {
+        // Game state
+        let board = [];
+        let currentPlayer = 1; // 1 = black, 2 = white
+        let gameOver = false;
+        let moveHistory = [];
+        let scores = { black: 0, white: 0 };
+
+        // Initialize game
+        function init() {
             board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
             currentPlayer = 1;
             gameOver = false;
             moveHistory = [];
-            createGrid();
-            updatePlayerInfo();
+            drawBoard();
+            updateUI();
         }
 
-        // 创建棋盘格子
-        function createGrid() {
-            const grid = document.getElementById('grid');
-            grid.innerHTML = '';
+        // Draw the board
+        function drawBoard() {
+            // Clear canvas
+            ctx.fillStyle = '#DEB887';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            for (let row = 0; row < BOARD_SIZE; row++) {
-                for (let col = 0; col < BOARD_SIZE; col++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.dataset.row = row;
-                    cell.dataset.col = col;
-                    cell.addEventListener('click', () => handleCellClick(row, col));
-                    grid.appendChild(cell);
-                }
-            }
+            // Draw grid lines
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 1;
 
-            // 绘制网格线
-            drawGridLines();
-        }
-
-        // 绘制网格线
-        function drawGridLines() {
-            const grid = document.getElementById('grid');
-
-            // 移除旧的网格线
-            const oldLines = grid.querySelectorAll('.grid-line');
-            oldLines.forEach(line => line.remove());
-
-            // 创建网格线容器
-            const linesContainer = document.createElement('div');
-            linesContainer.className = 'grid-lines';
-            linesContainer.style.cssText = `
-                position: absolute;
-                top: 35px;
-                left: 35px;
-                width: ${(BOARD_SIZE - 1) * 30}px;
-                height: ${(BOARD_SIZE - 1) * 30}px;
-                pointer-events: none;
-                z-index: 1;
-            `;
-
-            // 水平线
             for (let i = 0; i < BOARD_SIZE; i++) {
-                const line = document.createElement('div');
-                line.className = 'grid-line';
-                line.style.cssText = `
-                    position: absolute;
-                    left: 0;
-                    top: ${i * 30}px;
-                    width: 100%;
-                    height: 1px;
-                    background: linear-gradient(to right, #8b4513, #654321, #8b4513);
-                    box-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
-                `;
-                linesContainer.appendChild(line);
+                // Vertical lines
+                ctx.beginPath();
+                ctx.moveTo(PADDING + i * CELL_SIZE, PADDING);
+                ctx.lineTo(PADDING + i * CELL_SIZE, PADDING + (BOARD_SIZE - 1) * CELL_SIZE);
+                ctx.stroke();
+
+                // Horizontal lines
+                ctx.beginPath();
+                ctx.moveTo(PADDING, PADDING + i * CELL_SIZE);
+                ctx.lineTo(PADDING + (BOARD_SIZE - 1) * CELL_SIZE, PADDING + i * CELL_SIZE);
+                ctx.stroke();
             }
 
-            // 垂直线
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                const line = document.createElement('div');
-                line.className = 'grid-line';
-                line.style.cssText = `
-                    position: absolute;
-                    top: 0;
-                    left: ${i * 30}px;
-                    width: 1px;
-                    height: 100%;
-                    background: linear-gradient(to bottom, #8b4513, #654321, #8b4513);
-                    box-shadow: 1px 0 1px rgba(255, 255, 255, 0.3);
-                `;
-                linesContainer.appendChild(line);
-            }
-
-            // 星位点（天元、四星、四角）
+            // Draw star points (for 15x15 board)
             const starPoints = [
-                [3, 3], [3, 7], [3, 11],
-                [7, 3], [7, 7], [7, 11],
-                [11, 3], [11, 7], [11, 11]
+                [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
             ];
 
-            starPoints.forEach(([r, c]) => {
-                const star = document.createElement('div');
-                star.className = 'star-point';
-                star.style.cssText = `
-                    position: absolute;
-                    top: ${r * 30 - 3}px;
-                    left: ${c * 30 - 3}px;
-                    width: 6px;
-                    height: 6px;
-                    background: #654321;
-                    border-radius: 50%;
-                    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
-                `;
-                linesContainer.appendChild(star);
+            ctx.fillStyle = '#8B4513';
+            starPoints.forEach(([x, y]) => {
+                ctx.beginPath();
+                ctx.arc(
+                    PADDING + x * CELL_SIZE,
+                    PADDING + y * CELL_SIZE,
+                    4,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
             });
 
-            grid.appendChild(linesContainer);
+            // Draw stones
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    if (board[i][j] !== 0) {
+                        drawStone(i, j, board[i][j]);
+                    }
+                }
+            }
+
+            // Highlight last move
+            if (moveHistory.length > 0) {
+                const lastMove = moveHistory[moveHistory.length - 1];
+                ctx.strokeStyle = '#FF0000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(
+                    PADDING + lastMove.x * CELL_SIZE,
+                    PADDING + lastMove.y * CELL_SIZE,
+                    STONE_RADIUS + 2,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.stroke();
+            }
         }
 
-        // 处理格子点击
-        function handleCellClick(row, col) {
-            if (gameOver || board[row][col] !== 0) {
-                return;
+        // Draw a single stone
+        function drawStone(x, y, player) {
+            const centerX = PADDING + x * CELL_SIZE;
+            const centerY = PADDING + y * CELL_SIZE;
+
+            // Draw stone shadow
+            ctx.beginPath();
+            ctx.arc(centerX + 2, centerY + 2, STONE_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fill();
+
+            // Draw stone
+            const gradient = ctx.createRadialGradient(
+                centerX - 5, centerY - 5, 0,
+                centerX, centerY, STONE_RADIUS
+            );
+
+            if (player === 1) {
+                // Black stone
+                gradient.addColorStop(0, '#666');
+                gradient.addColorStop(1, '#000');
+            } else {
+                // White stone
+                gradient.addColorStop(0, '#fff');
+                gradient.addColorStop(1, '#ddd');
             }
 
-            // 放置棋子
-            board[row][col] = currentPlayer;
-            moveHistory.push({row, col, player: currentPlayer});
-            renderStone(row, col, currentPlayer);
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, STONE_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
 
-            // 清除上一步的标记
-            clearLastMoveMark();
-            // 标记当前为最后一步
-            markLastMove(row, col);
+            // Add subtle border for white stones
+            if (player === 2) {
+                ctx.strokeStyle = '#ccc';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
 
-            // 检查胜负
-            if (checkWin(row, col)) {
+        // Handle click on board
+        canvas.addEventListener('click', (e) => {
+            if (gameOver) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const x = Math.round((e.clientX - rect.left) * scaleX - PADDING) / CELL_SIZE;
+            const y = Math.round((e.clientY - rect.top) * scaleY - PADDING) / CELL_SIZE;
+
+            if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE) {
+                if (board[Math.round(x)][Math.round(y)] === 0) {
+                    makeMove(Math.round(x), Math.round(y));
+                }
+            }
+        });
+
+        // Make a move
+        function makeMove(x, y) {
+            board[x][y] = currentPlayer;
+            moveHistory.push({ x, y, player: currentPlayer });
+            drawBoard();
+
+            if (checkWin(x, y)) {
                 gameOver = true;
-                showGameOver(currentPlayer);
+                const winner = currentPlayer === 1 ? 'Black' : 'White';
+                if (currentPlayer === 1) {
+                    scores.black++;
+                } else {
+                    scores.white++;
+                }
+                updateScoreBoard();
+                showWinModal(winner);
                 return;
             }
 
-            // 检查平局
             if (moveHistory.length === BOARD_SIZE * BOARD_SIZE) {
                 gameOver = true;
-                showGameOver(0);
+                showWinModal('Draw');
                 return;
             }
 
-            // 切换玩家
             currentPlayer = currentPlayer === 1 ? 2 : 1;
-            updatePlayerInfo();
+            updateUI();
         }
 
-        // 渲染棋子
-        function renderStone(row, col, player) {
-            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
-            if (cell) {
-                const stone = document.createElement('div');
-                stone.className = `stone ${player === 1 ? 'black' : 'white'}`;
-                cell.appendChild(stone);
-            }
-        }
-
-        // 清除最后一步标记
-        function clearLastMoveMark() {
-            const lastMark = document.querySelector('.stone.last-move');
-            if (lastMark) {
-                lastMark.classList.remove('last-move');
-            }
-        }
-
-        // 标记最后一步
-        function markLastMove(row, col) {
-            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
-            if (cell) {
-                const stone = cell.querySelector('.stone');
-                if (stone) {
-                    stone.classList.add('last-move');
-                }
-            }
-        }
-
-        // 检查胜负
-        function checkWin(row, col) {
-            const player = board[row][col];
+        // Check for win
+        function checkWin(x, y) {
+            const player = board[x][y];
             const directions = [
-                [0, 1],   // 水平
-                [1, 0],   // 垂直
-                [1, 1],   // 对角线
-                [1, -1]   // 反对角线
+                [1, 0],   // Horizontal
+                [0, 1],   // Vertical
+                [1, 1],   // Diagonal
+                [1, -1]   // Anti-diagonal
             ];
 
-            for (const [dr, dc] of directions) {
+            for (const [dx, dy] of directions) {
                 let count = 1;
 
-                // 正向检查
-                for (let i = 1; i < 5; i++) {
-                    const r = row + dr * i;
-                    const c = col + dc * i;
-                    if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === player) {
-                        count++;
-                    } else {
-                        break;
-                    }
+                // Check in positive direction
+                let i = 1;
+                while (true) {
+                    const nx = x + dx * i;
+                    const ny = y + dy * i;
+                    if (nx < 0 || nx >= BOARD_SIZE || ny < 0 || ny >= BOARD_SIZE) break;
+                    if (board[nx][ny] !== player) break;
+                    count++;
+                    i++;
                 }
 
-                // 反向检查
-                for (let i = 1; i < 5; i++) {
-                    const r = row - dr * i;
-                    const c = col - dc * i;
-                    if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === player) {
-                        count++;
-                    } else {
-                        break;
-                    }
+                // Check in negative direction
+                i = 1;
+                while (true) {
+                    const nx = x - dx * i;
+                    const ny = y - dy * i;
+                    if (nx < 0 || nx >= BOARD_SIZE || ny < 0 || ny >= BOARD_SIZE) break;
+                    if (board[nx][ny] !== player) break;
+                    count++;
+                    i++;
                 }
 
-                if (count >= 5) {
-                    return true;
-                }
+                if (count >= 5) return true;
             }
 
             return false;
         }
 
-        // 显示游戏结束
-        function showGameOver(winner) {
-            const modal = document.getElementById('game-over-modal');
-            const title = document.getElementById('winner-title');
-            const message = document.getElementById('winner-message');
+        // Update UI elements
+        function updateUI() {
+            const status = document.getElementById('status');
+            const player1 = document.getElementById('player1');
+            const player2 = document.getElementById('player2');
 
-            if (winner === 0) {
-                title.textContent = '平局！';
-                message.textContent = '棋盘已满，双方势均力敌！';
+            if (currentPlayer === 1) {
+                status.textContent = "Black's Turn";
+                player1.classList.add('active');
+                player2.classList.remove('active');
             } else {
-                title.textContent = winner === 1 ? '黑方获胜！' : '白方获胜！';
-                message.textContent = winner === 1 ? '黑方五子连珠，恭喜获胜！' : '白方五子连珠，恭喜获胜！';
+                status.textContent = "White's Turn";
+                player2.classList.add('active');
+                player1.classList.remove('active');
+            }
+        }
+
+        // Update score board
+        function updateScoreBoard() {
+            document.getElementById('blackScore').textContent = scores.black;
+            document.getElementById('whiteScore').textContent = scores.white;
+        }
+
+        // Show win modal
+        function showWinModal(winner) {
+            const modal = document.getElementById('winModal');
+            const winnerText = document.getElementById('winnerText');
+
+            if (winner === 'Draw') {
+                winnerText.textContent = "It's a Draw!";
+            } else {
+                winnerText.textContent = `${winner} Wins!`;
             }
 
             modal.classList.add('show');
         }
 
-        // 关闭弹窗
-        function closeModal() {
-            const modal = document.getElementById('game-over-modal');
-            modal.classList.remove('show');
-            restartGame();
+        // Reset game
+        function resetGame() {
+            document.getElementById('winModal').classList.remove('show');
+            init();
         }
 
-        // 更新玩家信息
-        function updatePlayerInfo() {
-            const blackInfo = document.getElementById('black-info');
-            const whiteInfo = document.getElementById('white-info');
-
-            if (currentPlayer === 1) {
-                blackInfo.classList.add('active');
-                whiteInfo.classList.remove('active');
-            } else {
-                blackInfo.classList.remove('active');
-                whiteInfo.classList.add('active');
-            }
-        }
-
-        // 重新开始游戏
-        function restartGame() {
-            initGame();
-        }
-
-        // 悔棋
+        // Undo last move
         function undoMove() {
-            if (moveHistory.length === 0 || gameOver) {
-                return;
-            }
+            if (moveHistory.length === 0 || gameOver) return;
 
-            // 悔一步棋
             const lastMove = moveHistory.pop();
-            board[lastMove.row][lastMove.col] = 0;
-
-            // 更新界面
-            const cell = document.querySelector(`.cell[data-row="${lastMove.row}"][data-col="${lastMove.col}"]`);
-            const stone = cell.querySelector('.stone');
-            if (stone) {
-                stone.remove();
-            }
-
-            // 标记新的最后一步
-            clearLastMoveMark();
-            if (moveHistory.length > 0) {
-                const newLastMove = moveHistory[moveHistory.length - 1];
-                markLastMove(newLastMove.row, newLastMove.col);
-            }
-
-            // 切换回上一个玩家
+            board[lastMove.x][lastMove.y] = 0;
             currentPlayer = lastMove.player;
-            updatePlayerInfo();
+            drawBoard();
+            updateUI();
         }
 
-        // 初始化游戏
-        initGame();
+        // Start the game
+        init();
     </script>
 </body>
 </html>
