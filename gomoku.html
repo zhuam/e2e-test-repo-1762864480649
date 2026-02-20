@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gomoku - Five in a Row</title>
+    <title>五子棋游戏 - Gomoku</title>
     <style>
         * {
             margin: 0;
@@ -18,32 +18,23 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             padding: 20px;
-            color: #333;
         }
 
         .container {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 30px;
-            max-width: 900px;
-            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         h1 {
             text-align: center;
-            color: #667eea;
-            margin-bottom: 10px;
+            color: #333;
+            margin-bottom: 20px;
             font-size: 2.5em;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #999;
-            margin-bottom: 20px;
-            font-size: 0.9em;
         }
 
         .game-info {
@@ -51,112 +42,201 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
         }
 
-        .player-indicator {
+        .current-player {
+            font-size: 1.2em;
+            font-weight: bold;
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: bold;
-            transition: all 0.3s ease;
         }
 
-        .player-indicator.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .player-indicator:not(.active) {
-            background: #f0f0f0;
-            color: #999;
-        }
-
-        .stone-preview {
-            width: 25px;
-            height: 25px;
+        .player-indicator {
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
+            display: inline-block;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
-        .stone-preview.black {
-            background: radial-gradient(circle at 30% 30%, #666, #000);
+        .player-indicator.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
         }
 
-        .stone-preview.white {
-            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
-            border: 1px solid #ccc;
+        .player-indicator.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+            border: 2px solid #999;
         }
 
         .status {
-            text-align: center;
-            padding: 10px 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            font-weight: bold;
+            font-size: 1.1em;
             color: #667eea;
+            font-weight: bold;
         }
 
         .board-container {
             display: flex;
             justify-content: center;
-            margin: 20px 0;
-            overflow-x: auto;
+            margin-bottom: 20px;
         }
 
         #board {
-            background: linear-gradient(135deg, #DEB887 0%, #D2A679 100%);
-            border: 5px solid #8B4513;
-            border-radius: 5px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: grid;
+            grid-template-columns: repeat(15, 35px);
+            grid-template-rows: repeat(15, 35px);
+            gap: 0;
+            background: #daa520;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .cell {
+            width: 35px;
+            height: 35px;
+            position: relative;
             cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .cell::before,
+        .cell::after {
+            content: '';
+            position: absolute;
+            background: #8b6914;
+        }
+
+        .cell::before {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            left: 0;
+        }
+
+        .cell::after {
+            width: 1px;
+            height: 100%;
+            left: 50%;
+            top: 0;
+        }
+
+        .cell:hover::before,
+        .cell:hover::after {
+            background: #667eea;
+        }
+
+        .cell.top::before {
+            height: 50%;
+            top: 50%;
+        }
+
+        .cell.bottom::before {
+            height: 50%;
+            top: 0;
+        }
+
+        .cell.left::after {
+            width: 50%;
+            left: 50%;
+        }
+
+        .cell.right::after {
+            width: 50%;
+            left: 0;
+        }
+
+        .stone {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            animation: placeStone 0.2s ease-out;
+        }
+
+        @keyframes placeStone {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .stone.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
+        }
+
+        .stone.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+            border: 1px solid #ccc;
+        }
+
+        .stone.winning {
+            animation: winning 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes winning {
+            from {
+                box-shadow: 0 0 10px #ff0;
+            }
+            to {
+                box-shadow: 0 0 20px #ff0, 0 0 30px #ff0;
+            }
         }
 
         .controls {
             display: flex;
-            justify-content: center;
             gap: 15px;
-            margin-top: 20px;
-            flex-wrap: wrap;
+            justify-content: center;
         }
 
         button {
             padding: 12px 30px;
-            border: none;
-            border-radius: 25px;
             font-size: 1em;
             font-weight: bold;
+            border: none;
+            border-radius: 25px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        #resetBtn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .btn-primary:hover {
+        #resetBtn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 7px 20px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
         }
 
-        .btn-secondary {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        #undoBtn {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
             color: white;
-            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
         }
 
-        .btn-secondary:hover {
+        #undoBtn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 7px 20px rgba(245, 87, 108, 0.6);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .modal {
@@ -167,9 +247,9 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
-            justify-content: center;
-            align-items: center;
             z-index: 1000;
+            align-items: center;
+            justify-content: center;
         }
 
         .modal.show {
@@ -181,407 +261,315 @@
             padding: 40px;
             border-radius: 20px;
             text-align: center;
-            animation: modalPop 0.3s ease;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalAppear 0.3s ease-out;
         }
 
-        @keyframes modalPop {
-            0% {
-                transform: scale(0.8);
+        @keyframes modalAppear {
+            from {
+                transform: scale(0.5);
                 opacity: 0;
             }
-            100% {
+            to {
                 transform: scale(1);
                 opacity: 1;
             }
         }
 
-        .modal h2 {
-            color: #667eea;
+        .modal-content h2 {
             font-size: 2em;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            color: #667eea;
         }
 
-        .modal p {
-            color: #666;
+        .modal-content p {
             font-size: 1.2em;
-            margin-bottom: 25px;
-        }
-
-        .score-board {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin: 20px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .score-item {
-            text-align: center;
-        }
-
-        .score-item .label {
-            font-size: 0.9em;
-            color: #999;
-            margin-bottom: 5px;
-        }
-
-        .score-item .score {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
+            margin-bottom: 30px;
+            color: #666;
         }
 
         @media (max-width: 768px) {
+            #board {
+                grid-template-columns: repeat(15, 25px);
+                grid-template-rows: repeat(15, 25px);
+                padding: 10px;
+            }
+
+            .cell {
+                width: 25px;
+                height: 25px;
+            }
+
+            .stone {
+                width: 20px;
+                height: 20px;
+            }
+
             h1 {
                 font-size: 1.8em;
-            }
-
-            .container {
-                padding: 15px;
-            }
-
-            .game-info {
-                justify-content: center;
-            }
-
-            .controls {
-                flex-direction: column;
-            }
-
-            button {
-                width: 100%;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎮 Gomoku</h1>
-        <p class="subtitle">Five in a Row - Classic Strategy Game</p>
-
+        <h1>🎮 五子棋游戏</h1>
+        
         <div class="game-info">
-            <div class="player-indicator active" id="player1">
-                <div class="stone-preview black"></div>
-                <span>Player 1 (Black)</span>
+            <div class="current-player">
+                <span>当前玩家:</span>
+                <span class="player-indicator black" id="playerIndicator"></span>
+                <span id="playerText">黑棋</span>
             </div>
-            <div class="status" id="status">Black's Turn</div>
-            <div class="player-indicator" id="player2">
-                <div class="stone-preview white"></div>
-                <span>Player 2 (White)</span>
-            </div>
-        </div>
-
-        <div class="score-board">
-            <div class="score-item">
-                <div class="label">Black Wins</div>
-                <div class="score" id="blackScore">0</div>
-            </div>
-            <div class="score-item">
-                <div class="label">White Wins</div>
-                <div class="score" id="whiteScore">0</div>
-            </div>
+            <div class="status" id="status">游戏进行中</div>
         </div>
 
         <div class="board-container">
-            <canvas id="board" width="600" height="600"></canvas>
+            <div id="board"></div>
         </div>
 
         <div class="controls">
-            <button class="btn-primary" onclick="resetGame()">New Game</button>
-            <button class="btn-secondary" onclick="undoMove()">Undo Move</button>
+            <button id="undoBtn">↶ 悔棋</button>
+            <button id="resetBtn">🔄 重新开始</button>
         </div>
     </div>
 
-    <div class="modal" id="winModal">
+    <div class="modal" id="modal">
         <div class="modal-content">
-            <h2 id="winnerText">Black Wins!</h2>
-            <p>🎉 Congratulations! 🎉</p>
-            <button class="btn-primary" onclick="resetGame()">Play Again</button>
+            <h2 id="modalTitle">🎉 游戏结束!</h2>
+            <p id="modalMessage">黑棋获胜!</p>
+            <button id="modalBtn">再来一局</button>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('board');
-        const ctx = canvas.getContext('2d');
-        
-        // Game constants
-        const BOARD_SIZE = 15;
-        const CELL_SIZE = 40;
-        const PADDING = 20;
-        const STONE_RADIUS = 16;
-
-        // Game state
-        let board = [];
-        let currentPlayer = 1; // 1 = black, 2 = white
-        let gameOver = false;
-        let moveHistory = [];
-        let scores = { black: 0, white: 0 };
-
-        // Initialize game
-        function init() {
-            board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
-            currentPlayer = 1;
-            gameOver = false;
-            moveHistory = [];
-            drawBoard();
-            updateUI();
-        }
-
-        // Draw the board
-        function drawBoard() {
-            // Clear canvas
-            ctx.fillStyle = '#DEB887';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw grid lines
-            ctx.strokeStyle = '#8B4513';
-            ctx.lineWidth = 1;
-
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                // Vertical lines
-                ctx.beginPath();
-                ctx.moveTo(PADDING + i * CELL_SIZE, PADDING);
-                ctx.lineTo(PADDING + i * CELL_SIZE, PADDING + (BOARD_SIZE - 1) * CELL_SIZE);
-                ctx.stroke();
-
-                // Horizontal lines
-                ctx.beginPath();
-                ctx.moveTo(PADDING, PADDING + i * CELL_SIZE);
-                ctx.lineTo(PADDING + (BOARD_SIZE - 1) * CELL_SIZE, PADDING + i * CELL_SIZE);
-                ctx.stroke();
+        class Gomoku {
+            constructor() {
+                this.size = 15;
+                this.board = [];
+                this.currentPlayer = 'black'; // 'black' or 'white'
+                this.gameOver = false;
+                this.moveHistory = [];
+                
+                this.init();
             }
 
-            // Draw star points (for 15x15 board)
-            const starPoints = [
-                [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
-            ];
+            init() {
+                this.createBoard();
+                this.bindEvents();
+                this.updatePlayerDisplay();
+            }
 
-            ctx.fillStyle = '#8B4513';
-            starPoints.forEach(([x, y]) => {
-                ctx.beginPath();
-                ctx.arc(
-                    PADDING + x * CELL_SIZE,
-                    PADDING + y * CELL_SIZE,
-                    4,
-                    0,
-                    Math.PI * 2
-                );
-                ctx.fill();
-            });
+            createBoard() {
+                const boardElement = document.getElementById('board');
+                boardElement.innerHTML = '';
+                
+                for (let row = 0; row < this.size; row++) {
+                    this.board[row] = [];
+                    for (let col = 0; col < this.size; col++) {
+                        this.board[row][col] = null;
+                        
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
 
-            // Draw stones
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                for (let j = 0; j < BOARD_SIZE; j++) {
-                    if (board[i][j] !== 0) {
-                        drawStone(i, j, board[i][j]);
+                        // Add border classes for edge cells
+                        if (row === 0) cell.classList.add('top');
+                        if (row === this.size - 1) cell.classList.add('bottom');
+                        if (col === 0) cell.classList.add('left');
+                        if (col === this.size - 1) cell.classList.add('right');
+
+                        cell.addEventListener('click', () => this.placeStone(row, col));
+                        boardElement.appendChild(cell);
                     }
                 }
             }
 
-            // Highlight last move
-            if (moveHistory.length > 0) {
-                const lastMove = moveHistory[moveHistory.length - 1];
-                ctx.strokeStyle = '#FF0000';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(
-                    PADDING + lastMove.x * CELL_SIZE,
-                    PADDING + lastMove.y * CELL_SIZE,
-                    STONE_RADIUS + 2,
-                    0,
-                    Math.PI * 2
-                );
-                ctx.stroke();
-            }
-        }
-
-        // Draw a single stone
-        function drawStone(x, y, player) {
-            const centerX = PADDING + x * CELL_SIZE;
-            const centerY = PADDING + y * CELL_SIZE;
-
-            // Draw stone shadow
-            ctx.beginPath();
-            ctx.arc(centerX + 2, centerY + 2, STONE_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.fill();
-
-            // Draw stone
-            const gradient = ctx.createRadialGradient(
-                centerX - 5, centerY - 5, 0,
-                centerX, centerY, STONE_RADIUS
-            );
-
-            if (player === 1) {
-                // Black stone
-                gradient.addColorStop(0, '#666');
-                gradient.addColorStop(1, '#000');
-            } else {
-                // White stone
-                gradient.addColorStop(0, '#fff');
-                gradient.addColorStop(1, '#ddd');
+            bindEvents() {
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('undoBtn').addEventListener('click', () => this.undo());
+                document.getElementById('modalBtn').addEventListener('click', () => {
+                    this.hideModal();
+                    this.reset();
+                });
             }
 
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, STONE_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            // Add subtle border for white stones
-            if (player === 2) {
-                ctx.strokeStyle = '#ccc';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-        }
-
-        // Handle click on board
-        canvas.addEventListener('click', (e) => {
-            if (gameOver) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-
-            const x = Math.round((e.clientX - rect.left) * scaleX - PADDING) / CELL_SIZE;
-            const y = Math.round((e.clientY - rect.top) * scaleY - PADDING) / CELL_SIZE;
-
-            if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE) {
-                if (board[Math.round(x)][Math.round(y)] === 0) {
-                    makeMove(Math.round(x), Math.round(y));
+            placeStone(row, col) {
+                if (this.gameOver || this.board[row][col] !== null) {
+                    return;
                 }
+
+                // Place the stone
+                this.board[row][col] = this.currentPlayer;
+                this.moveHistory.push({ row, col, player: this.currentPlayer });
+
+                // Update visual
+                const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                const stone = document.createElement('div');
+                stone.className = `stone ${this.currentPlayer}`;
+                cell.appendChild(stone);
+
+                // Check for win
+                if (this.checkWin(row, col)) {
+                    this.endGame(this.currentPlayer);
+                    return;
+                }
+
+                // Check for draw
+                if (this.moveHistory.length === this.size * this.size) {
+                    this.endGame('draw');
+                    return;
+                }
+
+                // Switch player
+                this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+                this.updatePlayerDisplay();
             }
-        });
 
-        // Make a move
-        function makeMove(x, y) {
-            board[x][y] = currentPlayer;
-            moveHistory.push({ x, y, player: currentPlayer });
-            drawBoard();
+            checkWin(row, col) {
+                const directions = [
+                    [0, 1],   // horizontal
+                    [1, 0],   // vertical
+                    [1, 1],   // diagonal top-left to bottom-right
+                    [1, -1]   // diagonal top-right to bottom-left
+                ];
 
-            if (checkWin(x, y)) {
-                gameOver = true;
-                const winner = currentPlayer === 1 ? 'Black' : 'White';
-                if (currentPlayer === 1) {
-                    scores.black++;
+                const player = this.board[row][col];
+
+                for (const [dx, dy] of directions) {
+                    let count = 1;
+                    let winningStones = [{ row, col }];
+
+                    // Check positive direction
+                    for (let i = 1; i < 5; i++) {
+                        const newRow = row + dx * i;
+                        const newCol = col + dy * i;
+                        
+                        if (this.isValidPosition(newRow, newCol) && 
+                            this.board[newRow][newCol] === player) {
+                            count++;
+                            winningStones.push({ row: newRow, col: newCol });
+                        } else {
+                            break;
+                        }
+                    }
+
+                    // Check negative direction
+                    for (let i = 1; i < 5; i++) {
+                        const newRow = row - dx * i;
+                        const newCol = col - dy * i;
+                        
+                        if (this.isValidPosition(newRow, newCol) && 
+                            this.board[newRow][newCol] === player) {
+                            count++;
+                            winningStones.push({ row: newRow, col: newCol });
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if (count >= 5) {
+                        this.highlightWinningStones(winningStones);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            isValidPosition(row, col) {
+                return row >= 0 && row < this.size && col >= 0 && col < this.size;
+            }
+
+            highlightWinningStones(stones) {
+                stones.forEach(({ row, col }) => {
+                    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    const stone = cell.querySelector('.stone');
+                    if (stone) {
+                        stone.classList.add('winning');
+                    }
+                });
+            }
+
+            updatePlayerDisplay() {
+                const indicator = document.getElementById('playerIndicator');
+                const text = document.getElementById('playerText');
+                const status = document.getElementById('status');
+
+                indicator.className = `player-indicator ${this.currentPlayer}`;
+                text.textContent = this.currentPlayer === 'black' ? '黑棋' : '白棋';
+                status.textContent = '游戏进行中';
+            }
+
+            endGame(result) {
+                this.gameOver = true;
+                const status = document.getElementById('status');
+
+                if (result === 'draw') {
+                    status.textContent = '平局!';
+                    this.showModal('🤝 平局!', '双方势均力敌!');
                 } else {
-                    scores.white++;
+                    const winner = result === 'black' ? '黑棋' : '白棋';
+                    status.textContent = `${winner}获胜!`;
+                    this.showModal('🎉 游戏结束!', `${winner}获胜!`);
                 }
-                updateScoreBoard();
-                showWinModal(winner);
-                return;
             }
 
-            if (moveHistory.length === BOARD_SIZE * BOARD_SIZE) {
-                gameOver = true;
-                showWinModal('Draw');
-                return;
+            showModal(title, message) {
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalMessage').textContent = message;
+                document.getElementById('modal').classList.add('show');
             }
 
-            currentPlayer = currentPlayer === 1 ? 2 : 1;
-            updateUI();
-        }
+            hideModal() {
+                document.getElementById('modal').classList.remove('show');
+            }
 
-        // Check for win
-        function checkWin(x, y) {
-            const player = board[x][y];
-            const directions = [
-                [1, 0],   // Horizontal
-                [0, 1],   // Vertical
-                [1, 1],   // Diagonal
-                [1, -1]   // Anti-diagonal
-            ];
-
-            for (const [dx, dy] of directions) {
-                let count = 1;
-
-                // Check in positive direction
-                let i = 1;
-                while (true) {
-                    const nx = x + dx * i;
-                    const ny = y + dy * i;
-                    if (nx < 0 || nx >= BOARD_SIZE || ny < 0 || ny >= BOARD_SIZE) break;
-                    if (board[nx][ny] !== player) break;
-                    count++;
-                    i++;
+            undo() {
+                if (this.moveHistory.length === 0 || this.gameOver) {
+                    return;
                 }
 
-                // Check in negative direction
-                i = 1;
-                while (true) {
-                    const nx = x - dx * i;
-                    const ny = y - dy * i;
-                    if (nx < 0 || nx >= BOARD_SIZE || ny < 0 || ny >= BOARD_SIZE) break;
-                    if (board[nx][ny] !== player) break;
-                    count++;
-                    i++;
+                const lastMove = this.moveHistory.pop();
+                this.board[lastMove.row][lastMove.col] = null;
+
+                const cell = document.querySelector(`[data-row="${lastMove.row}"][data-col="${lastMove.col}"]`);
+                const stone = cell.querySelector('.stone');
+                if (stone) {
+                    stone.remove();
                 }
 
-                if (count >= 5) return true;
+                // Switch back to previous player
+                this.currentPlayer = lastMove.player;
+                this.updatePlayerDisplay();
             }
 
-            return false;
-        }
+            reset() {
+                // Clear board state
+                for (let row = 0; row < this.size; row++) {
+                    for (let col = 0; col < this.size; col++) {
+                        this.board[row][col] = null;
+                    }
+                }
 
-        // Update UI elements
-        function updateUI() {
-            const status = document.getElementById('status');
-            const player1 = document.getElementById('player1');
-            const player2 = document.getElementById('player2');
+                // Remove all stones from visual board
+                const stones = document.querySelectorAll('.stone');
+                stones.forEach(stone => stone.remove());
 
-            if (currentPlayer === 1) {
-                status.textContent = "Black's Turn";
-                player1.classList.add('active');
-                player2.classList.remove('active');
-            } else {
-                status.textContent = "White's Turn";
-                player2.classList.add('active');
-                player1.classList.remove('active');
+                // Reset game state
+                this.currentPlayer = 'black';
+                this.gameOver = false;
+                this.moveHistory = [];
+
+                this.updatePlayerDisplay();
+                this.hideModal();
             }
         }
 
-        // Update score board
-        function updateScoreBoard() {
-            document.getElementById('blackScore').textContent = scores.black;
-            document.getElementById('whiteScore').textContent = scores.white;
-        }
-
-        // Show win modal
-        function showWinModal(winner) {
-            const modal = document.getElementById('winModal');
-            const winnerText = document.getElementById('winnerText');
-
-            if (winner === 'Draw') {
-                winnerText.textContent = "It's a Draw!";
-            } else {
-                winnerText.textContent = `${winner} Wins!`;
-            }
-
-            modal.classList.add('show');
-        }
-
-        // Reset game
-        function resetGame() {
-            document.getElementById('winModal').classList.remove('show');
-            init();
-        }
-
-        // Undo last move
-        function undoMove() {
-            if (moveHistory.length === 0 || gameOver) return;
-
-            const lastMove = moveHistory.pop();
-            board[lastMove.x][lastMove.y] = 0;
-            currentPlayer = lastMove.player;
-            drawBoard();
-            updateUI();
-        }
-
-        // Start the game
-        init();
+        // Initialize the game when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new Gomoku();
+        });
     </script>
 </body>
 </html>
