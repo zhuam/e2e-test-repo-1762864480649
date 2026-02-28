@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>围棋 - Go/Weiqi</title>
+    <style>
+        :root {
+            --board-color: #DEB887;
+            --line-color: #2c1810;
+            --black-stone: #1a1a1a;
+            --white-stone: #f5f5f5;
+            --accent-color: #8B4513;
+            --bg-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .board-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            font-size: 2em;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .board-wrapper {
+            position: relative;
+            padding: 25px;
+            background: var(--board-color);
+            border-radius: 8px;
+            box-shadow: 
+                inset 0 0 30px rgba(139, 69, 19, 0.3),
+                0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(19, 32px);
+            grid-template-rows: repeat(19, 32px);
+            background: transparent;
+            position: relative;
+        }
+
+        .cell {
+            width: 32px;
+            height: 32px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            background: var(--line-color);
+        }
+
+        .cell::before {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            left: 0;
+        }
+
+        .cell::after {
+            content: '';
+            position: absolute;
+            background: var(--line-color);
+            width: 1px;
+            height: 100%;
+            left: 50%;
+            top: 0;
+        }
+
+        /* Edge lines */
+        .cell.top::before { width: 50%; left: 50%; }
+        .cell.bottom::before { width: 50%; left: 0; }
+        .cell.left::after { height: 50%; top: 50%; }
+        .cell.right::after { height: 50%; top: 0; }
+
+        /* Star points */
+        .cell.star::before {
+            z-index: 1;
+        }
+
+        .cell[data-row="3"][data-col="3"]::before,
+        .cell[data-row="3"][data-col="9"]::before,
+        .cell[data-row="3"][data-col="15"]::before,
+        .cell[data-row="9"][data-col="3"]::before,
+        .cell[data-row="9"][data-col="9"]::before,
+        .cell[data-row="9"][data-col="15"]::before,
+        .cell[data-row="15"][data-col="3"]::before,
+        .cell[data-row="15"][data-col="9"]::before,
+        .cell[data-row="15"][data-col="15"]::before {
+            width: 8px;
+            height: 8px;
+            background: var(--line-color);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .stone {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+            animation: placeStone 0.15s ease-out;
+            cursor: pointer;
+        }
+
+        @keyframes placeStone {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            70% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .stone.black {
+            background: radial-gradient(circle at 30% 30%, #4a4a4a, #000);
+        }
+
+        .stone.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+            border: 1px solid #aaa;
+        }
+
+        .stone.last-move::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #e74c3c;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .stone.white.last-move::after {
+            background: #e74c3c;
+        }
+
+        .sidebar {
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel h3 {
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .player-info.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .player-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .player-indicator.black {
+            background: radial-gradient(circle at 30% 30%, #4a4a4a, #000);
+        }
+
+        .player-indicator.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+            border: 1px solid #999;
+        }
+
+        .score-display {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-item .label {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .score-item .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .captured-info {
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 0.95em;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .rules-info {
+            font-size: 0.85em;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .rules-info li {
+            margin: 6px 0;
+            padding-left: 5px;
+        }
+
+        .game-status {
+            text-align: center;
+            padding: 10px;
+            background: #e8f4fd;
+            border-radius: 8px;
+            color: #1976d2;
+            font-weight: 500;
+        }
+
+        .game-status.ended {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            animation: modalPop 0.3s ease-out;
+            max-width: 400px;
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-content h2 {
+            font-size: 2em;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+        }
+
+        .modal-content p {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        /* Territory markers */
+        .territory {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            opacity: 0.5;
+        }
+
+        .territory.black {
+            background: black;
+        }
+
+        .territory.white {
+            background: white;
+            border: 1px solid #999;
+        }
+
+        /* Dead stones marker */
+        .stone.dead {
+            opacity: 0.4;
+        }
+
+        .stone.dead::before {
+            content: '✕';
+            position: absolute;
+            color: red;
+            font-size: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+
+        @media (max-width: 900px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-width: 400px;
+            }
+            
+            #board {
+                grid-template-columns: repeat(19, 22px);
+                grid-template-rows: repeat(19, 22px);
+            }
+            
+            .cell {
+                width: 22px;
+                height: 22px;
+            }
+            
+            .stone {
+                width: 19px;
+                height: 19px;
+            }
+            
+            .cell[data-row="3"][data-col="3"]::before,
+            .cell[data-row="3"][data-col="9"]::before,
+            .cell[data-row="3"][data-col="15"]::before,
+            .cell[data-row="9"][data-col="3"]::before,
+            .cell[data-row="9"][data-col="9"]::before,
+            .cell[data-row="9"][data-col="15"]::before,
+            .cell[data-row="15"][data-col="3"]::before,
+            .cell[data-row="15"][data-col="9"]::before,
+            .cell[data-row="15"][data-col="15"]::before {
+                width: 6px;
+                height: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="board-section">
+            <h1>🎯 围棋</h1>
+            <div class="board-wrapper">
+                <div id="board"></div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel">
+                <h3>👥 对局信息</h3>
+                <div class="player-info active" id="blackPlayer">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="player-indicator black"></span>
+                        <span>黑方</span>
+                    </div>
+                    <span id="blackTerritory">0</span>
+                </div>
+                <div class="player-info" id="whitePlayer">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="player-indicator white"></span>
+                        <span>白方</span>
+                    </div>
+                    <span id="whiteTerritory">0</span>
+                </div>
+                <div class="captured-info">
+                    <div>黑方提子: <strong id="blackCaptured">0</strong></div>
+                    <div>白方提子: <strong id="whiteCaptured">0</strong></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>📊 棋局状态</h3>
+                <div class="game-status" id="gameStatus">游戏进行中 - 黑方落子</div>
+                <div class="score-display">
+                    <div class="score-item">
+                        <div class="label">黑方实地</div>
+                        <div class="value" id="blackScore">0</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="label">白方实地</div>
+                        <div class="value" id="whiteScore">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>🎮 操作</h3>
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="game.undo()" id="undoBtn">↶ 悔棋</button>
+                    <button class="btn-primary" onclick="game.reset()">🔄 重新开始</button>
+                    <button class="btn-outline" onclick="game.toggleDeadMode()" id="deadBtn">☠ 标记死子</button>
+                    <button class="btn-outline" onclick="game.countTerritory()">📐 点目</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>📖 规则说明</h3>
+                <ul class="rules-info">
+                    <li>黑方先行，双方轮流落子</li>
+                    <li>棋子上下左右相连构成棋串</li>
+                    <li>棋串无气则被提掉</li>
+                    <li>禁止全局同型（打劫）</li>
+                    <li>双方确认终局后点目计胜负</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">🎉 游戏结束</h2>
+            <p id="modalMessage"></p>
+            <button class="btn-primary" onclick="game.closeModal()">确定</button>
+        </div>
+    </div>
+
+    <script>
+        class GoGame {
+            constructor() {
+                this.boardSize = 19;
+                this.board = [];
+                this.currentPlayer = 'black';
+                this.moveHistory = [];
+                this.capturedStones = { black: 0, white: 0 };
+                this.gameOver = false;
+                this.deadMode = false;
+                this.deadStones = new Set();
+                this.lastMove = null;
+                this.koPosition = null;
+
+                this.init();
+            }
+
+            init() {
+                this.createBoard();
+                this.renderBoard();
+                this.updateDisplay();
+            }
+
+            createBoard() {
+                this.board = [];
+                for (let row = 0; row < this.boardSize; row++) {
+                    this.board[row] = [];
+                    for (let col = 0; col < this.boardSize; col++) {
+                        this.board[row][col] = null;
+                    }
+                }
+            }
+
+            renderBoard() {
+                const boardElement = document.getElementById('board');
+                boardElement.innerHTML = '';
+
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+
+                        if (row === 0) cell.classList.add('top');
+                        if (row === this.boardSize - 1) cell.classList.add('bottom');
+                        if (col === 0) cell.classList.add('left');
+                        if (col === this.boardSize - 1) cell.classList.add('right');
+
+                        cell.addEventListener('click', () => this.handleClick(row, col));
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            handleClick(row, col) {
+                if (this.gameOver) return;
+
+                if (this.deadMode) {
+                    this.toggleDeadStone(row, col);
+                    return;
+                }
+
+                if (this.board[row][col] !== null) return;
+
+                if (this.koPosition && this.koPosition.row === row && this.koPosition.col === col) {
+                    return;
+                }
+
+                const newBoard = this.copyBoard();
+                newBoard[row][col] = this.currentPlayer;
+
+                const captured = this.removeCapturedStones(newBoard, row, col, this.currentPlayer);
+                
+                if (this.checkSelfCapture(newBoard, row, col, this.currentPlayer)) {
+                    return;
+                }
+
+                if (this.isKoViolation(newBoard, row, col)) {
+                    return;
+                }
+
+                this.board[row][col] = this.currentPlayer;
+                
+                const opponent = this.currentPlayer === 'black' ? 'white' : 'black';
+                this.capturedStones[this.currentPlayer] += captured;
+
+                this.moveHistory.push({
+                    row, col,
+                    player: this.currentPlayer,
+                    captured,
+                    koPosition: this.koPosition
+                });
+
+                if (captured > 0) {
+                    this.koPosition = null;
+                } else {
+                    this.koPosition = this.getKoPosition(row, col, opponent);
+                }
+
+                this.lastMove = { row, col };
+                this.renderStones();
+                this.updateDisplay();
+
+                if (this.isBoardFull()) {
+                    this.endGame();
+                } else {
+                    this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+                    this.updateDisplay();
+                }
+            }
+
+            toggleDeadStone(row, col) {
+                if (this.board[row][col] === null) return;
+
+                const key = `${row},${col}`;
+                if (this.deadStones.has(key)) {
+                    this.deadStones.delete(key);
+                } else {
+                    this.deadStones.add(key);
+                }
+                this.renderStones();
+                this.countTerritory();
+            }
+
+            getStoneGroup(board, row, col, player) {
+                const group = [];
+                const visited = new Set();
+                const stack = [[row, col]];
+
+                while (stack.length > 0) {
+                    const [r, c] = stack.pop();
+                    const key = `${r},${c}`;
+                    
+                    if (visited.has(key)) continue;
+                    if (r < 0 || r >= this.boardSize || c < 0 || c >= this.boardSize) continue;
+                    if (board[r][c] !== player) continue;
+
+                    visited.add(key);
+                    group.push({ row: r, col: c });
+
+                    stack.push([r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]);
+                }
+
+                return group;
+            }
+
+            countLiberties(board, row, col) {
+                const player = board[row][col];
+                if (player === null) return 0;
+
+                const group = this.getStoneGroup(board, row, col, player);
+                const liberties = new Set();
+
+                group.forEach(({ row: r, col: c }) => {
+                    const neighbors = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
+                    neighbors.forEach(([nr, nc]) => {
+                        if (nr >= 0 && nr < this.boardSize && nc >= 0 && nc < this.boardSize) {
+                            if (board[nr][nc] === null) {
+                                liberties.add(`${nr},${nc}`);
+                            }
+                        }
+                    });
+                });
+
+                return liberties.size;
+            }
+
+            removeCapturedStones(board, row, col, player) {
+                const opponent = player === 'black' ? 'white' : 'black';
+                const neighbors = [[row - 1, col], [row + 1, col], [row, col - 1], [row, col + 1]];
+                let captured = 0;
+
+                neighbors.forEach(([r, c]) => {
+                    if (r >= 0 && r < this.boardSize && c >= 0 && c < this.boardSize) {
+                        if (board[r][c] === opponent) {
+                            const liberties = this.countLiberties(board, r, c);
+                            if (liberties === 0) {
+                                const group = this.getStoneGroup(board, r, c, opponent);
+                                group.forEach(({ row: gr, col: gc }) => {
+                                    board[gr][gc] = null;
+                                    captured++;
+                                });
+                            }
+                        }
+                    }
+                });
+
+                return captured;
+            }
+
+            checkSelfCapture(board, row, col, player) {
+                const liberties = this.countLiberties(board, row, col);
+                return liberties === 0;
+            }
+
+            isKoViolation(board, row, col) {
+                if (!this.koPosition) return false;
+                return this.koPosition.row === row && this.koPosition.col === col;
+            }
+
+            getKoPosition(row, col, opponent) {
+                const testBoard = this.copyBoard();
+                testBoard[row][col] = this.currentPlayer;
+                
+                const neighbors = [[row - 1, col], [row + 1, col], [row, col - 1], [row, col + 1]];
+                let singleStoneCaptured = false;
+
+                neighbors.forEach(([r, c]) => {
+                    if (r >= 0 && r < this.boardSize && c >= 0 && c < this.boardSize) {
+                        if (testBoard[r][c] === opponent) {
+                            const liberties = this.countLiberties(testBoard, r, c);
+                            if (liberties === 0) {
+                                const group = this.getStoneGroup(testBoard, r, c, opponent);
+                                if (group.length === 1) {
+                                    singleStoneCaptured = true;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                if (singleStoneCaptured) {
+                    return { row, col };
+                }
+                return null;
+            }
+
+            copyBoard() {
+                return this.board.map(row => [...row]);
+            }
+
+            renderStones() {
+                document.querySelectorAll('.stone').forEach(s => s.remove());
+                document.querySelectorAll('.territory').forEach(t => t.remove());
+                document.querySelectorAll('.dead').forEach(s => s.classList.remove('dead'));
+
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.board[row][col]) {
+                            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                            const stone = document.createElement('div');
+                            stone.className = `stone ${this.board[row][col]}`;
+                            
+                            if (this.lastMove && this.lastMove.row === row && this.lastMove.col === col) {
+                                stone.classList.add('last-move');
+                            }
+
+                            const key = `${row},${col}`;
+                            if (this.deadStones.has(key)) {
+                                stone.classList.add('dead');
+                            }
+
+                            cell.appendChild(stone);
+                        }
+                    }
+                }
+            }
+
+            undo() {
+                if (this.moveHistory.length === 0) return;
+
+                const lastMove = this.moveHistory.pop();
+                this.board[lastMove.row][lastMove.col] = null;
+                this.capturedStones[lastMove.player] -= lastMove.captured;
+                this.koPosition = lastMove.koPosition;
+                this.currentPlayer = lastMove.player;
+                this.lastMove = this.moveHistory.length > 0 ? 
+                    { row: this.moveHistory[this.moveHistory.length - 1].row, 
+                      col: this.moveHistory[this.moveHistory.length - 1].col } : null;
+
+                this.renderStones();
+                this.updateDisplay();
+                this.gameOver = false;
+                document.getElementById('gameStatus').classList.remove('ended');
+            }
+
+            reset() {
+                this.board = [];
+                this.currentPlayer = 'black';
+                this.moveHistory = [];
+                this.capturedStones = { black: 0, white: 0 };
+                this.gameOver = false;
+                this.deadStones = new Set();
+                this.lastMove = null;
+                this.koPosition = null;
+
+                this.createBoard();
+                this.renderStones();
+                this.updateDisplay();
+                
+                document.getElementById('gameStatus').textContent = '游戏进行中 - 黑方落子';
+                document.getElementById('gameStatus').classList.remove('ended');
+            }
+
+            toggleDeadMode() {
+                this.deadMode = !this.deadMode;
+                document.getElementById('deadBtn').style.background = 
+                    this.deadMode ? 'var(--accent-color)' : '';
+                document.getElementById('deadBtn').style.color = 
+                    this.deadMode ? 'white' : '';
+            }
+
+            isBoardFull() {
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.board[row][col] === null) return false;
+                    }
+                }
+                return true;
+            }
+
+            countTerritory() {
+                const counted = new Set();
+                const territory = { black: 0, white: 0 };
+
+                const countRegion = (startRow, startCol) => {
+                    const stack = [[startRow, startCol]];
+                    const region = [];
+                    let blackBorder = false;
+                    let whiteBorder = false;
+                    let emptyCount = 0;
+
+                    while (stack.length > 0) {
+                        const [row, col] = stack.pop();
+                        const key = `${row},${col}`;
+
+                        if (counted.has(key)) continue;
+                        if (row < 0 || row >= this.boardSize || col < 0 || col >= this.boardSize) continue;
+
+                        const cell = this.board[row][col];
+                        if (cell === 'black') {
+                            blackBorder = true;
+                            continue;
+                        }
+                        if (cell === 'white') {
+                            whiteBorder = true;
+                            continue;
+                        }
+
+                        counted.add(key);
+                        region.push({ row, col });
+                        emptyCount++;
+
+                        stack.push([row - 1, col], [row + 1, col], [row, col - 1], [row, col + 1]);
+                    }
+
+                    if (region.length === 0) return null;
+
+                    if (blackBorder && !whiteBorder) return { owner: 'black', count: emptyCount };
+                    if (whiteBorder && !blackBorder) return { owner: 'white', count: emptyCount };
+                    return null;
+                };
+
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        const key = `${row},${col}`;
+                        if (!counted.has(key) && this.board[row][col] === null) {
+                            const result = countRegion(row, col);
+                            if (result) {
+                                territory[result.owner] += result.count;
+                            }
+                        }
+                    }
+                }
+
+                this.deadStones.forEach(key => {
+                    const [row, col] = key.split(',').map(Number);
+                    const stone = this.board[row][col];
+                    if (stone === 'black') territory.white++;
+                    if (stone === 'white') territory.black++;
+                });
+
+                const komi = 3.5;
+                const blackTotal = territory.black + this.capturedStones.white + this.deadStones.size;
+                const whiteTotal = territory.white + this.capturedStones.black + komi;
+
+                document.getElementById('blackScore').textContent = blackTotal;
+                document.getElementById('whiteScore').textContent = whiteTotal;
+                document.getElementById('blackTerritory').textContent = territory.black;
+                document.getElementById('whiteTerritory').textContent = territory.white;
+
+                let winner;
+                if (blackTotal > whiteTotal) {
+                    winner = `黑方获胜! (${blackTotal} vs ${whiteTotal})`;
+                } else if (whiteTotal > blackTotal) {
+                    winner = `白方获胜! (+贴目 ${komi}) (${whiteTotal} vs ${blackTotal})`;
+                } else {
+                    winner = `平局! (各 ${blackTotal} 子)`;
+                }
+
+                document.getElementById('modalTitle').textContent = '📐 点目结果';
+                document.getElementById('modalMessage').innerHTML = `
+                    <div style="text-align: left;">
+                        <div>黑方: 实地 ${territory.black} + 提子 ${this.capturedStones.white} + 死子 ${this.deadStones.size} = <strong>${blackTotal}</strong></div>
+                        <div>白方: 实地 ${territory.white} + 提子 ${this.capturedStones.black} + 贴目 ${komi} = <strong>${whiteTotal}</strong></div>
+                        <hr style="margin: 15px 0;">
+                        <div style="font-size: 1.3em; font-weight: bold; text-align: center;">${winner}</div>
+                    </div>
+                `;
+                document.getElementById('modal').classList.add('show');
+            }
+
+            endGame() {
+                this.gameOver = true;
+                document.getElementById('gameStatus').textContent = '游戏结束';
+                document.getElementById('gameStatus').classList.add('ended');
+            }
+
+            updateDisplay() {
+                document.getElementById('blackCaptured').textContent = this.capturedStones.black;
+                document.getElementById('whiteCaptured').textContent = this.capturedStones.white;
+
+                const blackPlayer = document.getElementById('blackPlayer');
+                const whitePlayer = document.getElementById('whitePlayer');
+                const status = document.getElementById('gameStatus');
+
+                if (this.currentPlayer === 'black') {
+                    blackPlayer.classList.add('active');
+                    whitePlayer.classList.remove('active');
+                    if (!this.gameOver) {
+                        status.textContent = '游戏进行中 - 黑方落子';
+                    }
+                } else {
+                    blackPlayer.classList.remove('active');
+                    whitePlayer.classList.add('active');
+                    if (!this.gameOver) {
+                        status.textContent = '游戏进行中 - 白方落子';
+                    }
+                }
+
+                document.getElementById('undoBtn').disabled = this.moveHistory.length === 0;
+            }
+
+            closeModal() {
+                document.getElementById('modal').classList.remove('show');
+            }
+        }
+
+        const game = new GoGame();
+    </script>
+</body>
+</html>
