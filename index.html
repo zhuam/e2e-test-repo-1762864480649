@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋游戏 - Gobang/Gomoku</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .games {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .game-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-color: #667eea;
+        }
+
+        .game-card h2 {
+            margin-bottom: 10px;
+            color: #667eea;
+            font-size: 1.5em;
+        }
+
+        .game-card p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .rules {
+            text-align: left;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .rules h3 {
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+
+        .rules ul {
+            margin-left: 20px;
+            color: #666;
+        }
+
+        .rules li {
+            margin: 8px 0;
+        }
+
+        footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 五子棋游戏</h1>
+        <p class="subtitle">选择你喜欢的版本开始游戏</p>
+
+        <div class="games">
+            <a href="gobang.html" class="game-card">
+                <h2>⚫ 五子棋经典版</h2>
+                <p>传统风格界面，包含悔棋功能、胜负判断和获胜动画效果</p>
+            </a>
+
+            <a href="gomoku.html" class="game-card">
+                <h2>⚪ 五子棋现代版</h2>
+                <p>现代化界面设计，支持移动端适配，带有模态框提示</p>
+            </a>
+        </div>
+
+        <div class="rules">
+            <h3>📜 游戏规则</h3>
+            <ul>
+                <li>黑方先行，双方轮流落子</li>
+                <li>点击棋盘交叉点放置棋子</li>
+                <li>先连成五子（横、竖、斜任意方向）者获胜</li>
+                <li>棋盘为 15×15 标准规格</li>
+                <li>支持悔棋功能，可撤销上一步操作</li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>纯 HTML/CSS/JS 实现 | 单文件游戏</p>
+        </footer>
+    </div>
+</body>
+</html>
