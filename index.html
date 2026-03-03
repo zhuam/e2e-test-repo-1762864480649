@@ -1277,8 +1277,11 @@
                 }
             }
 
-            // 机器人或玩家出牌
-            if (player.isBot && !gameState.isGameOver) {
+            // 机器人或玩家出牌（如果是已胡状态则跳过）
+            if (player.hu) {
+                // 玩家已胡，跳过
+                setTimeout(() => continueAfterHu(playerIndex), 500);
+            } else if (player.isBot && !gameState.isGameOver) {
                 setTimeout(() => {
                     botPlay(playerIndex);
                 }, 800);
@@ -1292,6 +1295,7 @@
             if (gameState.isGameOver || gameState.gamePhase !== 'playing') return;
 
             const player = gameState.players[playerIndex];
+            if (player.hu) return; // 已胡的玩家不再出牌
 
             // 选择要打出的牌（优先打缺门牌）
             const tileToDiscard = selectBotDiscardTile(player);
@@ -1746,8 +1750,10 @@
             hideTip();
             hideActionButtons();
 
-            // 吃完出牌
-            if (player.isBot) {
+            // 吃完出牌（血战到底：检查是否已胡）
+            if (player.hu) {
+                setTimeout(() => continueAfterHu(playerIndex), 500);
+            } else if (player.isBot) {
                 setTimeout(() => {
                     botPlay(playerIndex);
                 }, 800);
@@ -1804,8 +1810,10 @@
             hideTip();
             hideActionButtons();
 
-            // 碰后出牌
-            if (player.isBot) {
+            // 碰后出牌（血战到底：检查是否已胡）
+            if (player.hu) {
+                setTimeout(() => continueAfterHu(playerIndex), 500);
+            } else if (player.isBot) {
                 setTimeout(() => {
                     botPlay(playerIndex);
                 }, 800);
@@ -2072,17 +2080,107 @@
             const infoEl = document.getElementById(`player-${playerIndex}-info`);
             infoEl.classList.add('hu');
 
-            gameState.isGameOver = true;
-            disablePlayerActions();
+            // 血战到底模式：检查是否只剩一家未胡
+            const activePlayers = gameState.players.filter(p => !p.hu).length;
+
+            if (activePlayers <= 1) {
+                // 只剩一家或全部胡牌，游戏结束
+                gameState.isGameOver = true;
+                disablePlayerActions();
+                showFinalResult();
+            } else {
+                // 血战继续！3秒后继续游戏
+                showTip(`血战到底！还有 ${activePlayers} 家未胡，继续游戏...`);
+                setTimeout(() => {
+                    document.getElementById('game-message').classList.remove('show');
+                    // 跳过该玩家，继续下一个未胡的玩家
+                    continueAfterHu(playerIndex);
+                }, 2500);
+            }
+        }
+
+        // 血战到底：胡牌后继续游戏
+        function continueAfterHu(huPlayerIndex) {
+            if (gameState.isGameOver) return;
+
+            // 找到下一个未胡的玩家
+            let nextPlayer = (huPlayerIndex + 1) % 4;
+            let attempts = 0;
+            while (gameState.players[nextPlayer].hu && attempts < 4) {
+                nextPlayer = (nextPlayer + 1) % 4;
+                attempts++;
+            }
+
+            gameState.currentPlayer = nextPlayer;
+            gameState.extraTile = null;
+            gameState.lastDiscardedTile = null;
+            gameState.waitingForAction = false;
+            gameState.pendingActions = [];
+
+            updateUI();
+            drawTile(nextPlayer);
+        }
+
+        // 显示最终结算结果
+        function showFinalResult() {
+            const activePlayers = gameState.players.filter(p => !p.hu);
+            let message = '<div class="hu-text">🏆 游戏结束</div>';
+
+            if (activePlayers.length === 0) {
+                // 全部胡牌
+                message += '<div class="hu-details">流局，所有玩家都已胡牌！</div>';
+            } else if (activePlayers.length === 1) {
+                // 只剩一家，赢家
+                const winner = activePlayers[0];
+                message += `<div class="hu-details">${winner.name} 是唯一的未胡玩家获胜！</div>`;
+            }
+
+            // 显示所有玩家的胡牌情况
+            gameState.players.forEach((player, index) => {
+                if (player.hu) {
+                    message += `<div style="margin:8px 0;color:#aaa">${player.name}: ${player.huType || '胡牌'}</div>`;
+                }
+            });
+
+            document.getElementById('message-text').innerHTML = message;
+            document.getElementById('game-message').classList.add('show');
         }
 
         function calculateHuScore(player) {
             let score = 0;
             let details = [];
+            const allTiles = [...player.hand];
+            player.melds.forEach(meld => allTiles.push(...meld.tiles));
 
             // 基础分
             score += 2;
             details.push('基础分：2分');
+
+            // 检查是否清一色（只有一种花色）
+            const suits = new Set(allTiles.map(t => t.suit));
+            if (suits.size === 1) {
+                score += 4;
+                details.push('清一色：+4分');
+            }
+
+            // 检查是否七对子
+            const tileCounts = {};
+            player.hand.forEach(t => {
+                const key = getTileKey(t);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+            const pairs = Object.values(tileCounts).filter(c => c >= 2).length;
+            if (pairs === 7) {
+                score += 4;
+                details.push('七对子：+4分');
+            }
+
+            // 检查是否龙七对（有四张相同的牌）
+            const quads = Object.values(tileCounts).filter(c => c === 4).length;
+            if (quads > 0 && pairs >= 7 - quads) {
+                score += quads * 2;
+                details.push(`龙七对（${quads}对）：+${quads * 2}分`);
+            }
 
             // 自摸加1分
             if (player.huType === '自摸') {
@@ -2102,13 +2200,19 @@
                 details.push(`杠牌：+${gangCount}分`);
             }
 
-            // 碰牌碰碰胡
+            // 碰碰胡（全部是刻子或杠）
             if (player.melds.length >= 3 && player.melds.every(m => m.type === 'peng' || m.type === 'gang')) {
                 score += 2;
                 details.push('碰碰胡：+2分');
             }
 
-            details.push(`<strong>总计：${score}分</strong>`);
+            // 查花猪（如果有花猪需要扣分）
+            if (suits.has(player.queSuit)) {
+                score = Math.max(0, score - 2);
+                details.push('花猪（未缺门）：-2分');
+            }
+
+            details.push(`<strong style="color:#ffd700">总计：${score}分</strong>`);
             return details.join('<br>');
         }
 
@@ -2187,7 +2291,23 @@
         }
 
         function goToNextPlayer() {
-            gameState.currentPlayer = (gameState.currentPlayer + 1) % 4;
+            // 血战到底：跳过已胡的玩家
+            let nextPlayer = (gameState.currentPlayer + 1) % 4;
+            let attempts = 0;
+            while (gameState.players[nextPlayer].hu && attempts < 4) {
+                nextPlayer = (nextPlayer + 1) % 4;
+                attempts++;
+            }
+
+            // 检查是否所有玩家都已胡
+            const activePlayers = gameState.players.filter(p => !p.hu).length;
+            if (activePlayers === 0) {
+                gameState.isGameOver = true;
+                showFinalResult();
+                return;
+            }
+
+            gameState.currentPlayer = nextPlayer;
             gameState.selectedTile = null;
             gameState.extraTile = null;
 
