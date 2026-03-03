@@ -19,9 +19,6 @@
             --gold-dark: #b8860b;
             --blue: #4facfe;
             --red: #dc143c;
-            --wan-color: #c41e3a;
-            --tong-color: #1565c0;
-            --tiao-color: #2e7d32;
             --tile-shadow: 2px 3px 6px rgba(0, 0, 0, 0.4);
         }
 
@@ -188,13 +185,13 @@
 
         /* 花色颜色 */
         .tile.wan {
-            color: var(--wan-color);
+            color: #c41e3a;
         }
         .tile.tong {
-            color: var(--tong-color);
+            color: #1565c0;
         }
         .tile.tiao {
-            color: var(--tiao-color);
+            color: #2e7d32;
         }
 
         .tile .tile-content {
@@ -740,7 +737,7 @@
 
         <div class="game-table">
             <button class="rules-btn" onclick="showRules()">📜 规则</button>
-
+            
             <div class="deck-info">
                 牌墙: <span id="deck-count">108</span> 张
             </div>
@@ -851,7 +848,7 @@
         // ==================== 游戏配置 ====================
         const SUIT_NAMES = { wan: '万', tong: '筒', tiao: '条' };
         const NUMBERS = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
-
+        
         const TILE_SYMBOLS = {
             wan:  ['🀇', '🀈', '🀉', '🀊', '🀋', '🀌', '🀍', '🀎', '🀏'],
             tong: ['🀙', '🀚', '🀛', '🀜', '🀝', '🀞', '🀟', '🀠', '🀡'],
@@ -948,7 +945,7 @@
             hideTip();
 
             dealTiles();
-
+            
             // 确定缺哪一门（玩家选择，机器人随机）
             determineMissingSuits();
 
@@ -1001,592 +998,639 @@
             // 检查自摸
             if (checkHu(player.hand, player.melds, player.missingSuit)) {
                 if (player.isBot) {
-                    setTimeout(() => botHu(playerIndex, true), 500);
+                    setTimeout(() => {
+                        player.hasHu = true;
+                        player.huType = '自摸';
+                        showHuMessage(playerIndex, '自摸');
+                    }, 600);
                 } else {
-                    enableButton('btn-hu', true);
+                    showTip('🎉 你可以自摸胡牌！');
+                    document.getElementById('btn-hu').disabled = false;
+                    enablePlayerActions();
                 }
+                return;
             }
 
             // 检查暗杠
-            if (canGang(player.hand, null, player.melds, true)) {
+            const gangTile = findAnGang(player.hand);
+            if (gangTile) {
                 if (player.isBot) {
-                    setTimeout(() => botGang(playerIndex, true), 500);
+                    if (Math.random() > 0.5) {
+                        setTimeout(() => performGang(playerIndex, gangTile, true), 600);
+                        return;
+                    }
                 } else {
-                    enableButton('btn-gang', true);
+                    document.getElementById('btn-gang').disabled = false;
                 }
             }
 
-            if (player.isBot) {
-                setTimeout(() => botPlay(playerIndex), 1000);
+            // 检查补杠
+            const buGangTile = findBuGang(player);
+            if (buGangTile && !gangTile) {
+                if (player.isBot) {
+                    if (Math.random() > 0.6) {
+                        setTimeout(() => performBuGang(playerIndex, buGangTile), 600);
+                        return;
+                    }
+                } else {
+                    document.getElementById('btn-gang').disabled = false;
+                }
+            }
+
+            if (player.isBot && !gameState.isGameOver) {
+                setTimeout(() => botPlay(playerIndex), 900);
+            } else if (!player.isBot && !gameState.isGameOver) {
+                enablePlayerActions();
             }
         }
 
-        function discardTile() {
+        // ==================== 机器人AI ====================
+        function botPlay(playerIndex) {
             if (gameState.isGameOver) return;
-            if (gameState.players[gameState.currentPlayer].isBot) return;
+            const player = gameState.players[playerIndex];
+            const tileToDiscard = selectBotDiscardTile(player);
+            if (tileToDiscard) {
+                discardTileInternal(playerIndex, tileToDiscard);
+            }
+        }
+
+        function selectBotDiscardTile(player) {
+            const hand = player.hand;
+            const missingSuit = player.missingSuit;
+            
+            // 统计牌
+            const tileCounts = {};
+            hand.forEach(tile => {
+                const key = getTileKey(tile);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+
+            // 策略1: 优先打出缺门的牌
+            const missingTiles = hand.filter(t => t.suit === missingSuit);
+            if (missingTiles.length > 0) {
+                // 打孤张
+                const loneMissing = missingTiles.filter(t => tileCounts[getTileKey(t)] === 1);
+                if (loneMissing.length > 0) {
+                    return loneMissing[Math.floor(Math.random() * loneMissing.length)];
+                }
+                return missingTiles[Math.floor(Math.random() * missingTiles.length)];
+            }
+
+            // 策略2: 打孤张
+            const loneTiles = hand.filter(tile => {
+                const key = getTileKey(tile);
+                if (tileCounts[key] > 1) return false;
+                let hasNeighbor = false;
+                if (tile.value >= 2 && tileCounts[`${tile.suit}-${tile.value - 1}`]) hasNeighbor = true;
+                if (tile.value <= 8 && tileCounts[`${tile.suit}-${tile.value + 1}`]) hasNeighbor = true;
+                return !hasNeighbor;
+            });
+
+            if (loneTiles.length > 0) {
+                return loneTiles[Math.floor(Math.random() * loneTiles.length)];
+            }
+
+            // 策略3: 打单张对子
+            const singlePairs = hand.filter(t => tileCounts[getTileKey(t)] === 2);
+            if (singlePairs.length > 0) {
+                return singlePairs[Math.floor(Math.random() * singlePairs.length)];
+            }
+
+            return hand[Math.floor(Math.random() * hand.length)];
+        }
+
+        function findAnGang(hand) {
+            const tileCounts = {};
+            hand.forEach(tile => {
+                const key = getTileKey(tile);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+            for (const tile of hand) {
+                if (tileCounts[getTileKey(tile)] === 4) {
+                    return tile;
+                }
+            }
+            return null;
+        }
+
+        function findBuGang(player) {
+            for (const meld of player.melds) {
+                if (meld.type === 'peng') {
+                    const pengTile = meld.tiles[0];
+                    const count = player.hand.filter(t => 
+                        t.suit === pengTile.suit && t.value === pengTile.value
+                    ).length;
+                    if (count >= 1) {
+                        return pengTile;
+                    }
+                }
+            }
+            return null;
+        }
+
+        // ==================== 出牌 ====================
+        function discardTile() {
             if (!gameState.selectedTile) {
-                showTip('请先选择一张牌！');
+                showTip('请先选择一张牌');
                 return;
             }
 
             const player = gameState.players[gameState.currentPlayer];
             const tileIndex = player.hand.findIndex(t => t.id === gameState.selectedTile.id);
-            
             if (tileIndex === -1) return;
 
             const tile = player.hand.splice(tileIndex, 1)[0];
-            player.discarded.push(tile);
-            gameState.lastDiscardedTile = tile;
-            gameState.lastDiscardedPlayer = gameState.currentPlayer;
-            gameState.discardPool.push(tile);
-            gameState.selectedTile = null;
             gameState.extraTile = null;
+            gameState.selectedTile = null;
+            discardTileInternal(gameState.currentPlayer, tile);
+        }
+
+        function discardTileInternal(playerIndex, tile) {
+            const player = gameState.players[playerIndex];
+            player.discarded.push(tile);
+            gameState.discardPool.push(tile);
+            gameState.lastDiscardedTile = tile;
+            gameState.lastDiscardedPlayer = playerIndex;
 
             updateUI();
 
-            // 检查其他玩家是否可以碰/杠/胡
-            checkOtherPlayersActions();
+            setTimeout(() => checkActionsAfterDiscard(playerIndex, tile), 400);
         }
 
-        function checkOtherPlayersActions() {
-            const discardedTile = gameState.lastDiscardedTile;
-            const discardedBy = gameState.lastDiscardedPlayer;
-            let hasAction = false;
+        // ==================== 动作检测 ====================
+        function checkActionsAfterDiscard(discardPlayerIndex, tile) {
             gameState.pendingActions = [];
 
             for (let i = 0; i < 4; i++) {
-                if (i === discardedBy) continue;
-                
+                if (i === discardPlayerIndex) continue;
                 const player = gameState.players[i];
-                if (player.hasHu) continue;
 
-                let canPeng = false;
-                let canGang = false;
-                let canHu = false;
-
-                // 检查碰
-                const sameTiles = player.hand.filter(t => getTileKey(t) === getTileKey(discardedTile));
-                if (sameTiles.length >= 2) {
-                    canPeng = true;
-                }
-
-                // 检查杠
-                if (sameTiles.length >= 3) {
-                    canGang = true;
-                }
-
-                // 检查胡
-                const testHand = [...player.hand, discardedTile];
+                // 胡牌检测
+                const testHand = [...player.hand, tile];
                 if (checkHu(testHand, player.melds, player.missingSuit)) {
-                    canHu = true;
+                    gameState.pendingActions.push({ player: i, type: 'hu', tile, priority: 0 });
                 }
 
-                if (canHu || canGang || canPeng) {
-                    hasAction = true;
-                    gameState.pendingActions.push({
-                        playerIndex: i,
-                        canHu: canHu,
-                        canGang: canGang,
-                        canPeng: canPeng,
-                        tile: discardedTile
-                    });
+                // 杠检测
+                const gangCount = player.hand.filter(t => 
+                    t.suit === tile.suit && t.value === tile.value
+                ).length;
+                if (gangCount === 3) {
+                    gameState.pendingActions.push({ player: i, type: 'gang', tile, priority: 1 });
+                }
+
+                // 碰检测
+                const pengCount = player.hand.filter(t => 
+                    t.suit === tile.suit && t.value === tile.value
+                ).length;
+                if (pengCount >= 2) {
+                    gameState.pendingActions.push({ player: i, type: 'peng', tile, priority: 2 });
                 }
             }
 
-            if (hasAction) {
-                gameState.waitingForAction = true;
-                processPendingActions();
+            gameState.pendingActions.sort((a, b) => a.priority - b.priority);
+
+            if (gameState.pendingActions.length > 0) {
+                processNextAction();
             } else {
-                nextTurn();
+                setTimeout(() => nextPlayer(), 400);
             }
         }
 
-        function processPendingActions() {
-            if (gameState.pendingActions.length === 0) {
-                gameState.waitingForAction = false;
-                nextTurn();
+        function processNextAction() {
+            if (gameState.pendingActions.length === 0 || gameState.isGameOver) {
+                nextPlayer();
                 return;
             }
 
-            // 按优先级排序：胡 > 杠 > 碰
-            gameState.pendingActions.sort((a, b) => {
-                if (a.canHu && !b.canHu) return -1;
-                if (!a.canHu && b.canHu) return 1;
-                if (a.canGang && !b.canGang) return -1;
-                if (!a.canGang && b.canGang) return 1;
-                return 0;
-            });
-
-            const action = gameState.pendingActions[0];
-            const player = gameState.players[action.playerIndex];
+            const action = gameState.pendingActions.shift();
+            const player = gameState.players[action.player];
 
             if (player.isBot) {
                 setTimeout(() => {
-                    if (action.canHu) {
-                        botHu(action.playerIndex, false);
-                    } else if (action.canGang) {
-                        botGang(action.playerIndex, false);
-                    } else if (action.canPeng) {
-                        botPeng(action.playerIndex);
+                    if (action.type === 'hu') {
+                        player.hand.push(action.tile);
+                        player.hasHu = true;
+                        player.huType = '胡牌';
+                        showHuMessage(action.player, '胡牌');
+                    } else if (action.type === 'gang' && Math.random() > 0.3) {
+                        performGang(action.player, action.tile, false);
+                    } else if (action.type === 'peng' && Math.random() > 0.4) {
+                        performPeng(action.player, action.tile);
+                    } else {
+                        processNextAction();
                     }
-                }, 800);
+                }, 600);
             } else {
-                // 显示操作按钮
-                enableButton('btn-hu', action.canHu);
-                enableButton('btn-gang', action.canGang);
-                enableButton('btn-peng', action.canPeng);
-                document.getElementById('btn-ignore').style.display = 'inline-block';
+                if (action.type === 'hu') {
+                    showTip('🎉 你可以胡牌！');
+                    document.getElementById('btn-hu').disabled = false;
+                    document.getElementById('btn-ignore').style.display = 'inline-block';
+                    disableDiscardButton();
+                } else if (action.type === 'gang') {
+                    showTip('你可以杠牌！');
+                    document.getElementById('btn-gang').disabled = false;
+                    document.getElementById('btn-ignore').style.display = 'inline-block';
+                    disableDiscardButton();
+                } else if (action.type === 'peng') {
+                    showTip('你可以碰牌！');
+                    document.getElementById('btn-peng').disabled = false;
+                    document.getElementById('btn-ignore').style.display = 'inline-block';
+                    disableDiscardButton();
+                }
+                // 保存剩余动作
+                gameState.waitingForAction = true;
             }
         }
 
-        // ==================== 玩家操作 ====================
-        function pengAction() {
-            const action = gameState.pendingActions.find(a => !gameState.players[a.playerIndex].isBot);
-            if (!action) return;
+        function canPeng(hand, tile) {
+            return hand.filter(t => t.suit === tile.suit && t.value === tile.value).length >= 2;
+        }
 
-            const player = gameState.players[action.playerIndex];
-            const tile = gameState.lastDiscardedTile;
-            
-            // 找到两张相同的牌
-            const sameTiles = player.hand.filter(t => getTileKey(t) === getTileKey(tile)).slice(0, 2);
-            
-            // 从手牌中移除
-            sameTiles.forEach(t => {
-                const idx = player.hand.findIndex(ht => ht.id === t.id);
-                if (idx !== -1) player.hand.splice(idx, 1);
+        function canGang(hand, tile) {
+            return hand.filter(t => t.suit === tile.suit && t.value === tile.value).length >= 3;
+        }
+
+        // ==================== 碰杠操作 ====================
+        function performPeng(playerIndex, tile) {
+            const player = gameState.players[playerIndex];
+
+            // 移除两张牌
+            let removed = 0;
+            player.hand = player.hand.filter(t => {
+                if (removed < 2 && t.suit === tile.suit && t.value === tile.value) {
+                    removed++;
+                    return false;
+                }
+                return true;
             });
 
-            // 添加到碰牌区
+            // 记录碰
             player.melds.push({
                 type: 'peng',
-                tiles: [...sameTiles, tile]
+                tiles: [
+                    { ...tile, id: tile.id + '-p1' },
+                    { ...tile, id: tile.id + '-p2' },
+                    { ...tile, id: tile.id + '-p3' }
+                ]
             });
 
-            // 从弃牌区移除
-            const discardIdx = gameState.discardPool.findIndex(t => t.id === tile.id);
-            if (discardIdx !== -1) gameState.discardPool.splice(discardIdx, 1);
+            // 从弃牌池移除
+            const idx = gameState.discardPool.findIndex(t => 
+                t.suit === tile.suit && t.value === tile.value
+            );
+            if (idx > -1) gameState.discardPool.splice(idx, 1);
 
-            gameState.currentPlayer = action.playerIndex;
-            gameState.waitingForAction = false;
-            gameState.pendingActions = [];
+            gameState.currentPlayer = playerIndex;
             gameState.lastDiscardedTile = null;
-            gameState.lastDiscardedPlayer = null;
+            gameState.extraTile = null;
+            gameState.pendingActions = [];
+            gameState.waitingForAction = false;
 
-            resetActionButtons();
+            updateUI();
+            hideTip();
+            document.getElementById('btn-ignore').style.display = 'none';
+
+            if (player.isBot) {
+                setTimeout(() => botPlay(playerIndex), 800);
+            } else {
+                enablePlayerActions();
+            }
+        }
+
+        function performGang(playerIndex, tile, isAnGang) {
+            const player = gameState.players[playerIndex];
+
+            // 移除四张牌
+            let removed = 0;
+            player.hand = player.hand.filter(t => {
+                if (removed < 4 && t.suit === tile.suit && t.value === tile.value) {
+                    removed++;
+                    return false;
+                }
+                return true;
+            });
+
+            // 记录杠
+            player.melds.push({
+                type: 'gang',
+                isAnGang: isAnGang,
+                tiles: [
+                    { ...tile, id: tile.id + '-g1' },
+                    { ...tile, id: tile.id + '-g2' },
+                    { ...tile, id: tile.id + '-g3' },
+                    { ...tile, id: tile.id + '-g4' }
+                ]
+            });
+
+            if (!isAnGang) {
+                const idx = gameState.discardPool.findIndex(t => 
+                    t.suit === tile.suit && t.value === tile.value
+                );
+                if (idx > -1) gameState.discardPool.splice(idx, 1);
+            }
+
+            gameState.currentPlayer = playerIndex;
+            gameState.lastDiscardedTile = null;
+            gameState.extraTile = null;
+            gameState.pendingActions = [];
+            gameState.waitingForAction = false;
+            gameState.gangDraw = true;
+
+            updateUI();
+            hideTip();
+            document.getElementById('btn-ignore').style.display = 'none';
+
+            // 杠后摸牌
+            setTimeout(() => drawTile(playerIndex), 600);
+        }
+
+        function performBuGang(playerIndex, tile) {
+            const player = gameState.players[playerIndex];
+
+            // 移除一张牌
+            let removed = false;
+            player.hand = player.hand.filter(t => {
+                if (!removed && t.suit === tile.suit && t.value === tile.value) {
+                    removed = true;
+                    return false;
+                }
+                return true;
+            });
+
+            // 更新碰为杠
+            for (const meld of player.melds) {
+                if (meld.type === 'peng' && 
+                    meld.tiles[0].suit === tile.suit && 
+                    meld.tiles[0].value === tile.value) {
+                    meld.type = 'gang';
+                    meld.isAnGang = false;
+                    meld.tiles.push({ ...tile, id: tile.id + '-bu' });
+                    break;
+                }
+            }
+
+            gameState.currentPlayer = playerIndex;
+            gameState.extraTile = null;
+            gameState.gangDraw = true;
+
             updateUI();
 
-            // 需要打出一张牌
-            if (!player.isBot) {
-                showTip('请打出一张牌');
-            } else {
-                setTimeout(() => botPlay(action.playerIndex), 800);
-            }
+            setTimeout(() => drawTile(playerIndex), 600);
+        }
+
+        function pengAction() {
+            if (!gameState.lastDiscardedTile) return;
+            document.getElementById('btn-ignore').style.display = 'none';
+            performPeng(0, gameState.lastDiscardedTile);
         }
 
         function gangAction() {
-            const player = gameState.players[gameState.currentPlayer];
+            const player = gameState.players[0];
             
-            // 检查是暗杠还是明杠
-            if (gameState.waitingForAction) {
-                // 明杠（别人打出的牌）
-                const action = gameState.pendingActions.find(a => !gameState.players[a.playerIndex].isBot);
-                if (!action) return;
-
-                const tile = gameState.lastDiscardedTile;
-                const sameTiles = player.hand.filter(t => getTileKey(t) === getTileKey(tile));
-                
-                sameTiles.forEach(t => {
-                    const idx = player.hand.findIndex(ht => ht.id === t.id);
-                    if (idx !== -1) player.hand.splice(idx, 1);
-                });
-
-                player.melds.push({
-                    type: 'gang',
-                    tiles: [...sameTiles, tile]
-                });
-
-                const discardIdx = gameState.discardPool.findIndex(t => t.id === tile.id);
-                if (discardIdx !== -1) gameState.discardPool.splice(discardIdx, 1);
-
-                gameState.currentPlayer = action.playerIndex;
-                gameState.waitingForAction = false;
-                gameState.pendingActions = [];
-                gameState.gangDraw = true;
-
-                resetActionButtons();
-                updateUI();
-
-                // 杠后摸牌
-                setTimeout(() => drawTile(gameState.currentPlayer), 500);
-            } else {
-                // 暗杠
-                const tileCounts = {};
-                player.hand.forEach(t => {
-                    const key = getTileKey(t);
-                    tileCounts[key] = tileCounts[key] || [];
-                    tileCounts[key].push(t);
-                });
-
-                for (let key in tileCounts) {
-                    if (tileCounts[key].length === 4) {
-                        tileCounts[key].forEach(t => {
-                            const idx = player.hand.findIndex(ht => ht.id === t.id);
-                            if (idx !== -1) player.hand.splice(idx, 1);
-                        });
-
-                        player.melds.push({
-                            type: 'gang',
-                            tiles: [...tileCounts[key]]
-                        });
-
-                        gameState.gangDraw = true;
-                        resetActionButtons();
-                        updateUI();
-
-                        // 杠后摸牌
-                        setTimeout(() => drawTile(gameState.currentPlayer), 500);
-                        break;
-                    }
-                }
-            }
-        }
-
-        function huAction() {
-            let playerIndex;
-            let isZimo = false;
-
-            if (gameState.waitingForAction) {
-                // 点炮胡
-                const action = gameState.pendingActions.find(a => !gameState.players[a.playerIndex].isBot);
-                if (!action) return;
-                playerIndex = action.playerIndex;
-            } else {
-                // 自摸
-                playerIndex = gameState.currentPlayer;
-                isZimo = true;
+            // 优先检查暗杠
+            const anGang = findAnGang(player.hand);
+            if (anGang) {
+                performGang(0, anGang, true);
+                return;
             }
 
-            const player = gameState.players[playerIndex];
-            player.hasHu = true;
-            player.huType = isZimo ? '自摸' : '点炮';
-
-            gameState.isGameOver = true;
-
-            // 显示胡牌信息
-            let message = `<div class="hu-text">🎉 ${player.name} 胡了！</div>`;
-            message += `<div class="hu-details">`;
-            message += `<div>胡牌方式：${isZimo ? '自摸' : '点炮'}</div>`;
-            if (isZimo) {
-                message += `<div>自摸牌：${gameState.extraTile ? gameState.extraTile.name : ''}</div>`;
-            } else {
-                message += `<div>点炮牌：${gameState.lastDiscardedTile ? gameState.lastDiscardedTile.name : ''}</div>`;
+            // 检查补杠
+            const buGang = findBuGang(player);
+            if (buGang) {
+                performBuGang(0, buGang);
+                return;
             }
-            message += `</div>`;
 
-            document.getElementById('message-text').innerHTML = message;
-            document.getElementById('game-message').classList.add('show');
-
-            updateUI();
+            // 明杠
+            if (gameState.lastDiscardedTile && canGang(player.hand, gameState.lastDiscardedTile)) {
+                document.getElementById('btn-ignore').style.display = 'none';
+                performGang(0, gameState.lastDiscardedTile, false);
+            }
         }
 
         function ignoreAction() {
-            gameState.pendingActions.shift();
-            resetActionButtons();
-            
-            if (gameState.pendingActions.length > 0) {
-                processPendingActions();
-            } else {
-                gameState.waitingForAction = false;
-                nextTurn();
-            }
-        }
-
-        // ==================== 机器人操作 ====================
-        function botPlay(playerIndex) {
-            if (gameState.isGameOver) return;
-            
-            const player = gameState.players[playerIndex];
-            
-            // 简单策略：优先打缺门牌，然后打孤张
-            let tileToDiscard = null;
-            
-            // 优先打缺门牌
-            const missingSuitTiles = player.hand.filter(t => t.suit === player.missingSuit);
-            if (missingSuitTiles.length > 0) {
-                tileToDiscard = missingSuitTiles[Math.floor(Math.random() * missingSuitTiles.length)];
-            } else {
-                // 随机选择一张牌
-                tileToDiscard = player.hand[Math.floor(Math.random() * player.hand.length)];
-            }
-
-            const tileIndex = player.hand.findIndex(t => t.id === tileToDiscard.id);
-            const tile = player.hand.splice(tileIndex, 1)[0];
-            player.discarded.push(tile);
-            gameState.lastDiscardedTile = tile;
-            gameState.lastDiscardedPlayer = playerIndex;
-            gameState.discardPool.push(tile);
-
-            updateUI();
-            checkOtherPlayersActions();
-        }
-
-        function botHu(playerIndex, isZimo) {
-            const player = gameState.players[playerIndex];
-            player.hasHu = true;
-            player.huType = isZimo ? '自摸' : '点炮';
-            gameState.isGameOver = true;
-
-            let message = `<div class="hu-text">🎉 ${player.name} 胡了！</div>`;
-            message += `<div class="hu-details">`;
-            message += `<div>胡牌方式：${isZimo ? '自摸' : '点炮'}</div>`;
-            if (isZimo) {
-                message += `<div>自摸牌：${gameState.extraTile ? gameState.extraTile.name : ''}</div>`;
-            } else {
-                message += `<div>点炮牌：${gameState.lastDiscardedTile ? gameState.lastDiscardedTile.name : ''}</div>`;
-            }
-            message += `</div>`;
-
-            document.getElementById('message-text').innerHTML = message;
-            document.getElementById('game-message').classList.add('show');
-
-            updateUI();
-        }
-
-        function botGang(playerIndex, isAnGang) {
-            const player = gameState.players[playerIndex];
-            
-            if (isAnGang) {
-                // 暗杠
-                const tileCounts = {};
-                player.hand.forEach(t => {
-                    const key = getTileKey(t);
-                    tileCounts[key] = tileCounts[key] || [];
-                    tileCounts[key].push(t);
-                });
-
-                for (let key in tileCounts) {
-                    if (tileCounts[key].length === 4) {
-                        tileCounts[key].forEach(t => {
-                            const idx = player.hand.findIndex(ht => ht.id === t.id);
-                            if (idx !== -1) player.hand.splice(idx, 1);
-                        });
-
-                        player.melds.push({
-                            type: 'gang',
-                            tiles: [...tileCounts[key]]
-                        });
-
-                        gameState.gangDraw = true;
-                        updateUI();
-                        setTimeout(() => drawTile(playerIndex), 500);
-                        break;
-                    }
-                }
-            } else {
-                // 明杠
-                const action = gameState.pendingActions.find(a => a.playerIndex === playerIndex);
-                if (!action) return;
-
-                const tile = gameState.lastDiscardedTile;
-                const sameTiles = player.hand.filter(t => getTileKey(t) === getTileKey(tile));
-                
-                sameTiles.forEach(t => {
-                    const idx = player.hand.findIndex(ht => ht.id === t.id);
-                    if (idx !== -1) player.hand.splice(idx, 1);
-                });
-
-                player.melds.push({
-                    type: 'gang',
-                    tiles: [...sameTiles, tile]
-                });
-
-                const discardIdx = gameState.discardPool.findIndex(t => t.id === tile.id);
-                if (discardIdx !== -1) gameState.discardPool.splice(discardIdx, 1);
-
-                gameState.currentPlayer = playerIndex;
-                gameState.waitingForAction = false;
-                gameState.pendingActions = [];
-                gameState.gangDraw = true;
-
-                updateUI();
-                setTimeout(() => drawTile(playerIndex), 500);
-            }
-        }
-
-        function botPeng(playerIndex) {
-            const player = gameState.players[playerIndex];
-            const tile = gameState.lastDiscardedTile;
-            
-            const sameTiles = player.hand.filter(t => getTileKey(t) === getTileKey(tile)).slice(0, 2);
-            
-            sameTiles.forEach(t => {
-                const idx = player.hand.findIndex(ht => ht.id === t.id);
-                if (idx !== -1) player.hand.splice(idx, 1);
-            });
-
-            player.melds.push({
-                type: 'peng',
-                tiles: [...sameTiles, tile]
-            });
-
-            const discardIdx = gameState.discardPool.findIndex(t => t.id === tile.id);
-            if (discardIdx !== -1) gameState.discardPool.splice(discardIdx, 1);
-
-            gameState.currentPlayer = playerIndex;
+            document.getElementById('btn-ignore').style.display = 'none';
+            document.getElementById('btn-peng').disabled = true;
+            document.getElementById('btn-gang').disabled = true;
+            document.getElementById('btn-hu').disabled = true;
+            hideTip();
             gameState.waitingForAction = false;
-            gameState.pendingActions = [];
-            gameState.lastDiscardedTile = null;
-            gameState.lastDiscardedPlayer = null;
-
-            updateUI();
-            setTimeout(() => botPlay(playerIndex), 800);
+            processNextAction();
         }
 
-        // ==================== 胡牌检查 ====================
-        function checkHu(hand, melds, missingSuit) {
-            // 检查缺门
-            const suitsInHand = new Set(hand.map(t => t.suit));
-            if (suitsInHand.has('wan') && suitsInHand.has('tong') && suitsInHand.has('tiao')) {
-                return false;
+        // ==================== 胡牌检测 ====================
+        function checkHu(hand, melds = [], missingSuit = null) {
+            const totalTiles = hand.length + melds.reduce((sum, m) => sum + m.tiles.length, 0);
+            if (totalTiles % 3 !== 2) return false;
+
+            // 检查缺一门
+            if (missingSuit) {
+                const suits = new Set(hand.map(t => t.suit));
+                melds.forEach(m => m.tiles.forEach(t => suits.add(t.suit)));
+                suits.delete(missingSuit);
+                if (suits.size > 2) return false;
             }
-
-            // 如果还有缺门牌，不能胡
-            if (hand.some(t => t.suit === missingSuit)) {
-                return false;
-            }
-
-            // 计算总牌数（手牌 + 面子）
-            const totalTiles = hand.length + melds.length * 3;
-            if (totalTiles !== 14 && totalTiles !== 11 && totalTiles !== 8 && totalTiles !== 5 && totalTiles !== 2) {
-                return false;
-            }
-
-            // 使用递归检查是否可以组成4个面子 + 1个将
-            return canWin(hand);
-        }
-
-        function canWin(hand) {
-            if (hand.length === 0) return true;
-            if (hand.length % 3 !== 2) return false;
 
             const tileCounts = {};
-            hand.forEach(t => {
-                const key = getTileKey(t);
+            hand.forEach(tile => {
+                const key = getTileKey(tile);
                 tileCounts[key] = (tileCounts[key] || 0) + 1;
             });
 
-            // 尝试每个可能的将牌
-            for (let key in tileCounts) {
+            // 尝试每种将牌
+            for (const key of Object.keys(tileCounts)) {
                 if (tileCounts[key] >= 2) {
-                    tileCounts[key] -= 2;
-                    if (canFormMelds(tileCounts)) {
+                    const testCounts = { ...tileCounts };
+                    testCounts[key] -= 2;
+                    if (canFormSets(testCounts)) {
                         return true;
                     }
-                    tileCounts[key] += 2;
                 }
+            }
+
+            // 七对子检查
+            if (hand.length === 14) {
+                let pairs = 0;
+                const counts = { ...tileCounts };
+                for (const key of Object.keys(counts)) {
+                    if (counts[key] >= 2) {
+                        counts[key] -= 2;
+                        pairs++;
+                    }
+                }
+                if (pairs === 7) return true;
             }
 
             return false;
         }
 
-        function canFormMelds(tileCounts) {
-            const keys = Object.keys(tileCounts).filter(k => tileCounts[k] > 0);
-            
-            if (keys.length === 0) return true;
+        function canFormSets(tileCounts) {
+            const counts = { ...tileCounts };
 
-            for (let key of keys) {
-                const [suit, value] = key.split('-');
-                const count = tileCounts[key];
-
-                // 尝试刻子
-                if (count >= 3) {
-                    tileCounts[key] -= 3;
-                    if (canFormMelds(tileCounts)) return true;
-                    tileCounts[key] += 3;
+            // 先组刻子
+            for (const key of Object.keys(counts)) {
+                while (counts[key] >= 3) {
+                    counts[key] -= 3;
                 }
+            }
 
-                // 尝试顺子
-                const v = parseInt(value);
-                if (v <= 7) {
-                    const key1 = `${suit}-${v}`;
-                    const key2 = `${suit}-${v + 1}`;
-                    const key3 = `${suit}-${v + 2}`;
-                    
-                    if (tileCounts[key1] > 0 && tileCounts[key2] > 0 && tileCounts[key3] > 0) {
-                        tileCounts[key1]--;
-                        tileCounts[key2]--;
-                        tileCounts[key3]--;
-                        if (canFormMelds(tileCounts)) return true;
-                        tileCounts[key1]++;
-                        tileCounts[key2]++;
-                        tileCounts[key3]++;
+            // 再组顺子
+            for (const suit of ['wan', 'tong', 'tiao']) {
+                for (let v = 1; v <= 7; v++) {
+                    const k1 = `${suit}-${v}`;
+                    const k2 = `${suit}-${v + 1}`;
+                    const k3 = `${suit}-${v + 2}`;
+                    while ((counts[k1] || 0) > 0 && (counts[k2] || 0) > 0 && (counts[k3] || 0) > 0) {
+                        counts[k1]--;
+                        counts[k2]--;
+                        counts[k3]--;
                     }
                 }
-
-                return false;
             }
 
-            return true;
+            return Object.values(counts).every(c => c === 0);
         }
 
-        function canGang(hand, discardedTile, melds, isAnGang) {
-            if (isAnGang) {
-                // 检查暗杠
-                const tileCounts = {};
-                hand.forEach(t => {
-                    const key = getTileKey(t);
-                    tileCounts[key] = (tileCounts[key] || 0) + 1;
-                });
-
-                return Object.values(tileCounts).some(count => count === 4);
+        function huAction() {
+            const player = gameState.players[0];
+            if (gameState.extraTile) {
+                player.hasHu = true;
+                player.huType = '自摸';
             } else {
-                // 检查明杠
-                if (!discardedTile) return false;
-                const sameTiles = hand.filter(t => getTileKey(t) === getTileKey(discardedTile));
-                return sameTiles.length >= 3;
+                player.hand.push(gameState.lastDiscardedTile);
+                player.hasHu = true;
+                player.huType = '胡牌';
             }
+            showHuMessage(0, player.huType);
         }
 
-        // ==================== 工具函数 ====================
-        function nextTurn() {
-            gameState.currentPlayer = (gameState.currentPlayer + 1) % 4;
-            gameState.lastDiscardedTile = null;
-            gameState.lastDiscardedPlayer = null;
-            gameState.selectedTile = null;
-            
-            resetActionButtons();
-            updateUI();
+        function showHuMessage(playerIndex, huType) {
+            const player = gameState.players[playerIndex];
+            const details = calculateHuScore(player);
 
-            setTimeout(() => drawTile(gameState.currentPlayer), 500);
-        }
+            let message = `<div class="hu-text">🎉 ${player.name} ${huType}！</div>`;
+            message += `<div class="hu-details">${details}</div>`;
 
-        function checkFlow() {
-            gameState.isGameOver = true;
-            document.getElementById('message-text').innerHTML = `
-                <div class="hu-text">🌊 流局</div>
-                <div class="hu-details">牌墙已空，无人胡牌</div>
-            `;
+            document.getElementById('message-text').innerHTML = message;
             document.getElementById('game-message').classList.add('show');
+
+            const infoEl = document.getElementById(`player-${playerIndex}-info`);
+            infoEl.classList.add('hu');
+            document.getElementById(`win-badge-${playerIndex}`).innerHTML = '<span class="win-badge">胡</span>';
+
+            gameState.isGameOver = true;
+            disablePlayerActions();
         }
 
-        function resetActionButtons() {
-            enableButton('btn-discard', false);
-            enableButton('btn-peng', false);
-            enableButton('btn-gang', false);
-            enableButton('btn-hu', false);
+        function calculateHuScore(player) {
+            let score = 2;
+            let details = ['基础分：2分'];
+
+            if (player.huType === '自摸') {
+                score += 1;
+                details.push('自摸：+1分');
+            }
+
+            const gangCount = player.melds.filter(m => m.type === 'gang').length;
+            if (gangCount > 0) {
+                score += gangCount;
+                details.push(`杠牌：+${gangCount}分`);
+            }
+
+            const pengCount = player.melds.filter(m => m.type === 'peng').length;
+            if (pengCount >= 3) {
+                score += 2;
+                details.push('碰碰胡：+2分');
+            }
+
+            // 检查七对
+            const tileCounts = {};
+            player.hand.forEach(t => {
+                const key = getTileKey(t);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+            const pairs = Object.values(tileCounts).filter(c => c >= 2).length;
+            if (pairs === 7) {
+                score += 2;
+                details.push('七对子：+2分');
+            }
+
+            details.push(`<strong style="color:#ffd700">总计：${score}分</strong>`);
+            return details.join('<br>');
+        }
+
+        // ==================== 流局检查 ====================
+        function checkFlow() {
+            let huaZhuPlayers = [];
+            
+            gameState.players.forEach((player, index) => {
+                const suits = new Set(player.hand.map(t => t.suit));
+                player.melds.forEach(m => m.tiles.forEach(t => suits.add(t.suit)));
+                suits.delete(player.missingSuit);
+                if (suits.size > 2) {
+                    huaZhuPlayers.push(index);
+                }
+            });
+
+            if (huaZhuPlayers.length > 0) {
+                let msg = '<div class="hu-text">流局 - 查花猪</div>';
+                huaZhuPlayers.forEach(i => {
+                    const p = gameState.players[i];
+                    msg += `<div style="font-size:0.6em;margin:10px 0">${p.name} 未缺门，赔2分</div>`;
+                });
+                document.getElementById('message-text').innerHTML = msg;
+                document.getElementById('game-message').classList.add('show');
+            } else {
+                endGame('流局！牌墙已空');
+            }
+
+            gameState.isGameOver = true;
+        }
+
+        function endGame(message) {
+            gameState.isGameOver = true;
+            document.getElementById('message-text').innerHTML = `<div class="hu-text">${message}</div>`;
+            document.getElementById('game-message').classList.add('show');
+            disablePlayerActions();
+        }
+
+        // ==================== 玩家操作 ====================
+        function nextPlayer() {
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % 4;
+            gameState.selectedTile = null;
+            gameState.extraTile = null;
+            updateUI();
+            drawTile(gameState.currentPlayer);
+        }
+
+        function enablePlayerActions() {
+            document.getElementById('btn-discard').disabled = false;
+            const player = gameState.players[0];
+            const anGang = findAnGang(player.hand);
+            const buGang = findBuGang(player);
+            document.getElementById('btn-gang').disabled = !(anGang || buGang);
+            document.getElementById('btn-peng').disabled = true;
+            document.getElementById('btn-hu').disabled = true;
             document.getElementById('btn-ignore').style.display = 'none';
         }
 
-        function enableButton(id, enabled) {
-            const btn = document.getElementById(id);
-            btn.disabled = !enabled;
+        function disablePlayerActions() {
+            document.getElementById('btn-discard').disabled = true;
+            document.getElementById('btn-peng').disabled = true;
+            document.getElementById('btn-gang').disabled = true;
+            document.getElementById('btn-hu').disabled = true;
+            document.getElementById('btn-ignore').style.display = 'none';
+        }
+
+        function disableDiscardButton() {
+            document.getElementById('btn-discard').disabled = true;
         }
 
         function showTip(message) {
             const tip = document.getElementById('action-tip');
             tip.textContent = message;
             tip.classList.add('show');
-            setTimeout(() => tip.classList.remove('show'), 2000);
         }
 
         function hideTip() {
@@ -1601,58 +1645,56 @@
             document.getElementById('rules-panel').classList.remove('show');
         }
 
-        // ==================== UI渲染 ====================
+        // ==================== UI更新 ====================
         function updateUI() {
-            // 更新牌墙数量
-            document.getElementById('deck-count').textContent = gameState.deck.length;
             document.getElementById('remaining-count').textContent = gameState.deck.length;
-
-            // 更新当前玩家
-            document.getElementById('current-player-name').textContent = 
-                gameState.players[gameState.currentPlayer].name;
-            document.getElementById('dealer-name').textContent = 
-                gameState.players[gameState.dealer].name;
+            document.getElementById('deck-count').textContent = gameState.deck.length;
+            document.getElementById('current-player-name').textContent = gameState.players[gameState.currentPlayer].name;
+            document.getElementById('dealer-name').textContent = gameState.players[gameState.dealer].name;
             document.getElementById('round-number').textContent = gameState.round;
 
-            // 更新玩家信息
             gameState.players.forEach((player, index) => {
-                const infoEl = document.getElementById(`player-${index}-info`);
-                const countEl = document.getElementById(`player-${index}-count`);
                 const handEl = document.getElementById(`player-${index}-hand`);
+                const countEl = document.getElementById(`player-${index}-count`);
+                const infoEl = document.getElementById(`player-${index}-info`);
                 const meldsEl = document.getElementById(`player-${index}-melds`);
 
-                // 更新活跃状态
+                handEl.innerHTML = '';
+                countEl.textContent = player.hand.length;
+
                 infoEl.classList.toggle('active', index === gameState.currentPlayer && !gameState.isGameOver);
                 infoEl.classList.toggle('hu', player.hasHu);
 
-                // 更新牌数
-                countEl.textContent = player.hand.length;
+                // 渲染副露
+                meldsEl.innerHTML = '';
+                player.melds.forEach(meld => {
+                    const meldDiv = document.createElement('div');
+                    meldDiv.className = `meld ${meld.type}`;
+                    meld.tiles.forEach(tile => {
+                        const tileEl = document.createElement('div');
+                        tileEl.className = `tile ${tile.suit}`;
+                        tileEl.textContent = tile.symbol;
+                        meldDiv.appendChild(tileEl);
+                    });
+                    meldsEl.appendChild(meldDiv);
+                });
 
                 // 渲染手牌
-                handEl.innerHTML = '';
-                player.hand.forEach((tile, tileIndex) => {
+                player.hand.forEach((tile) => {
                     const tileEl = document.createElement('div');
                     tileEl.className = `tile ${tile.suit}`;
-                    
+
+                    if (index === gameState.currentPlayer && 
+                        gameState.extraTile && 
+                        tile.id === gameState.extraTile.id) {
+                        tileEl.classList.add('last-drawn');
+                    }
+
                     if (index === 0) {
-                        tileEl.innerHTML = `
-                            <div class="tile-content">
-                                <div class="tile-number">${tile.symbol}</div>
-                            </div>
-                        `;
+                        tileEl.textContent = tile.symbol;
                         tileEl.onclick = () => selectTile(tile, tileEl);
-                        
                         if (gameState.selectedTile && gameState.selectedTile.id === tile.id) {
                             tileEl.classList.add('selected');
-                        }
-
-                        if (gameState.extraTile && gameState.extraTile.id === tile.id) {
-                            tileEl.classList.add('last-drawn');
-                        }
-
-                        // 标记缺门牌
-                        if (tile.suit === player.missingSuit) {
-                            tileEl.style.opacity = '0.6';
                         }
                     } else {
                         tileEl.classList.add('hidden');
@@ -1660,32 +1702,6 @@
 
                     handEl.appendChild(tileEl);
                 });
-
-                // 渲染吃碰杠
-                meldsEl.innerHTML = '';
-                player.melds.forEach(meld => {
-                    const meldEl = document.createElement('div');
-                    meldEl.className = `meld ${meld.type}`;
-                    
-                    meld.tiles.forEach(tile => {
-                        const tileEl = document.createElement('div');
-                        tileEl.className = `tile ${tile.suit}`;
-                        tileEl.innerHTML = `
-                            <div class="tile-content">
-                                <div class="tile-number">${tile.symbol}</div>
-                            </div>
-                        `;
-                        meldEl.appendChild(tileEl);
-                    });
-
-                    meldsEl.appendChild(meldEl);
-                });
-
-                // 更新胡牌徽章
-                const badgeEl = document.getElementById(`win-badge-${index}`);
-                if (badgeEl) {
-                    badgeEl.textContent = player.hasHu ? ' 胡' : '';
-                }
             });
 
             // 渲染弃牌池
@@ -1694,24 +1710,12 @@
             gameState.discardPool.forEach(tile => {
                 const tileEl = document.createElement('div');
                 tileEl.className = `tile ${tile.suit}`;
-                tileEl.innerHTML = `
-                    <div class="tile-content">
-                        <div class="tile-number">${tile.symbol}</div>
-                    </div>
-                `;
+                tileEl.textContent = tile.symbol;
                 discardEl.appendChild(tileEl);
             });
-
-            // 启用/禁用出牌按钮
-            const isPlayerTurn = gameState.currentPlayer === 0 && !gameState.players[0].isBot && !gameState.isGameOver;
-            enableButton('btn-discard', isPlayerTurn && !gameState.waitingForAction);
         }
 
         function selectTile(tile, element) {
-            if (gameState.isGameOver) return;
-            if (gameState.currentPlayer !== 0) return;
-            if (gameState.waitingForAction) return;
-
             document.querySelectorAll('.tile.selected').forEach(el => el.classList.remove('selected'));
             element.classList.add('selected');
             gameState.selectedTile = tile;
