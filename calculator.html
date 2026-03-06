@@ -12,35 +12,26 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         .calculator {
-            background: rgba(255, 255, 255, 0.95);
+            background: #fff;
+            padding: 20px;
             border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
-            width: 100%;
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 25px;
-            font-size: 1.8em;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            width: 320px;
         }
 
         .display {
             background: #f8f9fa;
-            border-radius: 10px;
             padding: 20px;
+            border-radius: 10px;
             margin-bottom: 20px;
             text-align: right;
             min-height: 80px;
@@ -50,15 +41,15 @@
         }
 
         .expression {
-            color: #666;
-            font-size: 1em;
-            min-height: 24px;
-            word-wrap: break-word;
+            color: #888;
+            font-size: 14px;
+            min-height: 20px;
+            margin-bottom: 5px;
         }
 
         .result {
             color: #333;
-            font-size: 2.2em;
+            font-size: 36px;
             font-weight: bold;
             word-wrap: break-word;
         }
@@ -66,309 +57,217 @@
         .buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            gap: 10px;
         }
 
         button {
             padding: 20px;
-            font-size: 1.3em;
+            font-size: 20px;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 500;
+            transition: all 0.2s;
         }
 
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: scale(1.05);
         }
 
         button:active {
-            transform: translateY(0);
+            transform: scale(0.95);
         }
 
-        .number {
+        .num-btn {
             background: #e9ecef;
             color: #333;
         }
 
-        .number:hover {
+        .num-btn:hover {
             background: #dee2e6;
         }
 
-        .operator {
-            background: #667eea;
+        .op-btn {
+            background: #ff9500;
             color: white;
         }
 
-        .operator:hover {
-            background: #5a67d8;
+        .op-btn:hover {
+            background: #ff8000;
         }
 
-        .clear {
-            background: #ff6b6b;
+        .clear-btn {
+            background: #ff3b30;
             color: white;
+            grid-column: span 2;
         }
 
-        .clear:hover {
-            background: #ee5a5a;
+        .clear-btn:hover {
+            background: #e63329;
         }
 
-        .equals {
-            background: #51cf66;
+        .equals-btn {
+            background: #34c759;
             color: white;
+            grid-column: span 2;
         }
 
-        .equals:hover {
-            background: #40c057;
+        .equals-btn:hover {
+            background: #2db34d;
         }
 
-        .info {
+        .zero-btn {
+            grid-column: span 2;
+        }
+
+        h1 {
             text-align: center;
-            margin-top: 20px;
-            color: #666;
-            font-size: 0.9em;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
         }
 
-        @media (max-width: 480px) {
-            .calculator {
-                padding: 20px;
-            }
-
-            button {
-                padding: 18px;
-                font-size: 1.2em;
-            }
-
-            .result {
-                font-size: 1.8em;
-            }
+        .error {
+            color: #ff3b30;
         }
     </style>
 </head>
 <body>
     <div class="calculator">
-        <h1>🧮 简易计算器</h1>
+        <h1>简易计算器</h1>
         <div class="display">
             <div class="expression" id="expression"></div>
             <div class="result" id="result">0</div>
         </div>
         <div class="buttons">
-            <button class="clear" onclick="clearAll()">AC</button>
-            <button class="clear" onclick="clearEntry()">CE</button>
-            <button class="operator" onclick="appendOperator('/')">÷</button>
-            <button class="operator" onclick="appendOperator('*')">×</button>
+            <button class="clear-btn" onclick="clearAll()">C</button>
+            <button class="op-btn" onclick="appendOperator('/')">÷</button>
+            <button class="op-btn" onclick="appendOperator('*')">×</button>
 
-            <button class="number" onclick="appendNumber('7')">7</button>
-            <button class="number" onclick="appendNumber('8')">8</button>
-            <button class="number" onclick="appendNumber('9')">9</button>
-            <button class="operator" onclick="appendOperator('-')">−</button>
+            <button class="num-btn" onclick="appendNumber('7')">7</button>
+            <button class="num-btn" onclick="appendNumber('8')">8</button>
+            <button class="num-btn" onclick="appendNumber('9')">9</button>
+            <button class="op-btn" onclick="appendOperator('-')">-</button>
 
-            <button class="number" onclick="appendNumber('4')">4</button>
-            <button class="number" onclick="appendNumber('5')">5</button>
-            <button class="number" onclick="appendNumber('6')">6</button>
-            <button class="operator" onclick="appendOperator('+')">+</button>
+            <button class="num-btn" onclick="appendNumber('4')">4</button>
+            <button class="num-btn" onclick="appendNumber('5')">5</button>
+            <button class="num-btn" onclick="appendNumber('6')">6</button>
+            <button class="op-btn" onclick="appendOperator('+')">+</button>
 
-            <button class="number" onclick="appendNumber('1')">1</button>
-            <button class="number" onclick="appendNumber('2')">2</button>
-            <button class="number" onclick="appendNumber('3')">3</button>
-            <button class="operator" onclick="backspace()">⌫</button>
+            <button class="num-btn" onclick="appendNumber('1')">1</button>
+            <button class="num-btn" onclick="appendNumber('2')">2</button>
+            <button class="num-btn" onclick="appendNumber('3')">3</button>
+            <button class="op-btn" onclick="deleteLast()">←</button>
 
-            <button class="number" onclick="appendNumber('0')">0</button>
-            <button class="number" onclick="appendNumber('10')">10</button>
-            <button class="operator equals" onclick="calculate()" style="grid-column: span 2;">=</button>
+            <button class="num-btn zero-btn" onclick="appendNumber('0')">0</button>
+            <button class="num-btn" onclick="appendNumber('.')">.</button>
+            <button class="equals-btn" onclick="calculate()">=</button>
         </div>
-        <p class="info">支持 10 以内的加减乘除运算</p>
     </div>
 
     <script>
-        let currentInput = '';
-        let expression = '';
-        let shouldResetScreen = false;
+        let currentExpression = '';
+        let shouldReset = false;
 
         function updateDisplay() {
-            document.getElementById('expression').textContent = expression;
-            document.getElementById('result').textContent = currentInput || '0';
+            document.getElementById('expression').textContent = currentExpression;
         }
 
-        function appendNumber(number) {
-            if (shouldResetScreen) {
-                currentInput = '';
-                shouldResetScreen = false;
+        function appendNumber(num) {
+            if (shouldReset) {
+                currentExpression = '';
+                shouldReset = false;
             }
-            // 限制输入长度
-            if (currentInput.length >= 10) return;
-            currentInput += number;
+            currentExpression += num;
             updateDisplay();
         }
 
-        function appendDecimal() {
-            if (shouldResetScreen) {
-                currentInput = '';
-                shouldResetScreen = false;
+        function appendOperator(op) {
+            if (shouldReset) {
+                shouldReset = false;
             }
-            if (!currentInput.includes('.')) {
-                currentInput += currentInput === '' ? '0.' : '.';
-                updateDisplay();
+            // 防止连续输入运算符
+            if (currentExpression.length > 0 && isOperator(currentExpression[currentExpression.length - 1])) {
+                currentExpression = currentExpression.slice(0, -1);
             }
+            currentExpression += op;
+            updateDisplay();
         }
 
-        function appendOperator(operator) {
-            if (currentInput === '') {
-                // 如果当前没有输入，但有之前的表达式，可以替换运算符
-                if (expression !== '') {
-                    expression = expression.slice(0, -1) + operator;
-                    updateDisplay();
-                }
-                return;
-            }
+        function isOperator(char) {
+            return ['+', '-', '*', '/'].includes(char);
+        }
 
-            // 验证数字是否在10以内
-            const num = parseFloat(currentInput);
-            if (num > 10) {
-                alert('本计算器仅支持 10 以内的数字运算！');
-                return;
-            }
+        function clearAll() {
+            currentExpression = '';
+            document.getElementById('result').textContent = '0';
+            document.getElementById('result').classList.remove('error');
+            updateDisplay();
+        }
 
-            expression += currentInput + ' ' + operator + ' ';
-            currentInput = '';
-            shouldResetScreen = false;
+        function deleteLast() {
+            currentExpression = currentExpression.slice(0, -1);
             updateDisplay();
         }
 
         function calculate() {
-            if (expression === '' || currentInput === '') {
-                return;
-            }
+            if (!currentExpression) return;
 
-            // 验证最后一个数字是否在10以内
-            const num = parseFloat(currentInput);
-            if (num > 10) {
-                alert('本计算器仅支持 10 以内的数字运算！');
-                return;
-            }
-
-            expression += currentInput;
             try {
-                // 安全地计算表达式
-                const result = safeCalculate(expression);
-                currentInput = formatResult(result);
-                expression = '';
-                shouldResetScreen = true;
-                updateDisplay();
-            } catch (error) {
-                alert('计算错误：' + error.message);
-                clearAll();
-            }
-        }
-
-        function safeCalculate(expr) {
-            // 将表达式拆分为数组
-            const tokens = expr.split(' ').filter(token => token !== '');
-
-            if (tokens.length < 3) {
-                throw new Error('表达式不完整');
-            }
-
-            // 检查所有数字是否在10以内
-            for (let i = 0; i < tokens.length; i += 2) {
-                const num = parseFloat(tokens[i]);
-                if (num > 10) {
-                    throw new Error('仅支持 10 以内的数字运算');
+                // 验证表达式只包含数字和允许的运算符
+                if (!/^[\d+\-*/.]+$/.test(currentExpression)) {
+                    throw new Error('非法表达式');
                 }
-            }
 
-            // 按照先乘除后加减的顺序计算
-            const numbers = [];
-            const operators = [];
-
-            for (let i = 0; i < tokens.length; i++) {
-                if (i % 2 === 0) {
-                    numbers.push(parseFloat(tokens[i]));
-                } else {
-                    operators.push(tokens[i]);
-                }
-            }
-
-            // 先处理乘除
-            let i = 0;
-            while (i < operators.length) {
-                if (operators[i] === '*' || operators[i] === '/') {
-                    const left = numbers[i];
-                    const right = numbers[i + 1];
-                    let result;
-
-                    if (operators[i] === '*') {
-                        result = left * right;
-                    } else {
-                        if (right === 0) {
-                            throw new Error('不能除以零');
+                // 提取数字并检查是否都在10以内
+                const numbers = currentExpression.match(/\d+\.?\d*/g);
+                if (numbers) {
+                    for (let num of numbers) {
+                        if (parseFloat(num) > 10) {
+                            document.getElementById('result').textContent = '限10内数字';
+                            document.getElementById('result').classList.add('error');
+                            shouldReset = true;
+                            return;
                         }
-                        result = left / right;
                     }
-
-                    numbers.splice(i, 2, result);
-                    operators.splice(i, 1);
-                } else {
-                    i++;
                 }
-            }
 
-            // 再处理加减
-            let result = numbers[0];
-            for (let j = 0; j < operators.length; j++) {
-                if (operators[j] === '+') {
-                    result += numbers[j + 1];
-                } else if (operators[j] === '-') {
-                    result -= numbers[j + 1];
+                // 计算结果
+                const result = eval(currentExpression);
+
+                // 检查除零错误
+                if (!isFinite(result)) {
+                    throw new Error('除数不能为零');
                 }
+
+                // 格式化结果
+                const formattedResult = Math.round(result * 1000000) / 1000000;
+
+                document.getElementById('result').textContent = formattedResult;
+                document.getElementById('result').classList.remove('error');
+                currentExpression = formattedResult.toString();
+                shouldReset = true;
+            } catch (error) {
+                document.getElementById('result').textContent = error.message || '错误';
+                document.getElementById('result').classList.add('error');
+                shouldReset = true;
             }
-
-            return result;
-        }
-
-        function formatResult(result) {
-            // 格式化结果，保留最多6位小数，去掉末尾的0
-            const formatted = parseFloat(result.toFixed(6)).toString();
-            // 如果结果太长，使用科学计数法
-            if (formatted.length > 10) {
-                return result.toExponential(4);
-            }
-            return formatted;
-        }
-
-        function clearAll() {
-            currentInput = '';
-            expression = '';
-            shouldResetScreen = false;
-            updateDisplay();
-        }
-
-        function clearEntry() {
-            currentInput = '';
-            updateDisplay();
-        }
-
-        function backspace() {
-            currentInput = currentInput.slice(0, -1);
-            updateDisplay();
         }
 
         // 键盘支持
         document.addEventListener('keydown', function(event) {
-            if (event.key >= '0' && event.key <= '9') {
-                appendNumber(event.key);
-            } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/') {
-                appendOperator(event.key);
-            } else if (event.key === 'Enter' || event.key === '=') {
+            const key = event.key;
+
+            if (/[0-9.]/.test(key)) {
+                appendNumber(key);
+            } else if (['+', '-', '*', '/'].includes(key)) {
+                appendOperator(key);
+            } else if (key === 'Enter' || key === '=') {
                 event.preventDefault();
                 calculate();
-            } else if (event.key === 'Escape' || event.key === 'c' || event.key === 'C') {
+            } else if (key === 'Escape' || key === 'c' || key === 'C') {
                 clearAll();
-            } else if (event.key === 'Backspace') {
-                currentInput = currentInput.slice(0, -1);
-                updateDisplay();
+            } else if (key === 'Backspace') {
+                deleteLast();
             }
         });
     </script>
