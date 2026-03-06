@@ -160,7 +160,7 @@
             <button class="btn btn-equal" onclick="calculate()">=</button>
 
             <button class="btn btn-number btn-zero" onclick="appendNumber('0')">0</button>
-            <button class="btn btn-number" onclick="appendNumber('.')">.</button>
+            <button class="btn btn-number" onclick="appendNumber('10')">10</button>
             <button class="btn btn-clear" onclick="backspace()">⌫</button>
         </div>
         </div>
@@ -198,6 +198,13 @@
             if (shouldResetScreen) {
                 currentValue = '0';
                 shouldResetScreen = false;
+            }
+
+            // 如果点击的是10，直接设置为10
+            if (number === '10') {
+                currentValue = '10';
+                updateDisplay();
+                return;
             }
 
             // 限制输入10以内
