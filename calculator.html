@@ -128,9 +128,6 @@
             grid-column: span 2;
         }
 
-        .decimal {
-            grid-column: span 2;
-        }
 
         .info {
             text-align: center;
@@ -181,10 +178,11 @@
             <button class="number" onclick="appendNumber('1')">1</button>
             <button class="number" onclick="appendNumber('2')">2</button>
             <button class="number" onclick="appendNumber('3')">3</button>
-            <button class="operator equals" onclick="calculate()">=</button>
+            <button class="operator" onclick="backspace()">⌫</button>
 
             <button class="number zero" onclick="appendNumber('0')">0</button>
             <button class="number decimal" onclick="appendDecimal()">.</button>
+            <button class="operator equals" onclick="calculate()">=</button>
         </div>
         <p class="info">支持 10 以内的加减乘除运算</p>
     </div>
@@ -354,6 +352,11 @@
 
         function clearEntry() {
             currentInput = '';
+            updateDisplay();
+        }
+
+        function backspace() {
+            currentInput = currentInput.slice(0, -1);
             updateDisplay();
         }
 
