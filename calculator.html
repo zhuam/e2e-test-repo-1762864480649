@@ -106,7 +106,6 @@
         .btn-equal {
             background: #34c759;
             color: white;
-            grid-column: span 2;
         }
 
         .btn-equal:hover {
@@ -158,10 +157,12 @@
             <button class="btn btn-number" onclick="appendNumber('1')">1</button>
             <button class="btn btn-number" onclick="appendNumber('2')">2</button>
             <button class="btn btn-number" onclick="appendNumber('3')">3</button>
-            <button class="btn btn-operator" onclick="calculate()">=</button>
+            <button class="btn btn-equal" onclick="calculate()">=</button>
 
             <button class="btn btn-number btn-zero" onclick="appendNumber('0')">0</button>
             <button class="btn btn-number" onclick="appendNumber('.')">.</button>
+            <button class="btn btn-clear" onclick="backspace()">⌫</button>
+        </div>
         </div>
     </div>
 
@@ -288,6 +289,15 @@
             updateDisplay();
         }
 
+        function backspace() {
+            if (currentValue.length > 1) {
+                currentValue = currentValue.slice(0, -1);
+            } else {
+                currentValue = '0';
+            }
+            updateDisplay();
+        }
+
         // 键盘支持
         document.addEventListener('keydown', (e) => {
             if (e.key >= '0' && e.key <= '9') appendNumber(e.key);
@@ -301,14 +311,7 @@
             }
             if (e.key === 'Enter' || e.key === '=') calculate();
             if (e.key === 'Escape') clearAll();
-            if (e.key === 'Backspace') {
-                if (currentValue.length > 1) {
-                    currentValue = currentValue.slice(0, -1);
-                } else {
-                    currentValue = '0';
-                }
-                updateDisplay();
-            }
+            if (e.key === 'Backspace') backspace();
         });
     </script>
 </body>
