@@ -118,7 +118,6 @@
         .equals {
             background: #51cf66;
             color: white;
-            grid-column: span 2;
         }
 
         .equals:hover {
@@ -126,6 +125,10 @@
         }
 
         .zero {
+            grid-column: span 2;
+        }
+
+        .decimal {
             grid-column: span 2;
         }
 
@@ -178,10 +181,10 @@
             <button class="number" onclick="appendNumber('1')">1</button>
             <button class="number" onclick="appendNumber('2')">2</button>
             <button class="number" onclick="appendNumber('3')">3</button>
-            <button class="equals" onclick="calculate()">=</button>
+            <button class="operator equals" onclick="calculate()">=</button>
 
             <button class="number zero" onclick="appendNumber('0')">0</button>
-            <button class="number" onclick="appendDecimal()">.</button>
+            <button class="number decimal" onclick="appendDecimal()">.</button>
         </div>
         <p class="info">支持 10 以内的加减乘除运算</p>
     </div>
