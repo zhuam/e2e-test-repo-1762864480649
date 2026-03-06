@@ -203,15 +203,25 @@
                 shouldResetDisplay = false;
             }
 
-            // 如果点击的是10，且当前已有输入，则不处理（10作为独立数字）
+            // 如果点击的是10，直接设置为10
             if (num === '10') {
                 currentInput = '10';
                 updateDisplay();
                 return;
             }
 
-            // 限制输入长度为 10
-            if (currentInput.length >= 10) return;
+            // 计算组合后的数字
+            const combined = currentInput + num;
+
+            // 如果组合后的数字超过10，替换为新输入的数字
+            if (parseInt(combined) > 10) {
+                currentInput = num;
+                updateDisplay();
+                return;
+            }
+
+            // 限制输入长度为 2 位（最大支持10）
+            if (currentInput.length >= 2) return;
 
             currentInput += num;
             updateDisplay();
