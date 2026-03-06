@@ -124,11 +124,6 @@
             background: #40c057;
         }
 
-        .zero {
-            grid-column: span 2;
-        }
-
-
         .info {
             text-align: center;
             margin-top: 20px;
@@ -180,8 +175,8 @@
             <button class="number" onclick="appendNumber('3')">3</button>
             <button class="operator" onclick="backspace()">⌫</button>
 
-            <button class="number zero" onclick="appendNumber('0')">0</button>
-            <button class="number decimal" onclick="appendDecimal()">.</button>
+            <button class="number" onclick="appendNumber('0')">0</button>
+            <button class="number" onclick="appendNumber('10')">10</button>
             <button class="operator equals" onclick="calculate()">=</button>
         </div>
         <p class="info">支持 10 以内的加减乘除运算</p>
@@ -364,8 +359,6 @@
         document.addEventListener('keydown', function(event) {
             if (event.key >= '0' && event.key <= '9') {
                 appendNumber(event.key);
-            } else if (event.key === '.') {
-                appendDecimal();
             } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/') {
                 appendOperator(event.key);
             } else if (event.key === 'Enter' || event.key === '=') {
