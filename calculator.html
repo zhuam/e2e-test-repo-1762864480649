@@ -114,7 +114,7 @@
         .btn-equal {
             background: #28a745;
             color: #fff;
-            grid-column: span 2;
+            grid-column: span 3;
         }
 
         .btn-equal:hover {
@@ -172,6 +172,7 @@
             <button class="btn btn-number" onclick="appendNumber('3')">3</button>
             <button class="btn btn-number" onclick="appendNumber('0')">0</button>
 
+            <button class="btn btn-number" onclick="appendNumber('10')">10</button>
             <button class="btn btn-equal" onclick="calculate()">=</button>
         </div>
         <p class="hint">支持 10 以内的加减乘除运算</p>
@@ -194,12 +195,19 @@
         }
 
         function appendNumber(num) {
-            // 限制数字在 0-9 范围内
-            if (parseInt(num) > 9) return;
+            // 限制数字在 0-10 范围内
+            if (parseInt(num) > 10) return;
 
             if (shouldResetDisplay) {
                 currentInput = '';
                 shouldResetDisplay = false;
+            }
+
+            // 如果点击的是10，且当前已有输入，则不处理（10作为独立数字）
+            if (num === '10') {
+                currentInput = '10';
+                updateDisplay();
+                return;
             }
 
             // 限制输入长度为 10
