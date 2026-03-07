@@ -862,6 +862,150 @@
         .rules-btn:hover {
             background: rgba(255,255,255,0.2);
         }
+
+        /* 增强动画效果 */
+        .tile.discard-anim {
+            animation: discardAnim 0.5s ease;
+        }
+
+        @keyframes discardAnim {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) translateY(-20px); }
+            100% { transform: scale(1); }
+        }
+
+        .tile.win-anim {
+            animation: winAnim 1s ease infinite;
+        }
+
+        @keyframes winAnim {
+            0%, 100% { transform: scale(1) rotate(0deg); box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+            50% { transform: scale(1.1) rotate(5deg); box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); }
+        }
+
+        /* 计分面板 */
+        .score-board {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 15px;
+            display: flex;
+            gap: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .score-item {
+            color: #fff;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .score-item .label {
+            opacity: 0.7;
+            font-size: 0.8em;
+        }
+
+        .score-item .value {
+            color: var(--gold);
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        /* 游戏统计 */
+        .stats-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+
+        .stats-panel.show {
+            display: flex;
+        }
+
+        .stats-content {
+            background: linear-gradient(145deg, #1a1a2e 0%, #0f1629 100%);
+            border-radius: 20px;
+            padding: 30px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .stats-title {
+            color: var(--gold);
+            font-size: 1.5em;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 10px;
+            text-align: center;
+            color: #fff;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stats-table th {
+            color: var(--blue);
+            font-weight: bold;
+        }
+
+        .stats-table .highlight {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        /* 提示信息 */
+        .toast-message {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(50,50,50,0.9));
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border: 1px solid rgba(255,215,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .toast-message.show {
+            opacity: 1;
+        }
+
+        /* 胡牌类型标签 */
+        .hu-type-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin: 2px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,140,0,0.3));
+            border: 1px solid rgba(255,215,0,0.5);
+            color: #ffd700;
+        }
     </style>
 </head>
 <body>
@@ -878,6 +1022,7 @@
 
         <div class="game-table">
             <button class="rules-btn" onclick="showRules()">📖 规则</button>
+            <button class="rules-btn" style="left: 80px;" onclick="showStats()">📊 统计</button>
             <div class="deck-info">
                 牌墙: <span id="deck-count">108</span> 张
             </div>
@@ -978,7 +1123,7 @@
     <div class="rules-panel" id="rules-panel">
         <div class="rules-content">
             <h2>🀄 四川麻将规则</h2>
-            
+
             <h3>基本规则</h3>
             <ul>
                 <li>使用万、筒、条三种花色，共108张牌</li>
@@ -1014,6 +1159,9 @@
                 <li>自摸：+1分</li>
                 <li>杠牌：每个+1分</li>
                 <li>碰碰胡：+2分</li>
+                <li>清一色：+4分</li>
+                <li>七对：+4分</li>
+                <li>龙七对：+8分</li>
             </ul>
 
             <h3>查花猪（流局）</h3>
@@ -1022,6 +1170,53 @@
             <button class="close-rules-btn" onclick="hideRules()">关闭</button>
         </div>
     </div>
+
+    <!-- 统计面板 -->
+    <div class="stats-panel" id="stats-panel">
+        <div class="stats-content">
+            <div class="stats-title">📊 游戏统计</div>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>玩家</th>
+                        <th>胡牌</th>
+                        <th>自摸</th>
+                        <th>总得分</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-tbody">
+                    <tr>
+                        <td>玩家</td>
+                        <td id="stats-hu-0">0</td>
+                        <td id="stats-zimo-0">0</td>
+                        <td id="stats-score-0" class="highlight">0</td>
+                    </tr>
+                    <tr>
+                        <td>电脑1</td>
+                        <td id="stats-hu-1">0</td>
+                        <td id="stats-zimo-1">0</td>
+                        <td id="stats-score-1">0</td>
+                    </tr>
+                    <tr>
+                        <td>电脑2</td>
+                        <td id="stats-hu-2">0</td>
+                        <td id="stats-zimo-2">0</td>
+                        <td id="stats-score-2">0</td>
+                    </tr>
+                    <tr>
+                        <td>电脑3</td>
+                        <td id="stats-hu-3">0</td>
+                        <td id="stats-zimo-3">0</td>
+                        <td id="stats-score-3">0</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="new-game-btn" onclick="hideStats()">继续游戏</button>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast-message" id="toast-message"></div>
 
     <script>
         // ==================== 游戏配置 ====================
@@ -1046,10 +1241,10 @@
         // ==================== 游戏状态 ====================
         const gameState = {
             players: [
-                { name: '玩家', hand: [], discarded: [], melds: [], isBot: false, hu: false, huType: '', queSuit: null },
-                { name: '电脑玩家1', hand: [], discarded: [], melds: [], isBot: true, hu: false, huType: '', queSuit: null },
-                { name: '电脑玩家2', hand: [], discarded: [], melds: [], isBot: true, hu: false, huType: '', queSuit: null },
-                { name: '电脑玩家3', hand: [], discarded: [], melds: [], isBot: true, hu: false, huType: '', queSuit: null }
+                { name: '玩家', hand: [], discarded: [], melds: [], isBot: false, hu: false, huType: '', queSuit: null, score: 0, huCount: 0, zimoCount: 0 },
+                { name: '电脑玩家1', hand: [], discarded: [], melds: [], isBot: true, hu: false, huType: '', queSuit: null, score: 0, huCount: 0, zimoCount: 0 },
+                { name: '电脑玩家2', hand: [], discarded: [], melds: [], isBot: true, hu: false, huType: '', queSuit: null, score: 0, huCount: 0, zimoCount: 0 },
+                { name: '电脑玩家3', hand: [], discarded: [], melds: [], isBot: true, hu: false, huType: '', queSuit: null, score: 0, huCount: 0, zimoCount: 0 }
             ],
             currentPlayer: 0,
             deck: [],
@@ -1065,7 +1260,8 @@
             round: 1,
             chiOptions: [],
             canChi: false,
-            gamePhase: 'queSelect' // queSelect, playing, ended
+            gamePhase: 'queSelect', // queSelect, playing, ended
+            huPatterns: [] // 存储胡牌类型
         };
 
         // ==================== 牌操作 ====================
@@ -1162,7 +1358,7 @@
 
         // ==================== 游戏流程 ====================
         function startNewGame() {
-            // 重置游戏状态
+            // 重置游戏状态（保留统计）
             gameState.players.forEach(player => {
                 player.hand = [];
                 player.discarded = [];
@@ -1170,6 +1366,7 @@
                 player.hu = false;
                 player.huType = '';
                 player.queSuit = null;
+                // 不重置 score, huCount, zimoCount
             });
             gameState.deck = createDeck();
             gameState.discardPool = [];
@@ -1312,14 +1509,14 @@
                 tileCounts[key] = (tileCounts[key] || 0) + 1;
             });
 
-            // 策略1: 优先打出缺门牌
+            // 策略1: 优先打出缺门牌（最高优先级）
             const queTiles = hand.filter(t => t.suit === queSuit);
             if (queTiles.length > 0) {
                 // 优先打孤张缺门牌
                 const loneQueTiles = queTiles.filter(tile => {
                     const key = getTileKey(tile);
                     if (tileCounts[key] > 1) return false;
-                    
+
                     let hasNeighbor = false;
                     if (tile.value >= 2) {
                         const prevKey = `${tile.suit}-${tile.value - 1}`;
@@ -1331,47 +1528,89 @@
                     }
                     return !hasNeighbor;
                 });
-                
+
                 if (loneQueTiles.length > 0) {
                     return loneQueTiles[Math.floor(Math.random() * loneQueTiles.length)];
                 }
-                
+
+                // 优先打边张（1和9）
+                const edgeQueTiles = queTiles.filter(tile => tile.value === 1 || tile.value === 9);
+                if (edgeQueTiles.length > 0) {
+                    return edgeQueTiles[Math.floor(Math.random() * edgeQueTiles.length)];
+                }
+
                 // 打任意缺门牌
                 return queTiles[Math.floor(Math.random() * queTiles.length)];
             }
 
-            // 策略2: 优先打出孤张（没有相邻牌的牌）
+            // 策略2: 计算每张牌的利用率，打利用率最低的
             const nonQueTiles = hand.filter(t => t.suit !== queSuit);
-            const loneTiles = nonQueTiles.filter(tile => {
-                const key = getTileKey(tile);
-                if (tileCounts[key] > 1) return false; // 不打对子
 
-                // 检查是否有相邻的牌
-                let hasNeighbor = false;
+            // 为每张牌计算得分（越低越优先打）
+            const tileScores = nonQueTiles.map(tile => {
+                const key = getTileKey(tile);
+                let score = 0;
+
+                // 有重复的牌优先保留
+                if (tileCounts[key] >= 2) {
+                    score += 10 * tileCounts[key];
+                }
+
+                // 检查相邻牌
+                let neighborCount = 0;
                 if (tile.value >= 2) {
                     const prevKey = `${tile.suit}-${tile.value - 1}`;
-                    if (tileCounts[prevKey]) hasNeighbor = true;
+                    if (tileCounts[prevKey]) neighborCount += tileCounts[prevKey];
                 }
                 if (tile.value <= 8) {
                     const nextKey = `${tile.suit}-${tile.value + 1}`;
-                    if (tileCounts[nextKey]) hasNeighbor = true;
+                    if (tileCounts[nextKey]) neighborCount += tileCounts[nextKey];
                 }
-                return !hasNeighbor;
+
+                // 邻居越多，越有用
+                score += neighborCount * 3;
+
+                // 中间牌（3-7）比边牌（1,2,8,9）更有用
+                if (tile.value >= 3 && tile.value <= 7) {
+                    score += 2;
+                }
+
+                // 距离成为顺子的距离
+                let canFormShunzi = false;
+                if (tile.value >= 3) {
+                    const v1 = tile.value - 2;
+                    const v2 = tile.value - 1;
+                    if (tileCounts[`${tile.suit}-${v1}`] && tileCounts[`${tile.suit}-${v2}`]) {
+                        canFormShunzi = true;
+                    }
+                }
+                if (tile.value >= 2 && tile.value <= 8) {
+                    const v1 = tile.value - 1;
+                    const v3 = tile.value + 1;
+                    if (tileCounts[`${tile.suit}-${v1}`] && tileCounts[`${tile.suit}-${v3}`]) {
+                        canFormShunzi = true;
+                    }
+                }
+                if (tile.value <= 7) {
+                    const v2 = tile.value + 1;
+                    const v3 = tile.value + 2;
+                    if (tileCounts[`${tile.suit}-${v2}`] && tileCounts[`${tile.suit}-${v3}`]) {
+                        canFormShunzi = true;
+                    }
+                }
+                if (canFormShunzi) {
+                    score += 5; // 能组成顺子，保留
+                }
+
+                return { tile, score };
             });
 
-            if (loneTiles.length > 0) {
-                return loneTiles[Math.floor(Math.random() * loneTiles.length)];
-            }
-
-            // 策略3: 打出一个对子中的一张（保留搭子）
-            const pairs = nonQueTiles.filter(tile => tileCounts[getTileKey(tile)] === 2);
-            if (pairs.length > 2) { // 对子太多才打
-                return pairs[Math.floor(Math.random() * pairs.length)];
-            }
-
-            // 策略4: 随机打一张非缺门牌
-            if (nonQueTiles.length > 0) {
-                return nonQueTiles[Math.floor(Math.random() * nonQueTiles.length)];
+            // 选择得分最低的牌
+            tileScores.sort((a, b) => a.score - b.score);
+            if (tileScores.length > 0) {
+                // 在前几个低分牌中随机选择，增加变化
+                const topChoices = tileScores.slice(0, Math.min(3, tileScores.length));
+                return topChoices[Math.floor(Math.random() * topChoices.length)].tile;
             }
 
             // 最后才随机打一张
@@ -1521,37 +1760,41 @@
             const player = gameState.players[action.player];
 
             if (player.isBot) {
-                // 机器人动作
+                // 机器人动作 - 更智能的决策
                 setTimeout(() => {
                     if (action.type === 'hu') {
+                        // 胡牌总是执行
                         player.hand.push(action.tile);
                         player.hu = true;
                         player.huType = '胡牌';
                         showHuMessage(action.player, '胡牌');
                     } else if (action.type === 'gang') {
-                        // 机器人杠
-                        if (Math.random() > 0.3) {
+                        // 机器人杠 - 根据牌型决定
+                        const shouldGang = shouldBotGang(player, action.tile);
+                        if (shouldGang) {
                             performMingGang(action.player, action.tile);
                         } else {
                             processNextAction();
                         }
                     } else if (action.type === 'peng') {
-                        // 机器人有概率选择碰
-                        if (Math.random() > 0.4) {
+                        // 机器人碰 - 根据牌型决定
+                        const shouldPeng = shouldBotPeng(player, action.tile);
+                        if (shouldPeng) {
                             performPeng(action.player, action.tile);
                         } else {
                             processNextAction();
                         }
                     } else if (action.type === 'chi') {
-                        // 机器人选择吃
-                        if (Math.random() > 0.5) {
-                            const chiOption = action.options[Math.floor(Math.random() * action.options.length)];
+                        // 机器人吃 - 根据牌型决定
+                        const shouldChi = shouldBotChi(player, action.tile, action.options);
+                        if (shouldChi) {
+                            const chiOption = selectBestChiOption(player, action.options);
                             performChi(action.player, action.tile, chiOption);
                         } else {
                             processNextAction();
                         }
                     }
-                }, 500);
+                }, 600);
             } else {
                 // 玩家动作
                 if (action.type === 'hu') {
@@ -2063,6 +2306,16 @@
             const huDetails = calculateHuScore(player);
 
             let message = `<div class="hu-text">🎉 ${player.name} ${huType}！</div>`;
+
+            // 添加胡牌类型标签
+            if (gameState.huPatterns.length > 0) {
+                message += `<div style="margin: 10px 0;">`;
+                gameState.huPatterns.forEach(pattern => {
+                    message += `<span class="hu-type-tag">${pattern}</span>`;
+                });
+                message += `</div>`;
+            }
+
             message += `<div class="hu-details">${huDetails}</div>`;
 
             document.getElementById('message-text').innerHTML = message;
@@ -2070,7 +2323,22 @@
 
             // 更新玩家状态显示
             const infoEl = document.getElementById(`player-${playerIndex}-info`);
-            infoEl.classList.add('hu');
+            if (infoEl) infoEl.classList.add('hu');
+
+            // 为玩家手牌添加胜利动画
+            const handEl = document.getElementById(`player-${playerIndex}-hand`);
+            if (handEl) {
+                const tiles = handEl.querySelectorAll('.tile');
+                tiles.forEach(tile => tile.classList.add('win-anim'));
+            }
+
+            // 显示Toast提示
+            const isPlayerWin = playerIndex === 0;
+            if (isPlayerWin) {
+                showToast('🎊 恭喜你胡牌了！', 3000);
+            } else {
+                showToast(`${player.name} 胡牌了！`, 2000);
+            }
 
             gameState.isGameOver = true;
             disablePlayerActions();
@@ -2079,6 +2347,7 @@
         function calculateHuScore(player) {
             let score = 0;
             let details = [];
+            gameState.huPatterns = [];
 
             // 基础分
             score += 2;
@@ -2088,7 +2357,16 @@
             if (player.huType === '自摸') {
                 score += 1;
                 details.push('自摸：+1分');
+                player.zimoCount++;
+                gameState.huPatterns.push('自摸');
             }
+            player.huCount++;
+
+            // 获取完整手牌（包括副露）
+            const allTiles = [...player.hand];
+            player.melds.forEach(meld => {
+                meld.tiles.forEach(tile => allTiles.push(tile));
+            });
 
             // 杠分
             let gangCount = 0;
@@ -2100,16 +2378,77 @@
             if (gangCount > 0) {
                 score += gangCount;
                 details.push(`杠牌：+${gangCount}分`);
+                gameState.huPatterns.push(`${gangCount}个杠`);
             }
 
-            // 碰牌碰碰胡
-            if (player.melds.length >= 3 && player.melds.every(m => m.type === 'peng' || m.type === 'gang')) {
+            // 检测清一色
+            const suits = new Set(allTiles.map(t => t.suit));
+            if (suits.size === 1) {
+                score += 4;
+                details.push('清一色：+4分');
+                gameState.huPatterns.push('清一色');
+            }
+
+            // 检测碰碰胡
+            const isPengPengHu = player.melds.length >= 3 && player.melds.every(m => m.type === 'peng' || m.type === 'gang');
+            if (isPengPengHu) {
                 score += 2;
                 details.push('碰碰胡：+2分');
+                gameState.huPatterns.push('碰碰胡');
             }
 
-            details.push(`<strong>总计：${score}分</strong>`);
+            // 检测七对（需要特殊牌型）
+            const isQiDui = checkQiDui(player.hand);
+            if (isQiDui) {
+                score += 4;
+                details.push('七对：+4分');
+                gameState.huPatterns.push('七对');
+            }
+
+            // 检测金钩钓（单吊）
+            if (player.hand.length === 2) {
+                score += 1;
+                details.push('金钩钓：+1分');
+                gameState.huPatterns.push('金钩钓');
+            }
+
+            // 更新玩家总分
+            player.score += score;
+
+            details.push(`<strong>本局：${score}分 | 总计：${player.score}分</strong>`);
             return details.join('<br>');
+        }
+
+        // 检测七对
+        function checkQiDui(hand) {
+            if (hand.length !== 14 && hand.length !== 13) return false;
+
+            const tileCounts = {};
+            hand.forEach(tile => {
+                const key = getTileKey(tile);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+
+            const counts = Object.values(tileCounts);
+            // 七对需要7个对子
+            return counts.length === 7 && counts.every(c => c === 2);
+        }
+
+        // 检测龙七对
+        function checkLongQiDui(hand) {
+            if (hand.length !== 14 && hand.length !== 13) return false;
+
+            const tileCounts = {};
+            hand.forEach(tile => {
+                const key = getTileKey(tile);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+
+            const counts = Object.values(tileCounts);
+            // 龙七对需要6个对子 + 1个四张
+            const pairs = counts.filter(c => c === 2).length;
+            const quads = counts.filter(c => c === 4).length;
+            return pairs === 6 && quads === 1;
         }
 
         // ==================== 流局检查 ====================
@@ -2228,6 +2567,7 @@
             const tip = document.getElementById('action-tip');
             tip.textContent = message;
             tip.classList.add('show');
+            showToast(message, 1500);
         }
 
         function hideTip() {
@@ -2247,6 +2587,36 @@
 
         function hideRules() {
             document.getElementById('rules-panel').classList.remove('show');
+        }
+
+        function showStats() {
+            updateStatsDisplay();
+            document.getElementById('stats-panel').classList.add('show');
+        }
+
+        function hideStats() {
+            document.getElementById('stats-panel').classList.remove('show');
+        }
+
+        function updateStatsDisplay() {
+            gameState.players.forEach((player, index) => {
+                const huEl = document.getElementById(`stats-hu-${index}`);
+                const zimoEl = document.getElementById(`stats-zimo-${index}`);
+                const scoreEl = document.getElementById(`stats-score-${index}`);
+                if (huEl) huEl.textContent = player.huCount;
+                if (zimoEl) zimoEl.textContent = player.zimoCount;
+                if (scoreEl) scoreEl.textContent = player.score;
+            });
+        }
+
+        // Toast 提示功能
+        function showToast(message, duration = 2000) {
+            const toast = document.getElementById('toast-message');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
         }
 
         function updateUI() {
@@ -2367,9 +2737,185 @@
             gameState.selectedTile = tile;
         }
 
+        // ==================== 机器人智能决策 ====================
+        function shouldBotGang(player, tile) {
+            // 获取当前手牌中该牌的数量
+            const count = player.hand.filter(t =>
+                t.suit === tile.suit && t.value === tile.value
+            ).length;
+
+            // 如果已经有3张，可以考虑杠
+            if (count >= 3) {
+                // 检查是否接近听牌，如果接近则杠
+                const tempHand = [...player.hand];
+                const remainingHand = tempHand.filter(t =>
+                    !(t.suit === tile.suit && t.value === tile.value)
+                ).slice(0, -3);
+
+                // 简单策略：随机决定是否杠
+                return Math.random() > 0.2;
+            }
+            return false;
+        }
+
+        function shouldBotPeng(player, tile) {
+            // 如果是缺门牌，不碰
+            if (tile.suit === player.queSuit) return false;
+
+            // 统计当前手牌状态
+            const tileCounts = {};
+            player.hand.forEach(t => {
+                const key = getTileKey(t);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+
+            // 检查是否有利于听牌
+            const tempHand = [...player.hand];
+            const pengTiles = tempHand.filter(t =>
+                t.suit === tile.suit && t.value === tile.value
+            ).slice(0, 2);
+
+            const remainingHand = tempHand.filter(t =>
+                !pengTiles.some(pt => pt.id === t.id)
+            );
+
+            // 如果碰后更容易听牌，则碰
+            const progressBefore = evaluateHandProgress(player.hand, player.queSuit);
+            const progressAfter = evaluateHandProgress(remainingHand, player.queSuit);
+
+            // 碰牌后增加向听进度则碰
+            if (progressAfter >= progressBefore - 0.3) {
+                return Math.random() > 0.3; // 70%概率碰
+            }
+            return Math.random() > 0.7; // 30%概率碰
+        }
+
+        function shouldBotChi(player, tile, options) {
+            // 如果是缺门牌，不吃
+            if (tile.suit === player.queSuit) return false;
+
+            // 检查吃牌是否有利于听牌
+            for (const option of options) {
+                const tilesToRemove = option.tiles.filter(v => v !== tile.value);
+                const remainingHand = [...player.hand];
+
+                // 模拟移除牌
+                tilesToRemove.forEach(val => {
+                    const idx = remainingHand.findIndex(t =>
+                        t.suit === option.suit && t.value === val
+                    );
+                    if (idx > -1) remainingHand.splice(idx, 1);
+                });
+
+                const progressBefore = evaluateHandProgress(player.hand, player.queSuit);
+                const progressAfter = evaluateHandProgress(remainingHand, player.queSuit);
+
+                if (progressAfter >= progressBefore - 0.5) {
+                    return Math.random() > 0.4; // 60%概率吃
+                }
+            }
+            return Math.random() > 0.8; // 20%概率吃
+        }
+
+        function selectBestChiOption(player, options) {
+            // 选择最优的吃牌方式
+            let bestOption = options[0];
+            let bestScore = -1;
+
+            for (const option of options) {
+                let score = 0;
+
+                // 中间顺子（如4-5-6）比边张顺子（如1-2-3）更好
+                const middleValue = option.tiles[1];
+                if (middleValue >= 4 && middleValue <= 6) {
+                    score += 3;
+                } else if (middleValue >= 3 && middleValue <= 7) {
+                    score += 2;
+                }
+
+                // 检查吃完后的牌型
+                const tilesToRemove = option.tiles.filter(v => v !== gameState.lastDiscardedTile?.value);
+                const remainingHand = [...player.hand];
+                tilesToRemove.forEach(val => {
+                    const idx = remainingHand.findIndex(t =>
+                        t.suit === option.suit && t.value === val
+                    );
+                    if (idx > -1) remainingHand.splice(idx, 1);
+                });
+
+                const progress = evaluateHandProgress(remainingHand, player.queSuit);
+                score += progress * 2;
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestOption = option;
+                }
+            }
+
+            return bestOption;
+        }
+
+        // 评估手牌进度（0-1，越高越好）
+        function evaluateHandProgress(hand, queSuit) {
+            const nonQueTiles = hand.filter(t => t.suit !== queSuit);
+            if (nonQueTiles.length === 0) return 0;
+
+            const tileCounts = {};
+            nonQueTiles.forEach(tile => {
+                const key = getTileKey(tile);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+
+            let score = 0;
+            const counts = Object.values(tileCounts);
+
+            // 对子加分
+            counts.forEach(count => {
+                if (count === 2) score += 1;
+                if (count === 3) score += 2;
+                if (count === 4) score += 3;
+            });
+
+            // 检查顺子潜力
+            for (const suit of ['wan', 'tong', 'tiao']) {
+                if (suit === queSuit) continue;
+                for (let value = 1; value <= 7; value++) {
+                    const c1 = tileCounts[`${suit}-${value}`] || 0;
+                    const c2 = tileCounts[`${suit}-${value + 1}`] || 0;
+                    const c3 = tileCounts[`${suit}-${value + 2}`] || 0;
+
+                    if (c1 > 0 && c2 > 0 && c3 > 0) {
+                        score += 2; // 已成顺子
+                    } else if ((c1 > 0 && c2 > 0) || (c2 > 0 && c3 > 0) || (c1 > 0 && c3 > 0)) {
+                        score += 0.5; // 顺子潜力
+                    }
+                }
+            }
+
+            return Math.min(score / 6, 1); // 归一化到0-1
+        }
+
+        // ==================== 游戏音效（可选） ====================
+        function playSound(type) {
+            // 简单的音效提示，可以扩展为真实音效
+            const sounds = {
+                draw: '摸牌',
+                discard: '打牌',
+                peng: '碰',
+                gang: '杠',
+                chi: '吃',
+                hu: '胡',
+                win: '胜利',
+                error: '错误'
+            };
+            // 这里可以添加真实音效播放代码
+            // console.log(`播放音效: ${sounds[type] || type}`);
+        }
+
         // ==================== 初始化 ====================
         window.onload = function() {
             startNewGame();
+            showToast('欢迎来到四川麻将！请选择缺门开始游戏', 3000);
         };
     </script>
 </body>
