@@ -110,15 +110,10 @@
         .btn-equal {
             background: #34c759;
             color: white;
-            grid-column: span 2;
         }
 
         .btn-equal:hover {
             background: #2eb350;
-        }
-
-        .btn-zero {
-            grid-column: span 2;
         }
 
         .title {
@@ -134,38 +129,48 @@
             font-size: 12px;
             color: #666;
         }
+
+        /* 错误状态 */
+        .display.error .result {
+            color: #ff3b30;
+        }
     </style>
 </head>
 <body>
     <div class="calculator">
         <h1 class="title">🧮 简易计算器</h1>
-        <div class="display">
+        <div class="display" id="display">
             <div class="expression" id="expression"></div>
             <div class="result" id="result">0</div>
         </div>
         <div class="buttons">
+            <!-- 第一行: C, CE, ÷, × -->
             <button class="btn btn-clear" onclick="clearAll()">C</button>
             <button class="btn btn-clear" onclick="clearEntry()">CE</button>
             <button class="btn btn-operator" onclick="appendOperator('/')">÷</button>
             <button class="btn btn-operator" onclick="appendOperator('*')">×</button>
 
+            <!-- 第二行: 7, 8, 9, − -->
             <button class="btn btn-number" onclick="appendNumber('7')">7</button>
             <button class="btn btn-number" onclick="appendNumber('8')">8</button>
             <button class="btn btn-number" onclick="appendNumber('9')">9</button>
             <button class="btn btn-operator" onclick="appendOperator('-')">−</button>
 
+            <!-- 第三行: 4, 5, 6, + -->
             <button class="btn btn-number" onclick="appendNumber('4')">4</button>
             <button class="btn btn-number" onclick="appendNumber('5')">5</button>
             <button class="btn btn-number" onclick="appendNumber('6')">6</button>
             <button class="btn btn-operator" onclick="appendOperator('+')">+</button>
 
+            <!-- 第四行: 1, 2, 3, = -->
             <button class="btn btn-number" onclick="appendNumber('1')">1</button>
             <button class="btn btn-number" onclick="appendNumber('2')">2</button>
             <button class="btn btn-number" onclick="appendNumber('3')">3</button>
-            <button class="btn btn-operator" onclick="calculate()">=</button>
+            <button class="btn btn-equal" onclick="calculate()" style="grid-row: span 2;">=</button>
 
-            <button class="btn btn-number btn-zero" onclick="appendNumber('0')">0</button>
-            <button class="btn btn-number" onclick="appendNumber('10')">10</button>
+            <!-- 第五行: 0, 10 -->
+            <button class="btn btn-number" onclick="appendNumber('0')">0</button>
+            <button class="btn btn-number" onclick="appendNumber('10')" style="grid-column: span 2;">10</button>
         </div>
         <div class="info">支持 10 以内数字的加减乘除计算</div>
     </div>
@@ -177,13 +182,20 @@
 
         const expressionElement = document.getElementById('expression');
         const resultElement = document.getElementById('result');
+        const displayElement = document.getElementById('display');
 
         function updateDisplay() {
-            expressionElement.textContent = expression;
+            expressionElement.textContent = formatExpression(expression);
             resultElement.textContent = currentInput;
         }
 
+        function formatExpression(expr) {
+            return expr.replace(/\*/g, '×').replace(/\//g, '÷').replace(/-/g, '−');
+        }
+
         function appendNumber(number) {
+            displayElement.classList.remove('error');
+            
             if (shouldResetScreen) {
                 currentInput = number;
                 shouldResetScreen = false;
@@ -205,9 +217,12 @@
         }
 
         function appendOperator(operator) {
+            displayElement.classList.remove('error');
+            
             // 限制数字在10以内
             if (parseFloat(currentInput) > 10) {
                 currentInput = '超出范围(>10)';
+                displayElement.classList.add('error');
                 shouldResetScreen = true;
                 updateDisplay();
                 return;
@@ -232,43 +247,60 @@
                 return;
             }
 
+            displayElement.classList.remove('error');
+
             // 限制数字在10以内
             if (parseFloat(currentInput) > 10) {
                 currentInput = '超出范围(>10)';
+                displayElement.classList.add('error');
                 shouldResetScreen = true;
                 updateDisplay();
                 return;
             }
 
-            expression += currentInput;
-            
+            let fullExpression = expression + currentInput;
+
             try {
-                // 替换显示符号为实际运算符
-                let evalExpression = expression.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
-                
                 // 安全检查：只允许数字和基本运算符
-                if (!/^[\d+\-*/\s]+$/.test(evalExpression)) {
+                if (!/^[\d+\-*/\s.]+$/.test(fullExpression)) {
                     throw new Error('Invalid expression');
                 }
 
-                let result = eval(evalExpression);
-                
+                // 验证所有数字都在10以内
+                const numbers = fullExpression.match(/[\d.]+/g);
+                if (numbers) {
+                    for (let num of numbers) {
+                        if (parseFloat(num) > 10) {
+                            currentInput = '超出范围(>10)';
+                            displayElement.classList.add('error');
+                            expression = '';
+                            shouldResetScreen = true;
+                            updateDisplay();
+                            return;
+                        }
+                    }
+                }
+
+                let result = eval(fullExpression);
+
                 // 处理除零错误
                 if (!isFinite(result)) {
                     currentInput = '错误';
+                    displayElement.classList.add('error');
                 } else {
                     // 限制结果为整数或最多4位小数
                     currentInput = parseFloat(result.toFixed(4)).toString();
                 }
-                
+
                 expression = '';
                 shouldResetScreen = true;
             } catch (error) {
                 currentInput = '错误';
+                displayElement.classList.add('error');
                 expression = '';
                 shouldResetScreen = true;
             }
-            
+
             updateDisplay();
         }
 
@@ -276,11 +308,13 @@
             expression = '';
             currentInput = '0';
             shouldResetScreen = false;
+            displayElement.classList.remove('error');
             updateDisplay();
         }
 
         function clearEntry() {
             currentInput = '0';
+            displayElement.classList.remove('error');
             updateDisplay();
         }
 
@@ -301,6 +335,7 @@
                 } else {
                     currentInput = '0';
                 }
+                displayElement.classList.remove('error');
                 updateDisplay();
             }
         });
