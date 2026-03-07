@@ -165,8 +165,7 @@
             <button class="btn btn-operator" onclick="calculate()">=</button>
 
             <button class="btn btn-number btn-zero" onclick="appendNumber('0')">0</button>
-            <button class="btn btn-number" onclick="appendNumber('.')">.</button>
-            <button class="btn btn-operator" onclick="appendOperator('%')">%</button>
+            <button class="btn btn-number" onclick="appendNumber('10')">10</button>
         </div>
         <div class="info">支持 10 以内数字的加减乘除计算</div>
     </div>
@@ -186,16 +185,20 @@
 
         function appendNumber(number) {
             if (shouldResetScreen) {
-                currentInput = number === '.' ? '0.' : number;
+                currentInput = number;
                 shouldResetScreen = false;
             } else {
-                if (number === '.' && currentInput.includes('.')) {
-                    return;
-                }
-                if (currentInput === '0' && number !== '.') {
+                // 对于10这个特殊数字，直接替换当前输入
+                if (number === '10') {
+                    currentInput = number;
+                } else if (currentInput === '0') {
                     currentInput = number;
                 } else {
-                    currentInput += number;
+                    // 限制只能输入10以内的数字
+                    let newInput = currentInput + number;
+                    if (parseFloat(newInput) <= 10) {
+                        currentInput = newInput;
+                    }
                 }
             }
             updateDisplay();
@@ -244,7 +247,7 @@
                 let evalExpression = expression.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
                 
                 // 安全检查：只允许数字和基本运算符
-                if (!/^[\d+\-*/.%\s.]+$/.test(evalExpression)) {
+                if (!/^[\d+\-*/\s]+$/.test(evalExpression)) {
                     throw new Error('Invalid expression');
                 }
 
@@ -285,8 +288,6 @@
         document.addEventListener('keydown', (event) => {
             if (event.key >= '0' && event.key <= '9') {
                 appendNumber(event.key);
-            } else if (event.key === '.') {
-                appendNumber('.');
             } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/') {
                 appendOperator(event.key);
             } else if (event.key === 'Enter' || event.key === '=') {
