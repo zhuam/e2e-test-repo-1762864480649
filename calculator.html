@@ -238,11 +238,9 @@
                 return;
             }
 
-            // 限制输入10以内
-            if (currentValue === '0' && number !== '.') {
+            // 限制输入10以内的整数
+            if (currentValue === '0') {
                 currentValue = number;
-            } else if (number === '.' && currentValue.includes('.')) {
-                return;
             } else {
                 currentValue += number;
             }
@@ -343,7 +341,6 @@
             if (e.key >= '0' && e.key <= '9') appendNumber(e.key);
             // 支持 Shift+1 输入 10
             if (e.shiftKey && e.key === '!') appendNumber('10');
-            if (e.key === '.') appendNumber('.');
             if (e.key === '+') appendOperator('+');
             if (e.key === '-') appendOperator('-');
             if (e.key === '*') appendOperator('*');
