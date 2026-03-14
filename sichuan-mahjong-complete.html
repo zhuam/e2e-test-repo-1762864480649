@@ -1756,6 +1756,9 @@
                 return;
             }
 
+            // 先重置所有按钮状态
+            resetActionButtons();
+
             const action = gameState.pendingActions.shift();
             const player = gameState.players[action.player];
 
@@ -1766,8 +1769,10 @@
                         // 胡牌总是执行
                         player.hand.push(action.tile);
                         player.hu = true;
-                        player.huType = '胡牌';
-                        showHuMessage(action.player, '胡牌');
+                        // 检测胡牌类型
+                        const huType = detectHuType(player.hand, player.queSuit);
+                        player.huType = huType;
+                        showHuMessage(action.player, huType);
                     } else if (action.type === 'gang') {
                         // 机器人杠 - 根据牌型决定
                         const shouldGang = shouldBotGang(player, action.tile);
@@ -1794,7 +1799,7 @@
                             processNextAction();
                         }
                     }
-                }, 600);
+                }, 800 + Math.random() * 400); // 增加随机延迟，更像真人
             } else {
                 // 玩家动作
                 if (action.type === 'hu') {
@@ -1812,8 +1817,8 @@
                     document.getElementById('btn-peng').disabled = false;
                     document.getElementById('btn-ignore').style.display = 'inline-block';
                     disableDiscardButton();
-                    
-                    // 继续检查是否还有其他动作
+
+                    // 继续检查是否还有其他动作（如吃）
                     if (gameState.pendingActions.length > 0) {
                         const nextAction = gameState.pendingActions[0];
                         if (nextAction.player === 0 && nextAction.type === 'chi') {
@@ -1827,6 +1832,19 @@
                     document.getElementById('btn-chi').disabled = false;
                     document.getElementById('btn-ignore').style.display = 'inline-block';
                     disableDiscardButton();
+                }
+
+                // 如果还有未处理的其他动作（如胡），继续显示按钮
+                if (gameState.pendingActions.length > 0) {
+                    for (const pending of gameState.pendingActions) {
+                        if (pending.player === 0) {
+                            if (pending.type === 'hu' && action.type !== 'hu') {
+                                document.getElementById('btn-hu').disabled = false;
+                            } else if (pending.type === 'gang' && action.type !== 'gang') {
+                                document.getElementById('btn-gang').disabled = false;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1905,6 +1923,16 @@
         function showChiOptions() {
             if (!gameState.canChi || gameState.chiOptions.length === 0) return;
             showChiOptionsForPlayer(gameState.chiOptions);
+        }
+
+        // 重置所有动作按钮状态
+        function resetActionButtons() {
+            document.getElementById('btn-discard').disabled = true;
+            document.getElementById('btn-chi').disabled = true;
+            document.getElementById('btn-peng').disabled = true;
+            document.getElementById('btn-gang').disabled = true;
+            document.getElementById('btn-hu').disabled = true;
+            document.getElementById('btn-ignore').style.display = 'none';
         }
 
         function showChiOptionsForPlayer(options) {
@@ -2281,7 +2309,7 @@
 
         function huAction() {
             const player = gameState.players[0];
-            
+
             // 如果是别人打的牌，加到手牌中
             if (gameState.lastDiscardedTile) {
                 player.hand.push(gameState.lastDiscardedTile);
@@ -2297,13 +2325,15 @@
             }
 
             player.hu = true;
-            player.huType = gameState.lastDiscardedTile ? '胡牌' : '自摸';
+            // 检测胡牌类型
+            const isZimo = !gameState.lastDiscardedTile;
+            player.huType = isZimo ? '自摸' : detectHuType(player.hand, player.queSuit);
             showHuMessage(0, player.huType);
         }
 
         function showHuMessage(playerIndex, huType) {
             const player = gameState.players[playerIndex];
-            const huDetails = calculateHuScore(player);
+            const huDetails = calculateHuScore(player, huType);
 
             let message = `<div class="hu-text">🎉 ${player.name} ${huType}！</div>`;
 
@@ -2344,7 +2374,101 @@
             disablePlayerActions();
         }
 
-        function calculateHuScore(player) {
+        // 检测胡牌类型
+        function detectHuType(hand, queSuit) {
+            const allTiles = [...hand];
+
+            // 检查七对
+            if (checkQiDui(hand)) {
+                // 检查龙七对
+                if (checkLongQiDui(hand)) {
+                    return '龙七对';
+                }
+                return '七对';
+            }
+
+            // 统计牌型
+            const tileCounts = {};
+            hand.forEach(tile => {
+                const key = getTileKey(tile);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+
+            // 检查清一色
+            const suits = new Set(hand.map(t => t.suit));
+            if (suits.size === 1) {
+                return '清一色';
+            }
+
+            // 检查碰碰胡（所有组合都是刻子）
+            if (checkPengPengHu(hand)) {
+                return '碰碰胡';
+            }
+
+            // 检查将对胡
+            if (checkJiangDuiHu(hand)) {
+                return '将对胡';
+            }
+
+            // 检查带幺九
+            if (checkDaiYaoJiu(hand)) {
+                return '带幺九';
+            }
+
+            // 检查平胡
+            return '平胡';
+        }
+
+        // 检查碰碰胡
+        function checkPengPengHu(hand) {
+            const tileCounts = {};
+            hand.forEach(tile => {
+                const key = getTileKey(tile);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+
+            // 将牌
+            let hasPair = false;
+            const counts = Object.values(tileCounts);
+            for (const count of counts) {
+                if (count === 2) {
+                    hasPair = true;
+                } else if (count !== 3 && count !== 4) {
+                    return false;
+                }
+            }
+            return hasPair;
+        }
+
+        // 检查将对胡（所有对子都是 2、5、8）
+        function checkJiangDuiHu(hand) {
+            const tileCounts = {};
+            hand.forEach(tile => {
+                const key = getTileKey(tile);
+                tileCounts[key] = (tileCounts[key] || 0) + 1;
+            });
+
+            const counts = Object.values(tileCounts);
+            for (const count of counts) {
+                if (count !== 2 && count !== 3 && count !== 4) {
+                    return false;
+                }
+            }
+            // 简化检查，实际需要更复杂的逻辑
+            return false;
+        }
+
+        // 检查带幺九
+        function checkDaiYaoJiu(hand) {
+            for (const tile of hand) {
+                if (tile.value !== 1 && tile.value !== 9) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function calculateHuScore(player, huType) {
             let score = 0;
             let details = [];
             gameState.huPatterns = [];
