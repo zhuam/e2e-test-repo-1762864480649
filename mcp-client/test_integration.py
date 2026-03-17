@@ -20,7 +20,7 @@ async def test_stdio_integration():
     print("=" * 60)
     
     client = StdioMCPClient(
-        command=["python", "mcp-server/server.py", "--transport", "stdio"]
+        command=["python", "../mcp-server/server.py", "--transport", "stdio"]
     )
     
     try:
