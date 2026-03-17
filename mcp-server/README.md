@@ -1,14 +1,15 @@
 # Simple MCP Server
 
-一个最简单的 Python MCP Server 实现，支持 stdio 和 sse 两种传输方式。
+一个最简单的 Python MCP Server 实现，支持 stdio 和 http 两种传输方式。
 
 ## 功能特点
 
 - ✅ 支持 stdio 传输方式（标准输入输出）
-- ✅ 支持 SSE 传输方式（Server-Sent Events）
+- ✅ 支持 HTTP 传输方式（REST API 风格）
 - ✅ 完整的 MCP 协议实现
 - ✅ 提供 7 个实用工具函数
 - ✅ 无需复杂依赖
+- ✅ 包含完整的功能测试
 
 ## 安装
 
@@ -43,28 +44,41 @@ echo '{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}' | python server.py
 echo '{"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "add", "arguments": {"a": 10, "b": 20}}}' | python server.py
 ```
 
-### 2. SSE 模式
+### 2. HTTP 模式
 
 ```bash
-python server.py --transport sse --host 127.0.0.1 --port 3000
+python server.py --transport http --host 127.0.0.1 --port 3000
 ```
 
-**SSE 模式示例请求：**
+**HTTP 模式 API 端点：**
+
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/` | GET | 服务器信息和可用端点 |
+| `/health` | GET | 健康检查 |
+| `/tools` | GET | 获取工具列表 |
+| `/call` | POST | 调用工具（简单格式） |
+| `/rpc` | POST | JSON-RPC 格式请求 |
+
+**HTTP 模式示例请求：**
 
 ```bash
 # 获取服务器信息
 curl http://127.0.0.1:3000/
 
+# 健康检查
+curl http://127.0.0.1:3000/health
+
 # 获取工具列表
 curl http://127.0.0.1:3000/tools
 
 # 调用工具（简单格式）
-curl -X POST http://127.0.0.1:3000/message \
+curl -X POST http://127.0.0.1:3000/call \
   -H "Content-Type: application/json" \
   -d '{"tool": "add", "params": {"a": 10, "b": 20}}'
 
-# 调用工具（MCP 标准格式）
-curl -X POST http://127.0.0.1:3000/message \
+# 调用工具（JSON-RPC 格式）
+curl -X POST http://127.0.0.1:3000/rpc \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -107,9 +121,66 @@ python server.py --help
 
 optional arguments:
   -h, --help            show this help message and exit
-  --transport {stdio,sse}
-                        Transport mode: stdio or sse (default: stdio)
-  --host HOST           Host for SSE mode (default: 127.0.0.1)
-  --port PORT           Port for SSE mode (default: 3000)
+  --transport {stdio,http}
+                        Transport mode: stdio or http (default: stdio)
+  --host HOST           Host for HTTP mode (default: 127.0.0.1)
+  --port PORT           Port for HTTP mode (default: 3000)
   --version             show program's version number and exit
+```
+
+## 运行测试
+
+```bash
+# 运行功能测试
+python test_server.py
+```
+
+测试包括：
+- stdio 传输方式测试（12 个测试用例）
+- HTTP 传输方式测试（11 个测试用例）
+
+测试内容涵盖：
+- 初始化和工具列表获取
+- 所有工具的调用测试
+- 错误处理测试（除以零、未知工具、缺少参数等）
+- HTTP 端点测试
+
+## 快速开始
+
+```bash
+# 1. 安装依赖
+pip install -r requirements.txt
+
+# 2. 启动 HTTP 服务器
+python server.py --transport http --port 3000
+
+# 3. 在另一个终端测试
+curl http://127.0.0.1:3000/tools
+curl -X POST http://127.0.0.1:3000/call -H "Content-Type: application/json" -d '{"tool": "add", "params": {"a": 5, "b": 3}}'
+```
+
+## 示例输出
+
+**HTTP 工具调用响应：**
+```json
+{
+  "success": true,
+  "result": 8
+}
+```
+
+**JSON-RPC 响应：**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"success\": true, \"result\": 8}"
+      }
+    ]
+  }
+}
 ```

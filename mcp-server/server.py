@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 最简单的 MCP Server 实现
-支持 stdio 和 sse 两种传输方式
+支持 stdio 和 http 两种传输方式
 """
 
 import argparse
@@ -310,107 +310,98 @@ class StdioServer:
                 print(json.dumps(error_response, ensure_ascii=False), flush=True)
 
 
-class SSEServer:
-    """基于 SSE 的 MCP Server"""
+class HTTPServer:
+    """基于 HTTP 的 MCP Server（REST API 风格）"""
 
     def __init__(self, server: MCPServer, host: str = "127.0.0.1", port: int = 3000):
         self.server = server
         self.host = host
         self.port = port
-        self.sessions: Dict[str, asyncio.Queue] = {}
 
-    async def handle_sse(self, request):
-        """处理 SSE 连接"""
-        import aiohttp
-        from aiohttp import web
-
-        session_id = str(id(asyncio.current_task()))
-        queue = asyncio.Queue()
-        self.sessions[session_id] = queue
-
-        response = web.StreamResponse(
-            status=200,
-            reason='OK',
-            headers={
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-                'Access-Control-Allow-Origin': '*'
-            }
-        )
-        await response.prepare(request)
-
-        # 发送初始事件
-        await response.write(f"event: connected\ndata: {{\"session_id\": \"{session_id}\"}}\n\n".encode())
-
-        try:
-            while True:
-                try:
-                    data = await asyncio.wait_for(queue.get(), timeout=30)
-                    event_data = json.dumps(data)
-                    await response.write(f"event: message\ndata: {event_data}\n\n".encode())
-                except asyncio.TimeoutError:
-                    # 发送 ping 保持连接
-                    await response.write(f"event: ping\ndata: {{}}\n\n".encode())
-        except Exception as e:
-            logger.error(f"SSE connection error: {e}")
-        finally:
-            del self.sessions[session_id]
-
-        return response
-
-    async def handle_post(self, request):
-        """处理 POST 请求"""
+    async def handle_request(self, request):
+        """处理 HTTP 请求"""
         from aiohttp import web
 
         try:
-            data = await request.json()
+            # 获取请求方法和路径
+            method = request.method
+            path = request.path
 
-            # 支持两种格式：标准 MCP 请求或直接请求
-            if "jsonrpc" in data:
-                response = self.server.handle_request(data)
-            else:
-                # 简单格式：直接调用工具
+            # 路由处理
+            if path == '/' and method == 'GET':
+                # 根路径 - 返回服务器信息
+                return web.json_response({
+                    "name": "Simple MCP Server",
+                    "version": "1.0.0",
+                    "description": "最简单的 MCP Server 实现",
+                    "endpoints": {
+                        "health": "GET /health",
+                        "tools": "GET /tools",
+                        "call": "POST /call",
+                        "rpc": "POST /rpc"
+                    }
+                })
+
+            elif path == '/health' and method == 'GET':
+                # 健康检查
+                return web.json_response({"status": "ok"})
+
+            elif path == '/tools' and method == 'GET':
+                # 获取工具列表
+                capabilities = self.server.get_capabilities()
+                return web.json_response(capabilities)
+
+            elif path == '/call' and method == 'POST':
+                # 调用工具（简单格式）
+                data = await request.json()
                 tool_name = data.get("tool")
                 params = data.get("params", {})
+                
+                if not tool_name:
+                    return web.json_response({
+                        "success": False,
+                        "error": "Missing 'tool' parameter"
+                    }, status=400)
+                
                 result = self.server.execute_tool(tool_name, params)
-                response = result
+                return web.json_response(result)
 
-            # 如果有 SSE 连接，广播结果
-            for queue in self.sessions.values():
-                await queue.put(response)
+            elif path == '/rpc' and method == 'POST':
+                # JSON-RPC 格式请求
+                data = await request.json()
+                response = self.server.handle_request(data)
+                return web.json_response(response)
 
-            return web.json_response(response)
+            else:
+                return web.json_response({
+                    "error": "Not found",
+                    "message": f"Unknown endpoint: {method} {path}"
+                }, status=404)
+
+        except json.JSONDecodeError as e:
+            return web.json_response({
+                "success": False,
+                "error": f"Invalid JSON: {str(e)}"
+            }, status=400)
         except Exception as e:
+            logger.error(f"HTTP request error: {e}")
             return web.json_response({
                 "success": False,
                 "error": str(e)
             }, status=500)
 
-    async def handle_get_tools(self, request):
-        """获取工具列表"""
-        from aiohttp import web
-        return web.json_response(self.server.get_capabilities())
-
     async def run(self):
-        """运行 SSE 服务器"""
+        """运行 HTTP 服务器"""
         from aiohttp import web
 
-        logger.info(f"Starting MCP server in SSE mode on http://{self.host}:{self.port}")
+        logger.info(f"Starting MCP server in HTTP mode on http://{self.host}:{self.port}")
 
         app = web.Application()
-        app.router.add_get('/sse', self.handle_sse)
-        app.router.add_post('/message', self.handle_post)
-        app.router.add_get('/tools', self.handle_get_tools)
-        app.router.add_get('/', lambda r: web.json_response({
-            "name": "Simple MCP Server",
-            "version": "1.0.0",
-            "endpoints": {
-                "sse": "/sse",
-                "message": "POST /message",
-                "tools": "GET /tools"
-            }
-        }))
+        app.router.add_route('*', '/', self.handle_request)
+        app.router.add_route('*', '/health', self.handle_request)
+        app.router.add_route('*', '/tools', self.handle_request)
+        app.router.add_route('*', '/call', self.handle_request)
+        app.router.add_route('*', '/rpc', self.handle_request)
 
         runner = web.AppRunner(app)
         await runner.setup()
@@ -418,9 +409,10 @@ class SSEServer:
         await site.start()
 
         logger.info(f"MCP Server running at http://{self.host}:{self.port}")
-        logger.info(f"  - SSE endpoint: http://{self.host}:{self.port}/sse")
-        logger.info(f"  - Message endpoint: http://{self.host}:{self.port}/message")
-        logger.info(f"  - Tools endpoint: http://{self.host}:{self.port}/tools")
+        logger.info(f"  - Health check: http://{self.host}:{self.port}/health")
+        logger.info(f"  - Tools list: http://{self.host}:{self.port}/tools")
+        logger.info(f"  - Call tool: POST http://{self.host}:{self.port}/call")
+        logger.info(f"  - JSON-RPC: POST http://{self.host}:{self.port}/rpc")
 
         # 保持运行
         while True:
@@ -430,10 +422,10 @@ class SSEServer:
 async def main():
     """主函数"""
     parser = argparse.ArgumentParser(description='Simple MCP Server')
-    parser.add_argument('--transport', choices=['stdio', 'sse'], default='stdio',
-                        help='Transport mode: stdio or sse (default: stdio)')
-    parser.add_argument('--host', default='127.0.0.1', help='Host for SSE mode (default: 127.0.0.1)')
-    parser.add_argument('--port', type=int, default=3000, help='Port for SSE mode (default: 3000)')
+    parser.add_argument('--transport', choices=['stdio', 'http'], default='stdio',
+                        help='Transport mode: stdio or http (default: stdio)')
+    parser.add_argument('--host', default='127.0.0.1', help='Host for HTTP mode (default: 127.0.0.1)')
+    parser.add_argument('--port', type=int, default=3000, help='Port for HTTP mode (default: 3000)')
     parser.add_argument('--version', action='version', version='%(prog)s 1.0.0')
 
     args = parser.parse_args()
@@ -443,9 +435,9 @@ async def main():
     if args.transport == 'stdio':
         stdio_server = StdioServer(server)
         await stdio_server.run()
-    elif args.transport == 'sse':
-        sse_server = SSEServer(server, host=args.host, port=args.port)
-        await sse_server.run()
+    elif args.transport == 'http':
+        http_server = HTTPServer(server, host=args.host, port=args.port)
+        await http_server.run()
 
 
 if __name__ == "__main__":
