@@ -80,9 +80,7 @@ class StdioMCPClient(MCPClient):
         super().__init__()
         self.command = command
         self.cwd = cwd
-        self.process: Optional[subprocess.Popen] = None
-        self._reader: Optional[asyncio.StreamReader] = None
-        self._writer: Optional[asyncio.StreamWriter] = None
+        self.process: Optional[asyncio.subprocess.Process] = None
 
     async def connect(self) -> None:
         """连接到 MCP 服务器"""
@@ -144,6 +142,9 @@ class StdioMCPClient(MCPClient):
                 logger.warning("Server did not terminate gracefully, killing...")
                 self.process.kill()
                 await self.process.wait()
+            except ProcessLookupError:
+                # 进程已经不存在了
+                logger.info("Process already terminated")
             finally:
                 self.process = None
 
