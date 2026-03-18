@@ -12,14 +12,14 @@
         <div class="auth-card">
             <div class="auth-header">
                 <h1 class="auth-title">欢迎回来</h1>
-                <p class="auth-subtitle">请登录您的账户</p>
+                <p class="auth-subtitle">使用用户名、邮箱或手机号登录</p>
             </div>
 
             <form id="loginForm" class="auth-form">
                 <div class="form-group">
-                    <label for="username">用户名</label>
+                    <label for="username">用户名/邮箱/手机号</label>
                     <input type="text" id="username" name="username" required
-                           placeholder="请输入用户名" autocomplete="username">
+                           placeholder="请输入用户名、邮箱或手机号" autocomplete="username">
                     <span class="input-icon">👤</span>
                 </div>
 
@@ -56,17 +56,16 @@
                 <h2>UserSystem</h2>
                 <p>安全可靠的用户管理系统</p>
                 <ul class="features-list">
+                    <li>✓ 支持用户名/邮箱/手机号登录</li>
                     <li>✓ 安全的 JWT 认证</li>
                     <li>✓ 密码加密存储</li>
-                    <li>✓ 快速响应</li>
                 </ul>
             </div>
         </div>
     </div>
 
-    <script src="/js/app.js"></script>
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', handleLogin);
-    </script>
+    <!-- 引入 jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="/js/login.js"></script>
 </body>
 </html>

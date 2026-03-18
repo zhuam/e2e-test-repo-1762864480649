@@ -3,6 +3,7 @@ package com.example.webapp.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,10 +29,13 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
-    @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(length = 100)
     private String email;
+
+    @Pattern(regexp = "^$|1[3-9]\\d{9}", message = "Invalid phone number format")
+    @Column(length = 11, unique = true)
+    private String phone;
 
     @NotBlank(message = "Password is required")
     @Column(nullable = false)
