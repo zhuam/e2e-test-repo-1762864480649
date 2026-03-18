@@ -11,7 +11,10 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @Service
@@ -22,6 +25,9 @@ public class JwtService {
 
     @Value("${jwt.expiration:86400000}")
     private long jwtExpiration;
+
+    // Store invalidated tokens (in production, use Redis or database)
+    private final Set<String> invalidatedTokens = ConcurrentHashMap.newKeySet();
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
@@ -41,6 +47,20 @@ public class JwtService {
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey())
                 .compact();
+    }
+
+    /**
+     * Invalidate a token (for logout)
+     */
+    public void invalidateToken(String token) {
+        invalidatedTokens.add(token);
+    }
+
+    /**
+     * Check if a token has been invalidated
+     */
+    public boolean isTokenInvalidated(String token) {
+        return invalidatedTokens.contains(token);
     }
 
     public String extractUsername(String token) {
@@ -69,6 +89,11 @@ public class JwtService {
     }
 
     public Boolean validateToken(String token, String username) {
+        // Check if token is invalidated
+        if (isTokenInvalidated(token)) {
+            return false;
+        }
+        
         final String extractedUsername = extractUsername(token);
         return (extractedUsername.equals(username) && !isTokenExpired(token));
     }
