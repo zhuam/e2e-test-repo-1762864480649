@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Camera AI</string>
+    <string name="capture_desc">Take photo</string>
+    <string name="gallery_desc">Open gallery</string>
+    <string name="analyze_desc">Analyze with AI</string>
+    <string name="captured_image_desc">Captured image</string>
+    <string name="analyzing">Analyzing with AI...</string>
+    <string name="result_hint">AI analysis result will appear here</string>
+    <string name="retake">Retake</string>
+    <string name="analyze_with_ai">Analyze with AI</string>
+    <string name="permission_required">Camera permission is required</string>
+    <string name="error_taking_photo">Error taking photo</string>
+    <string name="error_analyzing">Error analyzing image</string>
+    <string name="no_image_captured">No image captured</string>
+    <string name="ai_result">AI Analysis Result:\n%1$s</string>
+    <string name="image_saved">Image saved successfully</string>
+</resources>

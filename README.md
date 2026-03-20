@@ -87,3 +87,27 @@ A temporary repo for E2E testing.
 - 键盘控制：方向键移动/旋转，空格键硬降，P 键暂停
 - 响应式设计，支持移动端触屏控制
 
+### Camera AI - Android 应用
+Android 拍照并调用 AI 模型解读图片的应用程序。
+
+- **[android-camera-app/](android-camera-app/)** - Android 应用项目
+
+#### 功能特色
+1. **拍照功能** - 使用 CameraX 实现相机预览和拍照
+2. **图库选择** - 支持从相册选择图片
+3. **AI 图像分析** - 调用 AI 模型解读图片内容
+4. **多模型支持** - 支持 OpenAI GPT-4 Vision、Claude Vision 等
+
+#### 支持的 AI 服务
+- OpenAI GPT-4 Vision API
+- Anthropic Claude Vision API
+- 自定义 API 端点
+- 本地 TensorFlow Lite 模型（待实现）
+
+#### 使用方法
+1. 使用 Android Studio 打开 `android-camera-app` 项目
+2. 在 `ModelInterpreter.java` 中配置您的 API 密钥
+3. 编译并运行到 Android 设备或模拟器
+4. 授予相机权限后，点击拍照按钮拍摄照片
+5. 点击"AI 分析"按钮获取图片解读结果
+
