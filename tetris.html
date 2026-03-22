@@ -43,7 +43,31 @@
             50% { filter: brightness(1.2); }
         }
 
-        .game-wrapper {
+        /* Main action buttons - always visible at top */
+        .main-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .main-actions .btn {
+            flex: 1;
+            max-width: 140px;
+            padding: 14px 18px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
             display: flex;
             gap: 20px;
             align-items: flex-start;
@@ -175,53 +199,111 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .btn-group {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
         .btn {
             flex: 1;
-            padding: 10px 12px;
+            padding: 14px 18px;
             border: none;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: bold;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 800;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-start {
-            background: linear-gradient(135deg, #00ff87, #00e676);
+            background: linear-gradient(135deg, #00ff87 0%, #00e676 100%);
             color: #1a1a2e;
-            box-shadow: 0 4px 15px rgba(0, 255, 135, 0.3);
+            box-shadow: 0 6px 20px rgba(0, 255, 135, 0.5),
+                        0 0 40px rgba(0, 255, 135, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            animation: btnPulse 2s ease-in-out infinite;
+        }
+
+        .btn-start::before {
+            content: '▶';
+            margin-right: 8px;
+            font-size: 0.9em;
+        }
+
+        .btn-start::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: rotate(45deg);
+            animation: btnShine 3s ease-in-out infinite;
+        }
+
+        @keyframes btnPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 6px 20px rgba(0, 255, 135, 0.5),
+                            0 0 40px rgba(0, 255, 135, 0.3);
+            }
+            50% {
+                transform: scale(1.03);
+                box-shadow: 0 8px 30px rgba(0, 255, 135, 0.7),
+                            0 0 60px rgba(0, 255, 135, 0.5);
+            }
+        }
+
+        @keyframes btnShine {
+            0% {
+                left: -50%;
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                left: 50%;
+                opacity: 0;
+            }
         }
 
         .btn-start:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 25px rgba(0, 255, 135, 0.5);
+            transform: scale(1.08);
+            box-shadow: 0 10px 40px rgba(0, 255, 135, 0.8),
+                        0 0 80px rgba(0, 255, 135, 0.6);
+        }
+
+        .btn-start:hover::after {
+            animation: btnShine 1.5s ease-in-out infinite;
         }
 
         .btn-start:active {
-            transform: scale(0.98);
+            transform: scale(1.02);
         }
 
         .btn-pause {
-            background: linear-gradient(135deg, #feca57, #ff9800);
+            background: linear-gradient(135deg, #feca57 0%, #ff9800 100%);
             color: #1a1a2e;
-            box-shadow: 0 4px 15px rgba(254, 202, 87, 0.3);
+            box-shadow: 0 6px 20px rgba(254, 202, 87, 0.5),
+                        0 0 40px rgba(254, 202, 87, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-pause::before {
+            content: '⏸';
+            margin-right: 8px;
+            font-size: 0.9em;
         }
 
         .btn-pause:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 25px rgba(254, 202, 87, 0.5);
+            transform: scale(1.08);
+            box-shadow: 0 10px 40px rgba(254, 202, 87, 0.8),
+                        0 0 80px rgba(254, 202, 87, 0.6);
         }
 
         .btn-pause:active {
-            transform: scale(0.98);
+            transform: scale(1.02);
         }
 
         .game-over {
@@ -395,11 +477,25 @@
             body {
                 padding: 10px 5px;
                 justify-content: flex-start;
-                padding-top: 20px;
+                padding-top: 10px;
             }
 
             h1 {
                 margin-bottom: 10px;
+                font-size: 1.3rem;
+            }
+
+            /* Main action buttons - always visible */
+            .main-actions {
+                margin-bottom: 10px;
+                max-width: 100%;
+                gap: 8px;
+            }
+
+            .main-actions .btn {
+                max-width: 100px;
+                padding: 10px 12px;
+                font-size: 0.85rem;
             }
 
             .game-wrapper {
@@ -428,7 +524,8 @@
             }
 
             .controls {
-                display: none;
+                display: block;
+                margin-top: 10px;
             }
 
             .mobile-controls {
@@ -562,6 +659,12 @@
 <body>
     <h1>俄罗斯方块 Tetris</h1>
 
+    <!-- Main action buttons - always visible -->
+    <div class="main-actions">
+        <button class="btn btn-start" id="startBtn">▶ 开始游戏</button>
+        <button class="btn btn-pause" id="pauseBtn">⏸ 暂停</button>
+    </div>
+
     <div class="game-wrapper">
         <div class="game-container">
             <canvas id="gameCanvas"></canvas>
@@ -597,10 +700,6 @@
                     <li><span class="key">Space</span> 落下</li>
                     <li><span class="key">P</span> 暂停</li>
                 </ul>
-                <div class="btn-group">
-                    <button class="btn btn-start" id="startBtn">开始</button>
-                    <button class="btn btn-pause" id="pauseBtn">暂停</button>
-                </div>
             </div>
         </div>
     </div>
