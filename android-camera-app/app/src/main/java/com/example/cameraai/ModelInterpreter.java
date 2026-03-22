@@ -37,7 +37,16 @@ public class ModelInterpreter {
     // API Configuration
     // IMPORTANT: In production, never store API keys in client code!
     // Use a backend server to proxy requests instead.
+    //
+    // To configure your API key:
+    // 1. Get your API key from https://platform.openai.com/api-keys (for OpenAI)
+    //    or https://console.anthropic.com/settings/keys (for Claude)
+    // 2. Replace YOUR_API_KEY_HERE below with your actual API key
+    // 3. For production apps, create a backend server to proxy requests
     private static final String API_KEY = "YOUR_API_KEY_HERE";
+
+    // To change AI provider, modify this line in the constructor:
+    // private AIProvider currentProvider = AIProvider.OPENAI;  // or CLAUDE, CUSTOM, LOCAL_TFLITE
 
     // API Endpoints (examples)
     private static final String OPENAI_VISION_URL = "https://api.openai.com/v1/chat/completions";
@@ -57,7 +66,18 @@ public class ModelInterpreter {
     private final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");
 
     public ModelInterpreter() {
-        // Configure HTTP client with timeouts
+        this(API_KEY, AIProvider.OPENAI);
+    }
+
+    /**
+     * Create ModelInterpreter with custom API key and provider
+     * @param apiKey Your API key (get from https://platform.openai.com/api-keys or https://console.anthropic.com/settings/keys)
+     * @param provider The AI provider to use
+     */
+    public ModelInterpreter(String apiKey, AIProvider provider) {
+        this.currentProvider = provider;
+        // Store API key - in production, use a backend server instead
+        // Note: This is for development/testing only
         httpClient = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
