@@ -1384,7 +1384,8 @@
 
             // 开始游戏
             gameState.gameStarted = true;
-            updateGameStatus('游戏中');
+            gameState.currentPlayer = 3; // 设置当前玩家为底部玩家
+            updateGameStatus('你的回合');
 
             // 玩家先出牌
             renderPlayerHand();
