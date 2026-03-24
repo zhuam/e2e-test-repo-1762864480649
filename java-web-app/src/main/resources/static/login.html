@@ -8,8 +8,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
 <body class="auth-page">
+    <!-- Animated Background -->
+    <div class="auth-background">
+        <div class="bg-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+            <div class="shape shape-5"></div>
+        </div>
+    </div>
+
     <div class="auth-container">
         <div class="auth-card">
+            <div class="auth-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="logo-text">UserSystem</span>
+            </div>
+
             <div class="auth-header">
                 <h1 class="auth-title">欢迎回来</h1>
                 <p class="auth-subtitle">使用用户名、邮箱或手机号登录</p>
@@ -17,22 +39,39 @@
 
             <form id="loginForm" class="auth-form">
                 <div class="form-group">
-                    <label for="username">用户名/邮箱/手机号</label>
-                    <input type="text" id="username" name="username" required
-                           placeholder="请输入用户名、邮箱或手机号" autocomplete="username">
-                    <span class="input-icon">👤</span>
+                    <label for="username">
+                        <span class="label-icon">👤</span>
+                        用户名/邮箱/手机号
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text" id="username" name="username" required
+                               placeholder="请输入用户名、邮箱或手机号" autocomplete="username">
+                        <div class="input-border"></div>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="password">密码</label>
-                    <input type="password" id="password" name="password" required
-                           placeholder="请输入密码" autocomplete="current-password">
-                    <span class="input-icon">🔒</span>
+                    <label for="password">
+                        <span class="label-icon">🔒</span>
+                        密码
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" name="password" required
+                               placeholder="请输入密码" autocomplete="current-password">
+                        <div class="input-border"></div>
+                        <button type="button" class="password-toggle" title="显示/隐藏密码">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-options">
                     <label class="checkbox-label">
                         <input type="checkbox" id="rememberMe">
+                        <span class="checkmark"></span>
                         <span>记住我</span>
                     </label>
                     <a href="#" class="forgot-link">忘记密码？</a>
@@ -40,26 +79,41 @@
 
                 <button type="submit" class="btn btn-primary btn-block">
                     <span class="btn-text">登录</span>
-                    <span class="btn-loader hidden"></span>
+                    <span class="btn-loader hidden">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.3"/>
+                            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </span>
                 </button>
             </form>
 
             <div id="message" class="message hidden"></div>
 
+            <div class="auth-divider">
+                <span>或</span>
+            </div>
+
+            <div class="social-login">
+                <button type="button" class="social-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.71 19.2c-.86 1.39-2.32 2.2-3.99 2.2-2.64 0-4.54-1.62-5.21-4.03h-.09c-1.01.04-2.06.15-3.24.43C5.06 17.58 4.16 16.7 4 15.4c.78-.31 2.53-.92 4.96-.92 1.65 0 2.87.56 3.46.83.63-2.53 2.54-4.71 5.13-4.71 2.02 0 3.37 1.21 4.05 2.13 1.36-.69 2.3-1.63 2.75-2.56-.88.39-2.65 1.09-4.94 1.09-1.98 0-3.33-1.09-3.97-1.9.56-2.1 2.35-3.66 4.51-3.66 2.02 0 3.48 1.13 4.33 1.85 1.27-1.22 2.27-2.75 2.77-4.39-1.24.69-2.62 1.17-4.05 1.38-.03-1.32-.07-2.75.03-4.04 2.03.74 3.83 2.09 5.01 3.88-.71.44-1.5.76-2.31.94.59 1.71.59 3.58.01 5.28z"/>
+                    </svg>
+                </button>
+                <button type="button" class="social-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.164 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.024A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.293 2.747-1.024 2.747-1.024.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                    </svg>
+                </button>
+                <button type="button" class="social-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.545 10.239v3.821h5.445c-.719 2.045-2.647 3.176-5.24 3.176-3.115 0-5.644-2.53-5.644-5.65s2.53-5.65 5.644-5.65c1.522 0 2.833.562 3.802 1.51l2.688-2.688C17.619 3.233 15.351 2.2 12.75 2.2 7.026 2.2 2.399 6.827 2.399 12.53c0 5.704 4.627 10.331 10.351 10.331 5.088 0 8.965-3.765 8.965-9.566 0-.067-.008-.133-.011-.2H12.545z"/>
+                    </svg>
+                </button>
+            </div>
+
             <div class="auth-footer">
                 <p>还没有账户？ <a href="/register.html">立即注册</a></p>
-            </div>
-        </div>
-
-        <div class="auth-decoration">
-            <div class="decoration-content">
-                <h2>UserSystem</h2>
-                <p>安全可靠的用户管理系统</p>
-                <ul class="features-list">
-                    <li>✓ 支持用户名/邮箱/手机号登录</li>
-                    <li>✓ 安全的 JWT 认证</li>
-                    <li>✓ 密码加密存储</li>
-                </ul>
             </div>
         </div>
     </div>

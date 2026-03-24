@@ -8,20 +8,28 @@ const USER_KEY = 'user_info';
 $(document).ready(function() {
     // 页面加载时检查是否已登录
     redirectIfAuthenticated();
-    
+
     // 绑定表单提交事件
     $('#loginForm').on('submit', handleLogin);
-    
+
     // 绑定输入框焦点事件，添加动画效果
     $('.form-group input').on('focus', function() {
         $(this).parent().addClass('focused');
     }).on('blur', function() {
         $(this).parent().removeClass('focused');
     });
-    
+
     // 实时验证输入
     $('#username').on('input', function() {
         validateUsername($(this).val());
+    });
+
+    // 密码显示/隐藏切换
+    $('.password-toggle').on('click', function() {
+        const $input = $(this).siblings('input');
+        const type = $input.attr('type') === 'password' ? 'text' : 'password';
+        $input.attr('type', type);
+        $(this).toggleClass('active');
     });
 });
 
