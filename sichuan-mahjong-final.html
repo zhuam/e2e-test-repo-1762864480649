@@ -1653,9 +1653,80 @@
 
         // ==================== 胡牌检测（简化版） ====================
         function canHu(hand, newTile) {
-            // 简化的胡牌检测
+            // 简化的胡牌检测 - 需要满足四川麻将基本规则
             const fullHand = [...hand, newTile];
-            return fullHand.length === 14;
+            if (fullHand.length !== 14) return false;
+
+            // 检查是否满足缺一门（手牌中只能有最多 2 种花色）
+            const suits = new Set(fullHand.map(t => t.suit));
+            if (suits.size > 2) return false;
+
+            // 简单的牌型检测：检查是否可以组成 4 组 + 1 将
+            // 这里使用简化的检测，实际游戏中需要更复杂的算法
+            return checkHuPai(fullHand);
+        }
+
+        // 检查胡牌牌型（递归算法）
+        function checkHuPai(hand) {
+            // 将手牌转换为字符串形式便于处理
+            const tiles = hand.map(t => t.suit + t.num);
+            tiles.sort();
+
+            // 尝试找将牌（对子）
+            const countMap = {};
+            for (const tile of tiles) {
+                countMap[tile] = (countMap[tile] || 0) + 1;
+            }
+
+            // 尝试每个可能的将牌
+            for (const [tile, count] of Object.entries(countMap)) {
+                if (count >= 2) {
+                    // 移除将牌，检查剩余牌是否能组成面子
+                    const remaining = [...tiles];
+                    remaining.splice(remaining.indexOf(tile), 2);
+                    if (canFormMelds(remaining)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // 检查是否能组成面子（刻子或顺子）
+        function canFormMelds(tiles) {
+            if (tiles.length === 0) return true;
+
+            const countMap = {};
+            for (const tile of tiles) {
+                countMap[tile] = (countMap[tile] || 0) + 1;
+            }
+
+            // 找到最小的牌
+            const firstTile = tiles[0];
+            const suit = firstTile.slice(0, -1);
+            const num = parseInt(firstTile.slice(-1));
+
+            // 尝试组成刻子（三张相同的）
+            if (countMap[firstTile] >= 3) {
+                const remaining = [...tiles];
+                remaining.splice(0, 3);
+                if (canFormMelds(remaining)) return true;
+            }
+
+            // 尝试组成顺子（同花色连续三张）
+            if (num <= 7) {
+                const tile2 = suit + (num + 1);
+                const tile3 = suit + (num + 2);
+                if (countMap[tile2] && countMap[tile3]) {
+                    const remaining = [...tiles];
+                    remaining.splice(remaining.indexOf(firstTile), 1);
+                    remaining.splice(remaining.indexOf(tile2), 1);
+                    remaining.splice(remaining.indexOf(tile3), 1);
+                    if (canFormMelds(remaining)) return true;
+                }
+            }
+
+            return false;
         }
 
         function playerHu() {
