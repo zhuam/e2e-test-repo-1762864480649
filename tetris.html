@@ -1175,13 +1175,11 @@
                     }
                 });
 
-                // Remove lines - create new board without cleared lines
-                const newBoard = board.filter((_, idx) => !clearedRows.includes(idx));
-                // Add new empty lines at the top
-                while (newBoard.length < ROWS) {
-                    newBoard.unshift(new Array(COLS).fill(0));
+                // Remove lines
+                for (let i = 0; i < linesCleared; i++) {
+                    board.splice(clearedRows[i], 1);
+                    board.unshift(new Array(COLS).fill(0));
                 }
-                board = newBoard;
 
                 // Score and level
                 const points = [0, 100, 300, 500, 800];
