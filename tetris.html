@@ -1156,31 +1156,23 @@
         // Clear completed lines with effects
         function clearLines() {
             let linesCleared = 0;
-            const clearedRows = [];
 
             for (let r = ROWS - 1; r >= 0; r--) {
                 if (board[r].every(cell => cell !== 0)) {
-                    clearedRows.push(r);
+                    // Create particles for this line
+                    for (let c = 0; c < COLS; c++) {
+                        if (board[r][c]) {
+                            createParticles(c, r, board[r][c]);
+                        }
+                    }
+                    // Remove this row and add new empty one at top
+                    board.splice(r, 1);
+                    board.unshift(new Array(COLS).fill(0));
                     linesCleared++;
                 }
             }
 
             if (linesCleared > 0) {
-                // Create particles for cleared lines
-                clearedRows.forEach(row => {
-                    for (let c = 0; c < COLS; c++) {
-                        if (board[row][c]) {
-                            createParticles(c, row, board[row][c]);
-                        }
-                    }
-                });
-
-                // Remove lines
-                for (let i = 0; i < linesCleared; i++) {
-                    board.splice(clearedRows[i], 1);
-                    board.unshift(new Array(COLS).fill(0));
-                }
-
                 // Score and level
                 const points = [0, 100, 300, 500, 800];
                 score += points[linesCleared] * level;
