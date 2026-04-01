@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>俄罗斯方块 - Tetris</title>
+    <title>俄罗斯方块 - Tetris Cyberpunk</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,8 +16,8 @@
         }
 
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0f3460 100%);
+            font-family: 'Orbitron', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #030014 0%, #090029 50%, #1a0a2e 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -25,6 +28,67 @@
             overflow: hidden;
             touch-action: manipulation;
             position: relative;
+        }
+
+        /* 赛博朋克霓虹网格背景 */
+        .cyber-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
+        }
+
+        .cyber-grid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(0, 255, 255, 0.1) 0%, transparent 100%);
+            animation: gridGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes gridGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* CRT 扫描线效果 */
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 9999;
+            animation: crtFlicker 0.03s infinite;
+        }
+
+        @keyframes crtFlicker {
+            0%, 100% { opacity: 0.97; }
+            50% { opacity: 1; }
         }
 
         /* 动态星空背景 */
@@ -121,15 +185,66 @@
             text-align: center;
             margin-bottom: 15px;
             font-size: clamp(1.5rem, 5vw, 2.5rem);
-            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #00ff87);
-            background-size: 300% 100%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #00ff87, #ffff00);
+            background-size: 400% 100%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
-            animation: titleGlow 3s ease-in-out infinite, rainbowShift 8s linear infinite;
+            text-shadow: 0 0 40px rgba(0, 255, 255, 0.8);
+            animation: titleGlow 3s ease-in-out infinite, rainbowShift 8s linear infinite, glitchText 5s infinite;
             position: relative;
             z-index: 10;
+            letter-spacing: 3px;
+        }
+
+        /* Glitch 效果 */
+        h1::before, h1::after {
+            content: '俄罗斯方块 Tetris';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #030014 0%, #090029 50%, #1a0a2e 100%);
+        }
+
+        h1::before {
+            animation: glitch-1 2s infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            transform: translate(-2px, 0);
+            -webkit-text-fill-color: #ff00ff;
+            z-index: -1;
+        }
+
+        h1::after {
+            animation: glitch-2 3s infinite;
+            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+            transform: translate(2px, 0);
+            -webkit-text-fill-color: #00ffff;
+            z-index: -2;
+        }
+
+        @keyframes glitch-1 {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-3px, 2px); }
+            40% { transform: translate(-3px, -2px); }
+            60% { transform: translate(3px, 2px); }
+            80% { transform: translate(3px, -2px); }
+        }
+
+        @keyframes glitch-2 {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(3px, -2px); }
+            40% { transform: translate(3px, 2px); }
+            60% { transform: translate(-3px, -2px); }
+            80% { transform: translate(-3px, 2px); }
+        }
+
+        @keyframes glitchText {
+            0%, 100% { text-shadow: 0 0 40px rgba(0, 255, 255, 0.8); }
+            25% { text-shadow: 3px 0 40px rgba(255, 0, 255, 0.8), -3px 0 40px rgba(0, 255, 255, 0.8); }
+            50% { text-shadow: -3px 0 40px rgba(255, 0, 255, 0.8), 3px 0 40px rgba(0, 255, 255, 0.8); }
+            75% { text-shadow: 0 0 40px rgba(0, 255, 135, 0.8); }
         }
 
         @keyframes titleGlow {
@@ -182,22 +297,107 @@
 
         .game-container {
             position: relative;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(20px);
             border-radius: 20px;
             padding: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.15),
-                        0 0 60px rgba(102, 126, 234, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow:
+                0 0 40px rgba(0, 255, 255, 0.3),
+                0 0 80px rgba(255, 0, 255, 0.2),
+                inset 0 0 60px rgba(0, 255, 255, 0.05),
+                0 0 0 2px rgba(0, 255, 255, 0.3),
+                0 0 0 4px rgba(255, 0, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            overflow: hidden;
+        }
+
+        /* 游戏容器四角装饰 */
+        .game-container::before,
+        .game-container::after {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #00ffff;
+            border-radius: 5px;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .game-container::before {
+            top: 5px;
+            left: 5px;
+            border-right: none;
+            border-bottom: none;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .game-container::after {
+            bottom: 5px;
+            right: 5px;
+            border-left: none;
+            border-top: none;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .game-container .corner-decor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ff00ff;
+            border-radius: 5px;
+            z-index: 10;
+        }
+
+        .game-container .corner-decor.top-right {
+            top: 8px;
+            right: 8px;
+            border-left: none;
+            border-bottom: none;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+
+        .game-container .corner-decor.bottom-left {
+            bottom: 8px;
+            left: 8px;
+            border-right: none;
+            border-top: none;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
         }
 
         #gameCanvas {
             border-radius: 12px;
-            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3e 50%, #0d1b2a 100%);
+            background: linear-gradient(180deg, #000000 0%, #0a0a1a 50%, #1a0a2e 100%);
             display: block;
-            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8),
-                        0 0 30px rgba(102, 126, 234, 0.3);
+            box-shadow:
+                inset 0 0 100px rgba(0, 0, 0, 0.9),
+                0 0 40px rgba(0, 255, 255, 0.4),
+                0 0 80px rgba(255, 0, 255, 0.2);
+            border: 2px solid rgba(0, 255, 255, 0.2);
+        }
+
+        /* Canvas 霓虹边框动画 */
+        .game-container {
+            animation: containerPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes containerPulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 40px rgba(0, 255, 255, 0.3),
+                    0 0 80px rgba(255, 0, 255, 0.2),
+                    inset 0 0 60px rgba(0, 255, 255, 0.05),
+                    0 0 0 2px rgba(0, 255, 255, 0.3),
+                    0 0 0 4px rgba(255, 0, 255, 0.1);
+            }
+            50% {
+                box-shadow:
+                    0 0 60px rgba(0, 255, 255, 0.5),
+                    0 0 100px rgba(255, 0, 255, 0.3),
+                    inset 0 0 80px rgba(0, 255, 255, 0.1),
+                    0 0 0 2px rgba(0, 255, 255, 0.5),
+                    0 0 0 4px rgba(255, 0, 255, 0.2);
+            }
         }
 
         .side-panel {
@@ -208,14 +408,15 @@
         }
 
         .info-box {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(20px);
             border-radius: 16px;
             padding: 15px 18px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+            box-shadow:
+                0 0 20px rgba(0, 255, 255, 0.2),
+                inset 0 0 30px rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
@@ -223,24 +424,42 @@
         .info-box::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.03), transparent);
-            transform: rotate(45deg);
-            transition: transform 0.5s;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .info-box::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, transparent);
+            animation: lineScan 2s linear infinite;
+        }
+
+        @keyframes lineScan {
+            0% { transform: translateY(0); opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-10px); opacity: 0; }
         }
 
         .info-box:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.15);
-            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow:
+                0 0 30px rgba(0, 255, 255, 0.4),
+                0 0 60px rgba(255, 0, 255, 0.2),
+                inset 0 0 40px rgba(0, 255, 255, 0.1);
+            border-color: rgba(0, 255, 255, 0.5);
         }
 
         .info-box:hover::before {
-            transform: rotate(45deg) translate(30px, 30px);
+            left: 100%;
         }
 
         .info-box h3 {
@@ -259,8 +478,14 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
-            text-shadow: 0 0 25px rgba(0, 255, 135, 0.4);
-            animation: scoreGlow 2s ease-in-out infinite;
+            text-shadow: 0 0 25px rgba(0, 255, 135, 0.6);
+            animation: scoreGlow 2s ease-in-out infinite, cyberDigit 5s linear infinite;
+            font-family: 'Orbitron', monospace;
+        }
+
+        @keyframes cyberDigit {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(10deg); }
         }
 
         @keyframes scoreGlow {
@@ -271,31 +496,35 @@
         .level-value {
             font-size: 1.5rem;
             font-weight: bold;
-            background: linear-gradient(135deg, #60efff, #00bcd4, #0097a7);
+            background: linear-gradient(135deg, #00ffff, #00bcd4, #0097a7);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
-            text-shadow: 0 0 20px rgba(0, 189, 189, 0.4);
+            text-shadow: 0 0 20px rgba(0, 189, 189, 0.6);
+            font-family: 'Orbitron', monospace;
         }
 
         .lines-value {
             font-size: 1.3rem;
             font-weight: bold;
-            background: linear-gradient(135deg, #feca57, #ff9800, #f57c00);
+            background: linear-gradient(135deg, #ff00ff, #e91e63, #c2185b);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
-            text-shadow: 0 0 20px rgba(254, 202, 87, 0.4);
+            text-shadow: 0 0 20px rgba(255, 0, 255, 0.6);
+            font-family: 'Orbitron', monospace;
         }
 
         .combo-display {
             font-size: 1.1rem;
             font-weight: bold;
-            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            background: linear-gradient(135deg, #ff006e, #ff4d8f, #ff6b6b);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
             animation: comboPulse 0.5s ease-out;
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 20px rgba(255, 0, 110, 0.6);
         }
 
         @keyframes comboPulse {
@@ -306,29 +535,34 @@
 
         #nextCanvas {
             border-radius: 12px;
-            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3e 100%);
+            background: linear-gradient(180deg, #000000 0%, #0a0a1a 100%);
             display: block;
             margin: 0 auto;
-            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+            box-shadow:
+                inset 0 0 30px rgba(0, 0, 0, 0.8),
+                0 0 20px rgba(0, 255, 255, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.2);
         }
 
         .controls {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(20px);
             border-radius: 16px;
             padding: 15px 18px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow:
+                0 0 20px rgba(0, 255, 255, 0.2),
+                inset 0 0 30px rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
         }
 
         .controls h3 {
             font-size: 0.75rem;
-            color: #8892b0;
+            color: #00ffff;
             margin-bottom: 10px;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
             font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
         }
 
         .control-list {
@@ -345,16 +579,20 @@
         }
 
         .key {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #00ffff 0%, #ff00ff 100%);
             padding: 3px 8px;
             border-radius: 6px;
             font-weight: bold;
             font-size: 0.65rem;
             min-width: 24px;
             text-align: center;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow:
+                0 2px 6px rgba(0, 0, 0, 0.4),
+                0 0 10px rgba(0, 255, 255, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #fff;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.8);
         }
 
         .btn {
@@ -373,13 +611,15 @@
         }
 
         .btn-start {
-            background: linear-gradient(135deg, #00ff87 0%, #00e676 50%, #00c853 100%);
+            background: linear-gradient(135deg, #00ffff 0%, #00ccff 50%, #0099ff 100%);
             background-size: 200% 100%;
-            color: #1a1a2e;
-            box-shadow: 0 6px 20px rgba(0, 255, 135, 0.5),
-                        0 0 40px rgba(0, 255, 135, 0.3),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            color: #000;
+            box-shadow:
+                0 6px 20px rgba(0, 255, 255, 0.6),
+                0 0 40px rgba(0, 255, 255, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
             animation: btnPulse 2s ease-in-out infinite, btnGradient 3s linear infinite;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
 
         @keyframes btnGradient {
@@ -408,13 +648,15 @@
         @keyframes btnPulse {
             0%, 100% {
                 transform: scale(1);
-                box-shadow: 0 6px 20px rgba(0, 255, 135, 0.5),
-                            0 0 40px rgba(0, 255, 135, 0.3);
+                box-shadow:
+                    0 6px 20px rgba(0, 255, 255, 0.6),
+                    0 0 40px rgba(0, 255, 255, 0.4);
             }
             50% {
                 transform: scale(1.03);
-                box-shadow: 0 8px 30px rgba(0, 255, 135, 0.7),
-                            0 0 60px rgba(0, 255, 135, 0.5);
+                box-shadow:
+                    0 8px 30px rgba(0, 255, 255, 0.8),
+                    0 0 60px rgba(0, 255, 255, 0.6);
             }
         }
 
@@ -439,13 +681,15 @@
         }
 
         .btn-pause {
-            background: linear-gradient(135deg, #feca57 0%, #ff9800 50%, #f57c00 100%);
+            background: linear-gradient(135deg, #ff00ff 0%, #e91e63 50%, #c2185b 100%);
             background-size: 200% 100%;
-            color: #1a1a2e;
-            box-shadow: 0 6px 20px rgba(254, 202, 87, 0.5),
-                        0 0 40px rgba(254, 202, 87, 0.3),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            color: #fff;
+            box-shadow:
+                0 6px 20px rgba(255, 0, 255, 0.6),
+                0 0 40px rgba(255, 0, 255, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
             animation: btnGradient 3s linear infinite;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
 
         .btn-pause::before {
@@ -456,8 +700,9 @@
 
         .btn-pause:hover {
             transform: scale(1.08);
-            box-shadow: 0 10px 40px rgba(254, 202, 87, 0.8),
-                        0 0 80px rgba(254, 202, 87, 0.6);
+            box-shadow:
+                0 10px 40px rgba(255, 0, 255, 0.8),
+                0 0 80px rgba(255, 0, 255, 0.6);
         }
 
         .btn-pause:active {
@@ -485,13 +730,22 @@
             transform: translate(-50%, -50%);
             font-size: 3rem;
             font-weight: bold;
-            background: linear-gradient(135deg, #ff6b6b, #feca57, #00ff87);
+            background: linear-gradient(135deg, #ff00ff, #00ffff, #ff006e);
+            background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
+            text-shadow: 0 0 40px rgba(255, 0, 255, 0.8), 0 0 80px rgba(0, 255, 255, 0.5);
             z-index: 1000;
             pointer-events: none;
-            animation: comboPopup 1s ease-out forwards;
+            animation: comboPopup 1s ease-out forwards, cyberGlitch 0.5s ease-in-out;
+            font-family: 'Orbitron', monospace;
+        }
+
+        @keyframes cyberGlitch {
+            0%, 100% { transform: translate(-50%, -50%) skew(0deg); }
+            25% { transform: translate(-48%, -52%) skew(10deg); }
+            50% { transform: translate(-52%, -48%) skew(-10deg); }
+            75% { transform: translate(-51%, -49%) skew(5deg); }
         }
 
         @keyframes comboPopup {
@@ -506,24 +760,65 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, rgba(20, 20, 40, 0.98), rgba(30, 30, 60, 0.98));
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.98), rgba(20, 0, 40, 0.98));
             padding: 40px 50px;
             border-radius: 24px;
             text-align: center;
             z-index: 1000;
             display: none;
-            border: 2px solid #ff6b6b;
-            box-shadow: 0 20px 60px rgba(255, 107, 107, 0.5),
-                        0 0 100px rgba(255, 107, 107, 0.3);
+            border: 2px solid #ff00ff;
+            box-shadow:
+                0 20px 60px rgba(255, 0, 255, 0.5),
+                0 0 100px rgba(255, 0, 255, 0.3),
+                inset 0 0 40px rgba(255, 0, 255, 0.1);
             backdrop-filter: blur(20px);
+            animation: gameOverGlitch 0.5s ease-out;
+        }
+
+        @keyframes gameOverGlitch {
+            0% { transform: translate(-50%, -50%) skewX(0); }
+            20% { transform: translate(-50%, -50%) skewX(10deg); }
+            40% { transform: translate(-50%, -50%) skewX(-10deg); }
+            60% { transform: translate(-50%, -50%) skewX(5deg); }
+            80% { transform: translate(-50%, -50%) skewX(-5deg); }
+            100% { transform: translate(-50%, -50%) skewX(0); }
         }
 
         .game-over h2 {
             font-size: 2.5rem;
-            color: #ff6b6b;
+            color: #ff00ff;
             margin-bottom: 20px;
-            text-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
+            text-shadow: 0 0 30px rgba(255, 0, 255, 0.8), 0 0 60px rgba(255, 0, 255, 0.5);
             animation: gameOverPulse 1s ease-in-out infinite;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 3px;
+        }
+
+        /* 游戏结束标题 glitch 效果 */
+        .game-over h2::before,
+        .game-over h2::after {
+            content: '游戏结束';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .game-over h2::before {
+            animation: glitch-1 2s infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            transform: translate(-2px, 0);
+            color: #00ffff;
+            z-index: -1;
+        }
+
+        .game-over h2::after {
+            animation: glitch-2 3s infinite;
+            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+            transform: translate(2px, 0);
+            color: #ff00ff;
+            z-index: -2;
         }
 
         @keyframes gameOverPulse {
@@ -539,19 +834,21 @@
 
         .game-over .final-score {
             font-size: 3rem;
-            background: linear-gradient(135deg, #00ff87, #00e676);
+            background: linear-gradient(135deg, #00ffff, #00ff87);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: bold;
             margin-bottom: 25px;
-            text-shadow: 0 0 30px rgba(0, 255, 135, 0.5);
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+            font-family: 'Orbitron', monospace;
         }
 
         .game-over .high-score {
             font-size: 1rem;
-            color: #feca57;
+            color: #00ffff;
             margin-bottom: 25px;
-            text-shadow: 0 0 15px rgba(254, 202, 87, 0.5);
+            text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+            font-family: 'Orbitron', monospace;
         }
 
         .overlay {
@@ -574,10 +871,11 @@
             height: 100%;
             background: linear-gradient(180deg,
                 transparent 0%,
-                rgba(255, 255, 255, 0.8) 50%,
+                rgba(0, 255, 255, 0.8) 50%,
                 transparent 100%);
             animation: lineClearFlash 0.4s ease-out forwards;
             pointer-events: none;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.8);
         }
 
         @keyframes lineClearFlash {
@@ -605,13 +903,16 @@
             height: 55px;
             border: none;
             border-radius: 50%;
-            background: linear-gradient(145deg, #3a3a5a, #2a2a4a);
-            color: white;
+            background: linear-gradient(145deg, #1a0a2e, #0d0a1a);
+            color: #00ffff;
             font-size: 1.4rem;
             cursor: pointer;
             touch-action: manipulation;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            box-shadow:
+                0 4px 15px rgba(0, 0, 0, 0.6),
+                0 0 20px rgba(0, 255, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(0, 255, 255, 0.3);
             transition: all 0.15s ease;
             display: flex;
             align-items: center;
@@ -620,22 +921,34 @@
 
         .mobile-btn:active {
             transform: scale(0.92);
-            background: linear-gradient(145deg, #4a4a6a, #3a3a5a);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(145deg, #2a1a3e, #1a1a2e);
+            box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.4),
+                0 0 30px rgba(0, 255, 255, 0.5);
         }
 
         .mobile-btn.action {
-            background: linear-gradient(145deg, #667eea, #764ba2);
+            background: linear-gradient(145deg, #0d2147, #1a0a2e);
+            border-color: rgba(255, 0, 255, 0.5);
+            color: #ff00ff;
             width: 65px;
             height: 65px;
             font-size: 1.6rem;
+            box-shadow:
+                0 4px 15px rgba(0, 0, 0, 0.6),
+                0 0 25px rgba(255, 0, 255, 0.4);
         }
 
         .mobile-btn.drop {
-            background: linear-gradient(145deg, #ff6b6b, #ee5a5a);
+            background: linear-gradient(145deg, #2a0a1a, #1a0a0a);
+            border-color: rgba(255, 0, 110, 0.5);
+            color: #ff006e;
             width: 70px;
             height: 70px;
             font-size: 1.8rem;
+            box-shadow:
+                0 4px 15px rgba(0, 0, 0, 0.6),
+                0 0 30px rgba(255, 0, 110, 0.5);
         }
 
         .mobile-row {
@@ -646,7 +959,12 @@
         }
 
         .pause-mobile {
-            background: linear-gradient(145deg, #feca57, #ff9800);
+            background: linear-gradient(145deg, #2a0a2e, #1a0a1a);
+            border-color: rgba(0, 255, 255, 0.5);
+            color: #00ffff;
+            box-shadow:
+                0 4px 15px rgba(0, 0, 0, 0.6),
+                0 0 25px rgba(0, 255, 255, 0.4);
         }
 
         /* Particle effects container */
@@ -875,6 +1193,12 @@
     </style>
 </head>
 <body>
+    <!-- CRT 扫描线效果 -->
+    <div class="crt-overlay"></div>
+
+    <!-- 赛博朋克霓虹网格背景 -->
+    <div class="cyber-grid"></div>
+
     <!-- 动态背景 -->
     <div class="stars-container" id="starsContainer"></div>
     <div class="ambient-light"></div>
@@ -892,6 +1216,8 @@
     <div class="game-wrapper">
         <div class="game-container">
             <canvas id="gameCanvas"></canvas>
+            <div class="corner-decor top-right"></div>
+            <div class="corner-decor bottom-left"></div>
         </div>
 
         <div class="side-panel">
@@ -1033,55 +1359,55 @@
             }
         }
 
-        // Tetromino shapes with enhanced colors and effects
+        // Tetromino shapes with cyberpunk neon colors
         const TETROMINOES = {
             I: {
                 shape: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]],
-                color: '#00f5ff',
-                glow: 'rgba(0, 245, 255, 0.6)',
-                innerColor: 'rgba(0, 245, 255, 0.3)',
+                color: '#00ffff',
+                glow: 'rgba(0, 255, 255, 0.8)',
+                innerColor: 'rgba(0, 255, 255, 0.4)',
                 pattern: 'horizontal'
             },
             O: {
                 shape: [[1,1], [1,1]],
-                color: '#ffeb3b',
-                glow: 'rgba(255, 235, 59, 0.6)',
-                innerColor: 'rgba(255, 235, 59, 0.3)',
+                color: '#ffff00',
+                glow: 'rgba(255, 255, 0, 0.8)',
+                innerColor: 'rgba(255, 255, 0, 0.4)',
                 pattern: 'grid'
             },
             T: {
                 shape: [[0,1,0], [1,1,1], [0,0,0]],
-                color: '#9c27b0',
-                glow: 'rgba(156, 39, 176, 0.6)',
-                innerColor: 'rgba(156, 39, 176, 0.3)',
+                color: '#ff00ff',
+                glow: 'rgba(255, 0, 255, 0.8)',
+                innerColor: 'rgba(255, 0, 255, 0.4)',
                 pattern: 'diamond'
             },
             S: {
                 shape: [[0,1,1], [1,1,0], [0,0,0]],
-                color: '#4caf50',
-                glow: 'rgba(76, 175, 80, 0.6)',
-                innerColor: 'rgba(76, 175, 80, 0.3)',
+                color: '#00ff00',
+                glow: 'rgba(0, 255, 0, 0.8)',
+                innerColor: 'rgba(0, 255, 0, 0.4)',
                 pattern: 'diagonal1'
             },
             Z: {
                 shape: [[1,1,0], [0,1,1], [0,0,0]],
-                color: '#f44336',
-                glow: 'rgba(244, 67, 54, 0.6)',
-                innerColor: 'rgba(244, 67, 54, 0.3)',
+                color: '#ff0044',
+                glow: 'rgba(255, 0, 68, 0.8)',
+                innerColor: 'rgba(255, 0, 68, 0.4)',
                 pattern: 'diagonal2'
             },
             J: {
                 shape: [[1,0,0], [1,1,1], [0,0,0]],
-                color: '#2196f3',
-                glow: 'rgba(33, 150, 243, 0.6)',
-                innerColor: 'rgba(33, 150, 243, 0.3)',
+                color: '#0066ff',
+                glow: 'rgba(0, 102, 255, 0.8)',
+                innerColor: 'rgba(0, 102, 255, 0.4)',
                 pattern: 'triangle'
             },
             L: {
                 shape: [[0,0,1], [1,1,1], [0,0,0]],
-                color: '#ff9800',
-                glow: 'rgba(255, 152, 0, 0.6)',
-                innerColor: 'rgba(255, 152, 0, 0.3)',
+                color: '#ff8800',
+                glow: 'rgba(255, 136, 0, 0.8)',
+                innerColor: 'rgba(255, 136, 0, 0.4)',
                 pattern: 'vertical'
             }
         };
@@ -1261,24 +1587,27 @@
             return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
         }
 
-        // Draw the board with enhanced effects
+        // Draw the board with cyberpunk effects
         function drawBoard() {
             // Clear canvas with gradient background
             const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            bgGradient.addColorStop(0, '#0a0a1a');
-            bgGradient.addColorStop(0.5, '#1a1a3e');
-            bgGradient.addColorStop(1, '#0d1b2a');
+            bgGradient.addColorStop(0, '#000000');
+            bgGradient.addColorStop(0.5, '#0a0a1a');
+            bgGradient.addColorStop(1, '#1a0a2e');
             ctx.fillStyle = bgGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw subtle grid with glow
-            ctx.strokeStyle = 'rgba(102, 126, 234, 0.08)';
+            // Draw cyberpunk grid with glow
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.15)';
             ctx.lineWidth = 1;
+            ctx.shadowColor = 'rgba(0, 255, 255, 0.3)';
+            ctx.shadowBlur = 5;
             for (let r = 0; r < ROWS; r++) {
                 for (let c = 0; c < COLS; c++) {
                     ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
                 }
             }
+            ctx.shadowBlur = 0;
 
             // Draw placed blocks with effects
             for (let r = 0; r < ROWS; r++) {
@@ -1345,8 +1674,24 @@
 
         // Draw next piece preview
         function drawNext() {
-            nextCtx.fillStyle = '#0a0a1a';
+            // Cyberpunk background with gradient
+            const nextBgGradient = nextCtx.createLinearGradient(0, 0, 0, nextCanvas.height);
+            nextBgGradient.addColorStop(0, '#000000');
+            nextBgGradient.addColorStop(1, '#1a0a2e');
+            nextCtx.fillStyle = nextBgGradient;
             nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+
+            // Draw neon grid
+            nextCtx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+            nextCtx.lineWidth = 1;
+            nextCtx.shadowColor = 'rgba(0, 255, 255, 0.2)';
+            nextCtx.shadowBlur = 3;
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    nextCtx.strokeRect(c * NEXT_BLOCK_SIZE, r * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE);
+                }
+            }
+            nextCtx.shadowBlur = 0;
 
             if (!nextPiece) return;
 
