@@ -3,602 +3,595 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>连连看游戏</title>
+    <title>连连看 - Lianliankan</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            user-select: none;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             padding: 20px;
-            color: #fff;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        .game-container {
-            max-width: 800px;
+        /* 动态背景 */
+        .bg-decoration {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-circle:nth-child(1) { width: 400px; height: 400px; top: 5%; left: 5%; animation-delay: 0s; }
+        .bg-circle:nth-child(2) { width: 300px; height: 300px; top: 60%; right: 10%; animation-delay: -7s; }
+        .bg-circle:nth-child(3) { width: 350px; height: 350px; bottom: 10%; left: 20%; animation-delay: -14s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
         }
 
         h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
-            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-            color: #00d4ff;
+            font-size: 2.5em;
+            color: #fff;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            animation: titlePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
         .game-info {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
+            gap: 30px;
             flex-wrap: wrap;
-            gap: 15px;
             margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .info-item {
-            text-align: center;
-            padding: 10px 20px;
-            background: rgba(0, 212, 255, 0.1);
-            border-radius: 10px;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            min-width: 120px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            padding: 12px 25px;
+            border-radius: 25px;
+            color: #fff;
+            font-size: 1.1em;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-        .info-label {
-            font-size: 0.9rem;
-            color: #aaa;
-            margin-bottom: 5px;
-        }
-
-        .info-value {
-            font-size: 1.5rem;
+        .info-item span {
             font-weight: bold;
-            color: #00d4ff;
-        }
-
-        .game-board {
-            display: grid;
-            gap: 5px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            border: 2px solid rgba(0, 212, 255, 0.3);
-            margin: 0 auto;
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
-        }
-
-        .cell {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(1rem, 4vw, 1.8rem);
-            background: linear-gradient(145deg, #2a2a4a, #1a1a3a);
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            user-select: none;
-            min-width: 35px;
-            min-height: 35px;
-        }
-
-        .cell:hover {
-            transform: scale(1.1);
-            border-color: rgba(0, 212, 255, 0.5);
-            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
-        }
-
-        .cell.selected {
-            background: linear-gradient(145deg, #00d4ff, #0099cc);
-            border-color: #fff;
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
-            transform: scale(1.15);
-        }
-
-        .cell.matched {
-            background: linear-gradient(145deg, #00ff88, #00cc6a);
-            opacity: 0;
-            pointer-events: none;
-            transform: scale(0);
-        }
-
-        .cell.hint {
-            animation: hint-pulse 1s infinite;
-        }
-
-        @keyframes hint-pulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
-            50% { box-shadow: 0 0 25px rgba(255, 255, 0, 0.8); }
+            color: #ffd700;
         }
 
         .controls {
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin-top: 20px;
             flex-wrap: wrap;
+            margin-bottom: 20px;
         }
 
         .btn {
-            padding: 12px 30px;
-            font-size: 1rem;
+            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
             border: none;
+            padding: 12px 30px;
             border-radius: 25px;
+            color: #fff;
+            font-size: 1em;
+            font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.4);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .btn-primary {
-            background: linear-gradient(145deg, #00d4ff, #0099cc);
-            color: #1a1a2e;
-        }
-
-        .btn-primary:hover {
+        .btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.5);
+            box-shadow: 0 8px 25px rgba(255,215,0,0.6);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
         }
 
         .btn-secondary {
-            background: linear-gradient(145deg, #ff6b6b, #ee5a5a);
-            color: #fff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
         }
 
         .btn-secondary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.5);
+            box-shadow: 0 8px 25px rgba(102,126,234,0.6);
         }
 
-        .btn-hint {
-            background: linear-gradient(145deg, #ffd93d, #ffcc00);
-            color: #1a1a2e;
+        .game-board-container {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
 
-        .btn-hint:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 20px rgba(255, 217, 61, 0.5);
+        .game-board {
+            display: grid;
+            gap: 6px;
+            justify-content: center;
+            margin: 0 auto;
         }
 
-        .modal {
-            display: none;
+        .cell {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+
+        .cell:hover:not(.empty) {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(255,255,255,0.4);
+        }
+
+        .cell.selected {
+            background: linear-gradient(145deg, #ffd700 0%, #ff8c00 100%);
+            transform: scale(1.15);
+            box-shadow: 0 0 30px rgba(255,215,0,0.8);
+            border-color: #fff;
+        }
+
+        .cell.empty {
+            background: rgba(255,255,255,0.1);
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .cell.matched {
+            animation: matchPop 0.5s ease-out forwards;
+        }
+
+        @keyframes matchPop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .cell.hint {
+            animation: hintPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes hintPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255,215,0,0.5); }
+            50% { box-shadow: 0 0 25px rgba(255,215,0,0.9); }
+        }
+
+        /* 路径线 */
+        .path-line {
+            position: absolute;
+            background: linear-gradient(90deg, rgba(255,215,0,0.8), rgba(255,140,0,0.8));
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 模态框 */
+        .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            justify-content: center;
+            background: rgba(0,0,0,0.7);
+            display: none;
             align-items: center;
+            justify-content: center;
             z-index: 1000;
         }
 
-        .modal-content {
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        .modal {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            border-radius: 30px;
             padding: 40px;
-            border-radius: 20px;
             text-align: center;
-            border: 2px solid rgba(0, 212, 255, 0.5);
-            box-shadow: 0 0 50px rgba(0, 212, 255, 0.3);
-            max-width: 90%;
+            max-width: 400px;
+            width: 90%;
+            animation: modalSlide 0.4s ease-out;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         }
 
-        .modal-title {
-            font-size: 2rem;
-            color: #00d4ff;
+        @keyframes modalSlide {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal h2 {
+            color: #667eea;
+            font-size: 2em;
             margin-bottom: 20px;
         }
 
-        .modal-text {
-            font-size: 1.2rem;
+        .modal p {
+            color: #666;
+            font-size: 1.2em;
             margin-bottom: 30px;
-            color: #fff;
         }
 
-        .difficulty-select {
+        .modal-stats {
+            background: rgba(102,126,234,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .modal-stats .stat {
+            display: inline-block;
+            margin: 0 15px;
+        }
+
+        .modal-stats .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .modal-stats .stat-label {
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        /* 难度选择 */
+        .difficulty-selector {
             display: flex;
             justify-content: center;
             gap: 10px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
         }
 
         .difficulty-btn {
-            padding: 10px 20px;
-            border: 2px solid rgba(0, 212, 255, 0.3);
-            background: rgba(0, 212, 255, 0.1);
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 8px 20px;
+            border-radius: 20px;
             color: #fff;
-            border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .difficulty-btn:hover,
-        .difficulty-btn.active {
-            background: rgba(0, 212, 255, 0.3);
-            border-color: #00d4ff;
+        .difficulty-btn.active,
+        .difficulty-btn:hover {
+            background: rgba(255,255,255,0.4);
+            border-color: #fff;
         }
 
-        .path-line {
-            position: absolute;
-            pointer-events: none;
-            z-index: 100;
-        }
-
-        .path-line line {
-            stroke: #00d4ff;
-            stroke-width: 4;
-            stroke-linecap: round;
-            filter: drop-shadow(0 0 5px rgba(0, 212, 255, 0.8));
-            animation: path-draw 0.3s ease-out forwards;
-        }
-
-        @keyframes path-draw {
-            from { stroke-dasharray: 100; stroke-dashoffset: 100; }
-            to { stroke-dasharray: 100; stroke-dashoffset: 0; }
-        }
-
-        @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-
-            .game-board {
-                gap: 3px;
-                padding: 10px;
-            }
+        /* 响应式 */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8em; }
 
             .cell {
-                border-radius: 6px;
-                min-width: 28px;
-                min-height: 28px;
+                width: 40px;
+                height: 40px;
+                font-size: 22px;
             }
 
-            .game-info {
-                padding: 10px;
-            }
+            .game-board { gap: 4px; }
 
             .info-item {
-                min-width: 80px;
                 padding: 8px 15px;
+                font-size: 0.95em;
             }
 
-            .info-value {
-                font-size: 1.2rem;
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9em;
             }
+        }
+
+        @media (max-width: 480px) {
+            .cell {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+
+            .game-board { gap: 3px; }
+
+            .game-board-container { padding: 10px; }
+        }
+
+        /* 计时器动画 */
+        .timer-warning {
+            animation: timerFlash 0.5s ease-in-out infinite;
+        }
+
+        @keyframes timerFlash {
+            0%, 100% { color: #fff; }
+            50% { color: #ff4444; }
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <h1>🔗 连连看</h1>
+    <div class="bg-decoration">
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🔗 连连看</h1>
+        </header>
 
         <div class="game-info">
-            <div class="info-item">
-                <div class="info-label">得分</div>
-                <div class="info-value" id="score">0</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">剩余</div>
-                <div class="info-value" id="remaining">0</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">时间</div>
-                <div class="info-value" id="timer">0:00</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">最高分</div>
-                <div class="info-value" id="high-score">0</div>
-            </div>
+            <div class="info-item">得分：<span id="score">0</span></div>
+            <div class="info-item">时间：<span id="timer">00:00</span></div>
+            <div class="info-item">剩余：<span id="remaining">0</span></div>
         </div>
 
-        <div class="difficulty-select">
+        <div class="difficulty-selector">
             <button class="difficulty-btn" data-rows="6" data-cols="8">简单</button>
-            <button class="difficulty-btn active" data-rows="8" data-cols="10">中等</button>
-            <button class="difficulty-btn" data-rows="10" data-cols="12">困难</button>
+            <button class="difficulty-btn active" data-rows="8" data-cols="12">普通</button>
+            <button class="difficulty-btn" data-rows="10" data-cols="16">困难</button>
         </div>
-
-        <div class="game-board" id="game-board"></div>
 
         <div class="controls">
-            <button class="btn btn-primary" id="new-game">新游戏</button>
-            <button class="btn btn-hint" id="hint-btn">提示</button>
-            <button class="btn btn-secondary" id="shuffle-btn">重排</button>
+            <button class="btn" id="newGameBtn">新游戏</button>
+            <button class="btn btn-secondary" id="shuffleBtn">重排</button>
+            <button class="btn btn-secondary" id="hintBtn">提示</button>
+        </div>
+
+        <div class="game-board-container">
+            <div class="game-board" id="gameBoard"></div>
         </div>
     </div>
 
-    <div class="modal" id="game-over-modal">
-        <div class="modal-content">
-            <div class="modal-title" id="modal-title">游戏结束!</div>
-            <div class="modal-text" id="modal-text">你的得分：0</div>
-            <button class="btn btn-primary" id="modal-new-game">再来一局</button>
+    <!-- 胜利模态框 -->
+    <div class="modal-overlay" id="winModal">
+        <div class="modal">
+            <h2>🎉 恭喜胜利!</h2>
+            <div class="modal-stats">
+                <div class="stat">
+                    <div class="stat-value" id="finalScore">0</div>
+                    <div class="stat-label">得分</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="finalTime">00:00</div>
+                    <div class="stat-label">用时</div>
+                </div>
+            </div>
+            <button class="btn" id="playAgainBtn">再玩一次</button>
         </div>
     </div>
 
-    <svg class="path-line" id="path-svg" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999;"></svg>
+    <!-- 游戏结束模态框 -->
+    <div class="modal-overlay" id="gameOverModal">
+        <div class="modal">
+            <h2>⏰ 时间到!</h2>
+            <p>再接再厉!</p>
+            <button class="btn" id="tryAgainBtn">再试一次</button>
+        </div>
+    </div>
 
     <script>
         $(function() {
             // 游戏配置
             const CONFIG = {
-                emojis: ['🍎', '🍊', '🍇', '🍓', '🍒', '🍑', '🍍', '🥝', '🥥', '🍌', '🥭', '🍐',
-                         '🍋', '🍈', '🍉', '🥕', '🌽', '🍆', '🥒', '🥦', '🍄', '🥜', '🌰', '🍞',
-                         '🧀', '🍖', '🍗', '🥩', '🥓', '🍔', '🍟', '🍕', '🌭', '🥪', '🌮', '🌯'],
-                maxTime: 300
+                emojis: ['🍎', '🍊', '🍋', '🍇', '🍓', '🍑', '🍍', '🥝', '🍒', '🍉', '🥭', '🍐'],
+                baseTime: 180, // 基础时间（秒）
+                scorePerMatch: 10,
+                timeBonus: 5,
+                shuffleCost: 50
             };
 
             // 游戏状态
-            let gameState = {
+            let state = {
                 rows: 8,
-                cols: 10,
+                cols: 12,
                 board: [],
                 selected: null,
                 score: 0,
-                remaining: 0,
-                timer: 0,
+                startTime: null,
                 timerInterval: null,
-                highScore: parseInt(localStorage.getItem('lianliankan-highscore')) || 0,
-                shuffleCount: 3
+                isPlaying: false,
+                remainingPairs: 0
             };
 
-            // 初始化
-            function init() {
-                $('#high-score').text(gameState.highScore);
-                bindEvents();
-                startNewGame();
-            }
-
-            // 绑定事件
-            function bindEvents() {
-                $('#new-game').on('click', startNewGame);
-                $('#modal-new-game').on('click', () => {
-                    $('#game-over-modal').hide();
-                    startNewGame();
-                });
-                $('#hint-btn').on('click', showHint);
-                $('#shuffle-btn').on('click', shuffleBoard);
-
-                $('.difficulty-btn').on('click', function() {
-                    $('.difficulty-btn').removeClass('active');
-                    $(this).addClass('active');
-                    gameState.rows = parseInt($(this).data('rows'));
-                    gameState.cols = parseInt($(this).data('cols'));
-                    startNewGame();
-                });
-            }
-
-            // 开始新游戏
-            function startNewGame() {
-                // 重置状态
-                clearInterval(gameState.timerInterval);
-                gameState.selected = null;
-                gameState.score = 0;
-                gameState.timer = 0;
-                gameState.shuffleCount = 3;
-                $('#score').text('0');
-                $('#timer').text('0:00');
-                $('#shuffle-btn').prop('disabled', false);
-
-                // 创建游戏板
-                createBoard();
-                renderBoard();
-
-                // 启动计时器
-                gameState.timerInterval = setInterval(() => {
-                    gameState.timer++;
-                    const mins = Math.floor(gameState.timer / 60);
-                    const secs = gameState.timer % 60;
-                    $('#timer').text(`${mins}:${secs.toString().padStart(2, '0')}`);
-
-                    // 超时游戏结束
-                    if (gameState.timer >= CONFIG.maxTime) {
-                        endGame(false);
-                    }
-                }, 1000);
-            }
-
-            // 创建游戏板
-            function createBoard() {
-                const totalCells = gameState.rows * gameState.cols;
+            // 初始化游戏板
+            function initBoard() {
+                const totalCells = state.rows * state.cols;
                 const pairCount = totalCells / 2;
+                state.remainingPairs = pairCount;
 
                 // 生成成对的 emoji
-                let pairs = [];
+                let emojis = [];
                 for (let i = 0; i < pairCount; i++) {
                     const emoji = CONFIG.emojis[i % CONFIG.emojis.length];
-                    pairs.push(emoji, emoji);
+                    emojis.push(emoji, emoji);
                 }
 
-                // 洗牌算法
-                for (let i = pairs.length - 1; i > 0; i--) {
+                // Fisher-Yates 洗牌
+                for (let i = emojis.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
-                    [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+                    [emojis[i], emojis[j]] = [emojis[j], emojis[i]];
                 }
 
-                // 创建二维数组（添加边框）
-                gameState.board = [];
-                for (let i = -1; i <= gameState.rows; i++) {
+                // 创建带边框的棋盘（用于寻路）
+                state.board = [];
+                for (let r = -1; r <= state.rows; r++) {
                     const row = [];
-                    for (let j = -1; j <= gameState.cols; j++) {
-                        if (i === -1 || i === gameState.rows || j === -1 || j === gameState.cols) {
+                    for (let c = -1; c <= state.cols; c++) {
+                        if (r === -1 || r === state.rows || c === -1 || c === state.cols) {
                             row.push(null); // 边框
                         } else {
-                            row.push(pairs.shift());
+                            const idx = r * state.cols + c;
+                            row.push(emojis[idx]);
                         }
                     }
-                    gameState.board.push(row);
+                    state.board.push(row);
                 }
-
-                gameState.remaining = totalCells;
-                $('#remaining').text(gameState.remaining);
             }
 
             // 渲染游戏板
             function renderBoard() {
-                const boardEl = $('#game-board');
-                boardEl.empty();
-                boardEl.css('grid-template-columns', `repeat(${gameState.cols}, 1fr)`);
+                const $board = $('#gameBoard');
+                $board.empty();
+                $board.css('grid-template-columns', `repeat(${state.cols}, auto)`);
 
-                for (let i = 0; i < gameState.rows; i++) {
-                    for (let j = 0; j < gameState.cols; j++) {
-                        const cell = $('<div class="cell"></div>');
-                        const emoji = gameState.board[i][j];
+                for (let r = 0; r < state.rows; r++) {
+                    for (let c = 0; c < state.cols; c++) {
+                        const emoji = state.board[r][c];
+                        const $cell = $('<div class="cell"></div>');
+                        $cell.attr('data-row', r).attr('data-col', c);
 
                         if (emoji) {
-                            cell.text(emoji);
-                            cell.data('row', i);
-                            cell.data('col', j);
-                            cell.on('click', () => handleCellClick(i, j));
+                            $cell.text(emoji);
+                        } else {
+                            $cell.addClass('empty');
                         }
 
-                        boardEl.append(cell);
+                        $board.append($cell);
                     }
                 }
+
+                // 绑定点击事件
+                $('.cell:not(.empty)').on('click', handleCellClick);
             }
 
-            // 处理单元格点击
-            function handleCellClick(row, col) {
-                const emoji = gameState.board[row][col];
-                if (!emoji) return;
+            // 处理格子点击
+            function handleCellClick() {
+                if (!state.isPlaying) return;
 
-                const cell = getCell(row, col);
+                const $cell = $(this);
+                const row = parseInt($cell.attr('data-row'));
+                const col = parseInt($cell.attr('data-col'));
 
-                // 已选中的单元格再次点击，取消选中
-                if (gameState.selected &&
-                    gameState.selected.row === row &&
-                    gameState.selected.col === col) {
-                    cell.removeClass('selected');
-                    gameState.selected = null;
+                if ($cell.hasClass('selected')) {
+                    $cell.removeClass('selected');
+                    state.selected = null;
                     return;
                 }
 
-                // 第一个选择
-                if (!gameState.selected) {
-                    gameState.selected = { row, col, emoji };
-                    cell.addClass('selected');
-                    return;
-                }
+                if (!state.selected) {
+                    // 选择第一个
+                    state.selected = { row, col, emoji: state.board[row][col] };
+                    $cell.addClass('selected');
+                } else {
+                    // 选择第二个
+                    const prev = state.selected;
 
-                // 第二个选择，检查是否匹配
-                const prevCell = getCell(gameState.selected.row, gameState.selected.col);
-                prevCell.removeClass('selected');
+                    if (prev.row === row && prev.col === col) {
+                        return; // 点击同一个
+                    }
 
-                if (gameState.selected.emoji === emoji) {
-                    // 检查是否可以连接
-                    const path = findPath(gameState.selected.row, gameState.selected.col, row, col);
-                    if (path) {
-                        // 匹配成功
-                        drawPath(path);
-                        setTimeout(() => {
-                            clearPath();
-                            matchCells(gameState.selected.row, gameState.selected.col, row, col);
-                        }, 300);
-                        gameState.selected = null;
+                    if (state.board[row][col] !== prev.emoji) {
+                        // 图案不同，切换选择
+                        $(`.cell[data-row="${prev.row}"][data-col="${prev.col}"]`).removeClass('selected');
+                        state.selected = { row, col, emoji: state.board[row][col] };
+                        $cell.addClass('selected');
                         return;
                     }
-                }
 
-                // 不匹配，选择新的
-                gameState.selected = { row, col, emoji };
-                cell.addClass('selected');
-            }
-
-            // 获取单元格元素
-            function getCell(row, col) {
-                return $(`.cell[data-row="${row}"][data-col="${col}"]`);
-            }
-
-            // 匹配单元格
-            function matchCells(row1, col1, row2, col2) {
-                const cell1 = getCell(row1, col1);
-                const cell2 = getCell(row2, col2);
-
-                cell1.addClass('matched');
-                cell2.addClass('matched');
-
-                gameState.board[row1][col1] = null;
-                gameState.board[row2][col2] = null;
-
-                gameState.score += 10;
-                gameState.remaining -= 2;
-                $('#score').text(gameState.score);
-                $('#remaining').text(gameState.remaining);
-
-                // 检查游戏结束
-                if (gameState.remaining === 0) {
-                    endGame(true);
-                    return;
-                }
-
-                // 检查是否还有可匹配的
-                if (!hasAvailableMoves()) {
-                    setTimeout(() => {
-                        if (!hasAvailableMoves()) {
-                            endGame(false);
-                        }
-                    }, 500);
+                    // 检查是否可以连接
+                    const path = findPath(prev.row, prev.col, row, col);
+                    if (path) {
+                        // 成功匹配
+                        matchCells(prev.row, prev.col, row, col, path);
+                    } else {
+                        // 无法连接，切换选择
+                        $(`.cell[data-row="${prev.row}"][data-col="${prev.col}"]`).removeClass('selected');
+                        state.selected = { row, col, emoji: state.board[row][col] };
+                        $cell.addClass('selected');
+                    }
                 }
             }
 
-            // 寻找路径（最多两个转折）
+            // 寻路算法（BFS，最多两个拐角）
             function findPath(r1, c1, r2, c2) {
-                // 直连
-                if (canConnectDirect(r1, c1, r2, c2)) {
-                    return [{row: r1, col: c1}, {row: r2, col: c2}];
+                // 0 个拐角（直线）
+                if (checkLine(r1, c1, r2, c2)) {
+                    return [{r: r1, c: c1}, {r: r2, c: c2}];
                 }
 
-                // 一个转折
-                for (let r = -1; r <= gameState.rows; r++) {
-                    if (r !== r1 && r !== r2) continue;
-                    if (canConnectDirect(r1, c1, r, c2) && canConnectDirect(r, c2, r2, c2)) {
-                        return [{row: r1, col: c1}, {row: r, col: c2}, {row: r2, col: c2}];
-                    }
-                    if (canConnectDirect(r1, c1, r, c1) && canConnectDirect(r, c1, r2, c2)) {
-                        return [{row: r1, col: c1}, {row: r, col: c1}, {row: r2, col: c2}];
-                    }
+                // 1 个拐角
+                const corner1 = { r: r1, c: c2 };
+                const corner2 = { r: r2, c: c1 };
+
+                if (isEmpty(corner1) && checkLine(r1, c1, corner1.r, corner1.c) && checkLine(corner1.r, corner1.c, r2, c2)) {
+                    return [{r: r1, c: c1}, corner1, {r: r2, c: c2}];
+                }
+                if (isEmpty(corner2) && checkLine(r1, c1, corner2.r, corner2.c) && checkLine(corner2.r, corner2.c, r2, c2)) {
+                    return [{r: r1, c: c1}, corner2, {r: r2, c: c2}];
                 }
 
-                for (let c = -1; c <= gameState.cols; c++) {
-                    if (c !== c1 && c !== c2) continue;
-                    if (canConnectDirect(r1, c1, r2, c) && canConnectDirect(r2, c, r2, c2)) {
-                        return [{row: r1, col: c1}, {row: r2, col: c}, {row: r2, col: c2}];
-                    }
-                    if (canConnectDirect(r1, c1, r1, c) && canConnectDirect(r1, c, r2, c2)) {
-                        return [{row: r1, col: c1}, {row: r1, col: c}, {row: r2, col: c2}];
-                    }
-                }
+                // 2 个拐角
+                // 尝试从 r1 出发的水平线
+                for (let c = -1; c <= state.cols; c++) {
+                    if (c === c1) continue;
+                    if (!isEmpty({r: r1, c: c}) && !(r1 === r2 && c === c2)) continue;
 
-                // 两个转折
-                for (let r = -1; r <= gameState.rows; r++) {
-                    for (let c = -1; c <= gameState.cols; c++) {
-                        if (gameState.board[r]?.[c] !== null && !(r === -1 || r === gameState.rows || c === -1 || c === gameState.cols)) continue;
+                    if (checkLine(r1, c1, r1, c)) {
+                        // 从转折点尝试到达目标
+                        const cornerA = {r: r1, c: c};
+                        const cornerB = {r: r2, c: c};
 
-                        // 通过中转点
-                        if (canConnectDirect(r1, c1, r, c1) &&
-                            canConnectDirect(r, c1, r, c) &&
-                            canConnectDirect(r, c, r2, c)) {
-                            return [{row: r1, col: c1}, {row: r, col: c1}, {row: r, col: c}, {row: r2, col: c}];
+                        if (isEmpty(cornerB) && checkLine(cornerA.r, cornerA.c, cornerB.r, cornerB.c) && checkLine(cornerB.r, cornerB.c, r2, c2)) {
+                            return [{r: r1, c: c1}, cornerA, cornerB, {r: r2, c: c2}];
                         }
-                        if (canConnectDirect(r1, c1, r1, c) &&
-                            canConnectDirect(r1, c, r, c) &&
-                            canConnectDirect(r, c, r2, c)) {
-                            return [{row: r1, col: c1}, {row: r1, col: c}, {row: r, col: c}, {row: r2, col: c}];
+                    }
+                }
+
+                // 尝试从 r1 出发的垂直线
+                for (let r = -1; r <= state.rows; r++) {
+                    if (r === r1) continue;
+                    if (!isEmpty({r: r, c: c1}) && !(r === r2 && c1 === c2)) continue;
+
+                    if (checkLine(r1, c1, r, c1)) {
+                        const cornerA = {r: r, c: c1};
+                        const cornerB = {r: r, c: c2};
+
+                        if (isEmpty(cornerB) && checkLine(cornerA.r, cornerA.c, cornerB.r, cornerB.c) && checkLine(cornerB.r, cornerB.c, r2, c2)) {
+                            return [{r: r1, c: c1}, cornerA, cornerB, {r: r2, c: c2}];
                         }
                     }
                 }
@@ -606,36 +599,154 @@
                 return null;
             }
 
-            // 检查是否可以直接连接（直线，无阻挡）
-            function canConnectDirect(r1, c1, r2, c2) {
+            // 检查两点之间是否有直线（无阻挡）
+            function checkLine(r1, c1, r2, c2) {
                 if (r1 === r2) {
-                    // 同行
-                    const min = Math.min(c1, c2);
-                    const max = Math.max(c1, c2);
-                    for (let c = min + 1; c < max; c++) {
-                        if (gameState.board[r1][c] !== null) return false;
+                    const minC = Math.min(c1, c2);
+                    const maxC = Math.max(c1, c2);
+                    for (let c = minC + 1; c < maxC; c++) {
+                        if (state.board[r1] && state.board[r1][c] !== undefined && state.board[r1][c] !== null) {
+                            return false;
+                        }
                     }
                     return true;
                 }
                 if (c1 === c2) {
-                    // 同列
-                    const min = Math.min(r1, r2);
-                    const max = Math.max(r1, r2);
-                    for (let r = min + 1; r < max; r++) {
-                        if (gameState.board[r][c1] !== null) return false;
+                    const minR = Math.min(r1, r2);
+                    const maxR = Math.max(r1, r2);
+                    for (let r = minR + 1; r < maxR; r++) {
+                        if (state.board[r] && state.board[r][c1] !== undefined && state.board[r][c1] !== null) {
+                            return false;
+                        }
                     }
                     return true;
                 }
                 return false;
             }
 
-            // 检查是否有可移动的
-            function hasAvailableMoves() {
+            // 检查位置是否为空（在边框外或已消除）
+            function isEmpty(pos) {
+                if (pos.r === -1 || pos.r === state.rows || pos.c === -1 || pos.c === state.cols) {
+                    return true;
+                }
+                return state.board[pos.r][pos.c] === null;
+            }
+
+            // 匹配消除
+            function matchCells(r1, c1, r2, c2, path) {
+                // 清除选择状态
+                $('.cell.selected').removeClass('selected');
+                state.selected = null;
+
+                // 添加匹配动画
+                $(`.cell[data-row="${r1}"][data-col="${c1}"]`).addClass('matched');
+                $(`.cell[data-row="${r2}"][data-col="${c2}"]`).addClass('matched');
+
+                // 更新数据
+                state.board[r1][c1] = null;
+                state.board[r2][c2] = null;
+                state.remainingPairs--;
+
+                // 更新分数
+                state.score += CONFIG.scorePerMatch;
+                $('#score').text(state.score);
+                $('#remaining').text(state.remainingPairs);
+
+                // 更新显示
+                setTimeout(() => {
+                    $(`.cell[data-row="${r1}"][data-col="${c1}"], .cell[data-row="${r2}"][data-col="${c2}"]`).addClass('empty').removeClass('matched').text('');
+                    $(`.cell[data-row="${r1}"][data-col="${c1}"], .cell[data-row="${r2}"][data-col="${c2}"]`).off('click');
+                }, 500);
+
+                // 检查胜利
+                if (state.remainingPairs === 0) {
+                    gameWin();
+                }
+            }
+
+            // 游戏胜利
+            function gameWin() {
+                state.isPlaying = false;
+                clearInterval(state.timerInterval);
+
+                const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+                const timeStr = formatTime(elapsed);
+                const bonus = Math.max(0, CONFIG.baseTime - elapsed) * CONFIG.timeBonus;
+                state.score += bonus;
+
+                $('#finalScore').text(state.score);
+                $('#finalTime').text(timeStr);
+                $('#winModal').css('display', 'flex');
+            }
+
+            // 游戏结束
+            function gameOver() {
+                state.isPlaying = false;
+                clearInterval(state.timerInterval);
+                $('#gameOverModal').css('display', 'flex');
+            }
+
+            // 格式化时间
+            function formatTime(seconds) {
+                const m = Math.floor(seconds / 60);
+                const s = seconds % 60;
+                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
+
+            // 更新计时器
+            function updateTimer() {
+                const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+                const remaining = Math.max(0, CONFIG.baseTime - elapsed);
+                const $timer = $('#timer');
+                $timer.text(formatTime(elapsed));
+
+                if (remaining <= 30) {
+                    $timer.addClass('timer-warning');
+                } else {
+                    $timer.removeClass('timer-warning');
+                }
+
+                if (remaining <= 0) {
+                    gameOver();
+                }
+            }
+
+            // 开始新游戏
+            function startNewGame() {
+                // 清除之前的状态
+                clearInterval(state.timerInterval);
+                $('.cell').off('click');
+                state.selected = null;
+                state.score = 0;
+                state.isPlaying = true;
+                state.startTime = Date.now();
+
+                // 初始化
+                initBoard();
+                renderBoard();
+
+                // 更新显示
+                $('#score').text('0');
+                $('#remaining').text(state.remainingPairs);
+                $('#timer').text('00:00').removeClass('timer-warning');
+                $('#winModal, #gameOverModal').css('display', 'none');
+
+                // 启动计时器
+                state.timerInterval = setInterval(updateTimer, 1000);
+
+                // 检查是否有可匹配的
+                if (!hasAvailableMatch()) {
+                    shuffleBoard();
+                }
+            }
+
+            // 检查是否有可匹配的对
+            function hasAvailableMatch() {
                 const cells = [];
-                for (let i = 0; i < gameState.rows; i++) {
-                    for (let j = 0; j < gameState.cols; j++) {
-                        if (gameState.board[i][j]) {
-                            cells.push({row: i, col: j, emoji: gameState.board[i][j]});
+                for (let r = 0; r < state.rows; r++) {
+                    for (let c = 0; c < state.cols; c++) {
+                        if (state.board[r][c] !== null) {
+                            cells.push({r, c, emoji: state.board[r][c]});
                         }
                     }
                 }
@@ -643,7 +754,8 @@
                 for (let i = 0; i < cells.length; i++) {
                     for (let j = i + 1; j < cells.length; j++) {
                         if (cells[i].emoji === cells[j].emoji) {
-                            if (findPath(cells[i].row, cells[i].col, cells[j].row, cells[j].col)) {
+                            const path = findPath(cells[i].r, cells[i].c, cells[j].r, cells[j].c);
+                            if (path) {
                                 return true;
                             }
                         }
@@ -652,136 +764,93 @@
                 return false;
             }
 
-            // 显示提示
-            function showHint() {
-                $('.cell.hint').removeClass('hint');
-
-                for (let i = 0; i < gameState.rows; i++) {
-                    for (let j = 0; j < gameState.cols; j++) {
-                        if (!gameState.board[i][j]) continue;
-
-                        for (let k = i; k < gameState.rows; k++) {
-                            const startCol = (k === i) ? j + 1 : 0;
-                            for (let l = startCol; l < gameState.cols; l++) {
-                                if (k === i && l <= j) continue;
-                                if (!gameState.board[k][l]) continue;
-
-                                if (gameState.board[i][j] === gameState.board[k][l]) {
-                                    const path = findPath(i, j, k, l);
-                                    if (path) {
-                                        getCell(i, j).addClass('hint');
-                                        getCell(k, l).addClass('hint');
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 重排
+            // 重排棋盘
             function shuffleBoard() {
-                if (gameState.shuffleCount <= 0) {
-                    alert('没有重排次数了！');
-                    return;
-                }
+                if (!state.isPlaying) return;
 
                 // 收集剩余的 emoji
                 const remaining = [];
-                for (let i = 0; i < gameState.rows; i++) {
-                    for (let j = 0; j < gameState.cols; j++) {
-                        if (gameState.board[i][j]) {
-                            remaining.push(gameState.board[i][j]);
+                for (let r = 0; r < state.rows; r++) {
+                    for (let c = 0; c < state.cols; c++) {
+                        if (state.board[r][c] !== null) {
+                            remaining.push(state.board[r][c]);
                         }
                     }
                 }
 
-                // 重新洗牌
+                // 洗牌
                 for (let i = remaining.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
                 }
 
                 // 重新填充
-                for (let i = 0; i < gameState.rows; i++) {
-                    for (let j = 0; j < gameState.cols; j++) {
-                        if (gameState.board[i][j]) {
-                            gameState.board[i][j] = remaining.shift();
+                for (let r = 0; r < state.rows; r++) {
+                    for (let c = 0; c < state.cols; c++) {
+                        if (state.board[r][c] !== null) {
+                            state.board[r][c] = remaining.pop();
                         }
                     }
                 }
 
-                gameState.shuffleCount--;
                 renderBoard();
 
-                // 检查是否有可移动的
-                if (!hasAvailableMoves()) {
-                    setTimeout(shuffleBoard, 100);
+                // 确保有可匹配的
+                if (!hasAvailableMatch()) {
+                    shuffleBoard();
                 }
             }
 
-            // 绘制路径
-            function drawPath(path) {
-                const svg = $('#path-svg');
-                svg.empty();
+            // 提示功能
+            function showHint() {
+                if (!state.isPlaying) return;
 
-                let points = '';
-                path.forEach((p, index) => {
-                    const cell = getCell(p.row, p.col);
-                    if (cell.length) {
-                        const offset = cell.offset();
-                        const x = offset.left + cell.width() / 2;
-                        const y = offset.top + cell.height() / 2;
+                // 清除之前的提示
+                $('.cell.hint').removeClass('hint');
 
-                        if (index === 0) {
-                            points += `M ${x} ${y}`;
-                        } else {
-                            points += ` L ${x} ${y}`;
+                const cells = [];
+                for (let r = 0; r < state.rows; r++) {
+                    for (let c = 0; c < state.cols; c++) {
+                        if (state.board[r][c] !== null) {
+                            cells.push({r, c, emoji: state.board[r][c]});
                         }
                     }
-                });
-
-                if (points) {
-                    svg.append(`<line x1="${points.match(/\d+\.?\d*/g)?.[0]}" y1="${points.match(/\d+\.?\d*/g)?.[1]}" x2="${points.match(/\d+\.?\d*/g)?.[2]}" y2="${points.match(/\d+\.?\d*/g)?.[3]}" />`);
                 }
-            }
 
-            // 清除路径
-            function clearPath() {
-                $('#path-svg').empty();
-            }
-
-            // 游戏结束
-            function endGame(win) {
-                clearInterval(gameState.timerInterval);
-
-                const modal = $('#game-over-modal');
-                const title = $('#modal-title');
-                const text = $('#modal-text');
-
-                if (win) {
-                    title.text('🎉 恭喜通关！');
-                    //  bonus based on time
-                    const timeBonus = Math.max(0, CONFIG.maxTime - gameState.timer) * 0.1;
-                    gameState.score = Math.floor(gameState.score + timeBonus);
-                    text.html(`你的得分：<strong style="color: #00d4ff; font-size: 1.5rem;">${gameState.score}</strong><br>用时：${Math.floor(gameState.timer / 60)}分${gameState.timer % 60}秒`);
-
-                    if (gameState.score > gameState.highScore) {
-                        gameState.highScore = gameState.score;
-                        localStorage.setItem('lianliankan-highscore', gameState.highScore);
-                        $('#high-score').text(gameState.highScore);
+                for (let i = 0; i < cells.length; i++) {
+                    for (let j = i + 1; j < cells.length; j++) {
+                        if (cells[i].emoji === cells[j].emoji) {
+                            const path = findPath(cells[i].r, cells[i].c, cells[j].r, cells[j].c);
+                            if (path) {
+                                $(`.cell[data-row="${cells[i].r}"][data-col="${cells[i].c}"]`).addClass('hint');
+                                $(`.cell[data-row="${cells[j].r}"][data-col="${cells[j].c}"]`).addClass('hint');
+                                setTimeout(() => {
+                                    $('.cell.hint').removeClass('hint');
+                                }, 2000);
+                                return;
+                            }
+                        }
                     }
-                } else {
-                    title.text('😔 游戏结束');
-                    text.html(`时间到！<br>你的得分：<strong style="color: #ff6b6b;">${gameState.score}</strong>`);
                 }
-
-                modal.css('display', 'flex');
             }
 
-            // 启动游戏
-            init();
+            // 事件绑定
+            $('#newGameBtn').on('click', startNewGame);
+            $('#shuffleBtn').on('click', shuffleBoard);
+            $('#hintBtn').on('click', showHint);
+            $('#playAgainBtn, #tryAgainBtn').on('click', startNewGame);
+
+            // 难度选择
+            $('.difficulty-btn').on('click', function() {
+                $('.difficulty-btn').removeClass('active');
+                $(this).addClass('active');
+                state.rows = parseInt($(this).data('rows'));
+                state.cols = parseInt($(this).data('cols'));
+                startNewGame();
+            });
+
+            // 初始化游戏
+            startNewGame();
         });
     </script>
 </body>
