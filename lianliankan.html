@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>连连看游戏</title>
+    <script src="https://cdn.bootcss.com/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 100%;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-title {
+            font-size: 2.5rem;
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .info-label {
+            margin-right: 8px;
+        }
+
+        .info-value {
+            color: #ffeb3b;
+        }
+
+        .game-board {
+            display: grid;
+            gap: 5px;
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px auto;
+            justify-content: center;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .cell:hover {
+            transform: scale(1.1);
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .cell.selected {
+            border-color: #ff9800;
+            background: #fff3e0;
+            transform: scale(1.15);
+            box-shadow: 0 0 20px rgba(255, 152, 0, 0.6);
+        }
+
+        .cell.matched {
+            background: #c8e6c9;
+            border-color: #4caf50;
+            animation: matched 0.5s ease;
+        }
+
+        .cell.empty {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        @keyframes matched {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(0); }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .message {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .message.success {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+            display: block;
+        }
+
+        .message.error {
+            background: linear-gradient(135deg, #eb3349, #f45c43);
+            color: white;
+            display: block;
+        }
+
+        .path-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 20px;
+            }
+
+            .game-title {
+                font-size: 1.8rem;
+            }
+
+            .cell {
+                width: 40px;
+                height: 40px;
+                font-size: 1.4rem;
+                border-width: 2px;
+            }
+
+            .game-board {
+                gap: 3px;
+                padding: 10px;
+            }
+
+            .info-item {
+                padding: 8px 15px;
+                font-size: 1rem;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .cell {
+                width: 32px;
+                height: 32px;
+                font-size: 1.1rem;
+            }
+
+            .game-title {
+                font-size: 1.5rem;
+            }
+
+            .game-info {
+                gap: 15px;
+            }
+        }
+
+        /* 难度选择 */
+        .difficulty-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            padding: 8px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .difficulty-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .difficulty-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">🔗 连连看</h1>
+            <div class="difficulty-selector">
+                <button class="difficulty-btn active" data-rows="6" data-cols="8">简单</button>
+                <button class="difficulty-btn" data-rows="8" data-cols="10">中等</button>
+                <button class="difficulty-btn" data-rows="10" data-cols="12">困难</button>
+            </div>
+            <div class="game-info">
+                <div class="info-item">
+                    <span class="info-label">得分:</span>
+                    <span class="info-value" id="score">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">剩余:</span>
+                    <span class="info-value" id="remaining">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">时间:</span>
+                    <span class="info-value" id="timer">0</span>s
+                </div>
+            </div>
+        </div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="restartBtn">🔄 重新开始</button>
+            <button class="btn btn-secondary" id="shuffleBtn">🔀 重新洗牌</button>
+            <button class="btn btn-secondary" id="hintBtn">💡 提示</button>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+    (function($) {
+        // 游戏配置
+        const config = {
+            rows: 6,
+            cols: 8,
+            emojis: ['🍎', '🍊', '🍇', '🍓', '🍑', '🍒', '🍍', '🥝', '🍌', '🥭', '🍐', '🍎', '🍊', '🍇', '🍓', '🍑'],
+            maxPairs: 16
+        };
+
+        // 游戏状态
+        let gameState = {
+            board: [],
+            selected: null,
+            score: 0,
+            remaining: 0,
+            timer: 0,
+            timerInterval: null,
+            isPlaying: false
+        };
+
+        // 初始化游戏
+        function initGame(rows, cols) {
+            config.rows = rows;
+            config.cols = cols;
+
+            // 计算需要的图标对数
+            const totalCells = rows * cols;
+            const pairs = Math.min(totalCells / 2, config.maxPairs);
+
+            // 选择图标
+            const selectedEmojis = config.emojis.slice(0, Math.min(pairs, config.emojis.length));
+
+            // 创建成对的图标数组
+            let icons = [];
+            for (let i = 0; i < pairs; i++) {
+                const emoji = selectedEmojis[i % selectedEmojis.length];
+                icons.push(emoji, emoji);
+            }
+
+            // 打乱数组
+            shuffleArray(icons);
+
+            // 填充空位（如果需要）
+            while (icons.length < totalCells) {
+                icons.push(null);
+            }
+
+            // 创建游戏板
+            gameState.board = [];
+            for (let i = 0; i < rows; i++) {
+                gameState.board[i] = [];
+                for (let j = 0; j < cols; j++) {
+                    gameState.board[i][j] = icons[i * cols + j];
+                }
+            }
+
+            gameState.selected = null;
+            gameState.score = 0;
+            gameState.remaining = totalCells;
+            gameState.timer = 0;
+            gameState.isPlaying = true;
+
+            // 清除之前的计时器
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+            }
+
+            // 启动计时器
+            gameState.timerInterval = setInterval(() => {
+                if (gameState.isPlaying) {
+                    gameState.timer++;
+                    updateInfo();
+                }
+            }, 1000);
+
+            renderBoard();
+            updateInfo();
+            hideMessage();
+        }
+
+        // 渲染游戏板
+        function renderBoard() {
+            const $board = $('#gameBoard');
+            $board.empty();
+            $board.css('grid-template-columns', `repeat(${config.cols}, 1fr)`);
+
+            for (let i = 0; i < config.rows; i++) {
+                for (let j = 0; j < config.cols; j++) {
+                    const cell = gameState.board[i][j];
+                    const $cell = $('<div class="cell"></div>');
+
+                    if (cell === null) {
+                        $cell.addClass('empty');
+                    } else {
+                        $cell.text(cell).data('row', i).data('col', j).data('value', cell);
+                    }
+
+                    $cell.on('click', handleCellClick);
+                    $board.append($cell);
+                }
+            }
+        }
+
+        // 处理单元格点击
+        function handleCellClick() {
+            if (!gameState.isPlaying) return;
+
+            const $cell = $(this);
+            if ($cell.hasClass('empty') || $cell.hasClass('selected')) return;
+
+            const row = $cell.data('row');
+            const col = $cell.data('col');
+            const value = $cell.data('value');
+
+            if (gameState.selected === null) {
+                // 选择第一个单元格
+                gameState.selected = { row, col, value, $cell };
+                $cell.addClass('selected');
+            } else {
+                const prev = gameState.selected;
+
+                // 取消之前的选择
+                prev.$cell.removeClass('selected');
+                gameState.selected = null;
+
+                // 检查是否是同一个单元格
+                if (prev.row === row && prev.col === col) {
+                    return;
+                }
+
+                // 检查是否匹配
+                if (prev.value === value) {
+                    // 检查是否有路径
+                    const path = findPath(prev.row, prev.col, row, col);
+                    if (path) {
+                        // 匹配成功
+                        matchCells(prev.row, prev.col, row, col);
+                    } else {
+                        showMessage('无法连接！', 'error');
+                        setTimeout(hideMessage, 1000);
+                    }
+                }
+            }
+        }
+
+        // 匹配单元格
+        function matchCells(row1, col1, row2, col2) {
+            const $cell1 = getCell(row1, col1);
+            const $cell2 = getCell(row2, col2);
+
+            $cell1.addClass('matched');
+            $cell2.addClass('matched');
+
+            // 绘制路径
+            drawPath(row1, col1, row2, col2);
+
+            setTimeout(() => {
+                gameState.board[row1][col1] = null;
+                gameState.board[row2][col2] = null;
+                $cell1.addClass('empty').removeClass('matched').text('');
+                $cell2.addClass('empty').removeClass('matched').text('');
+
+                gameState.score += 10;
+                gameState.remaining -= 2;
+
+                updateInfo();
+                checkWin();
+            }, 300);
+        }
+
+        // 获取单元格
+        function getCell(row, col) {
+            return $(`.cell[data-row="${row}"][data-col="${col}"]`);
+        }
+
+        // 更新信息显示
+        function updateInfo() {
+            $('#score').text(gameState.score);
+            $('#remaining').text(gameState.remaining);
+            $('#timer').text(gameState.timer);
+        }
+
+        // 检查胜利条件
+        function checkWin() {
+            if (gameState.remaining === 0) {
+                gameState.isPlaying = false;
+                clearInterval(gameState.timerInterval);
+                showMessage(`🎉 恭喜！你赢了！得分：${gameState.score}，用时：${gameState.timer}秒`, 'success');
+            } else if (!hasPossibleMoves()) {
+                gameState.isPlaying = false;
+                clearInterval(gameState.timerInterval);
+                showMessage('😔 没有可消除的了！游戏结束', 'error');
+            }
+        }
+
+        // 检查是否还有可能的移动
+        function hasPossibleMoves() {
+            // 收集所有非空单元格
+            const cells = [];
+            for (let i = 0; i < config.rows; i++) {
+                for (let j = 0; j < config.cols; j++) {
+                    if (gameState.board[i][j] !== null) {
+                        cells.push({ row: i, col: j, value: gameState.board[i][j] });
+                    }
+                }
+            }
+
+            // 检查每对单元格
+            for (let i = 0; i < cells.length; i++) {
+                for (let j = i + 1; j < cells.length; j++) {
+                    if (cells[i].value === cells[j].value) {
+                        if (findPath(cells[i].row, cells[i].col, cells[j].row, cells[j].col)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        // 寻路算法 - 寻找两个点之间的路径
+        function findPath(r1, c1, r2, c2) {
+            // 扩展的板子，边界为 -1（可通行）
+            const extendedRows = config.rows + 2;
+            const extendedCols = config.cols + 2;
+
+            // 创建扩展板
+            const extended = [];
+            for (let i = 0; i < extendedRows; i++) {
+                extended[i] = [];
+                for (let j = 0; j < extendedCols; j++) {
+                    if (i === 0 || i === extendedRows - 1 || j === 0 || j === extendedCols - 1) {
+                        extended[i][j] = -1; // 边界
+                    } else {
+                        extended[i][j] = gameState.board[i-1][j-1] === null ? -1 : 1;
+                    }
+                }
+            }
+
+            // 起点和终点（在扩展板中的位置）
+            const startR = r1 + 1;
+            const startC = c1 + 1;
+            const endR = r2 + 1;
+            const endC = c2 + 1;
+
+            // 起点和终点设为可通行
+            extended[startR][startC] = -1;
+            extended[endR][endC] = -1;
+
+            // BFS 寻找最多两个转弯的路径
+            // 状态：[row, col, direction, turns]
+            // direction: 0-无，1-上，2-下，3-左，4-右
+
+            const queue = [];
+            const visited = new Set();
+
+            // 四个方向：上、下、左、右
+            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+            // 初始状态
+            for (let d = 0; d < 4; d++) {
+                const nr = startR + dirs[d][0];
+                const nc = startC + dirs[d][1];
+                if (nr >= 0 && nr < extendedRows && nc >= 0 && nc < extendedCols && extended[nr][nc] === -1) {
+                    queue.push([nr, nc, d, 0, [[startR, startC], [nr, nc]]]);
+                }
+            }
+
+            while (queue.length > 0) {
+                const [curR, curC, dir, turns, path] = queue.shift();
+                const stateKey = `${curR},${curC},${dir},${turns}`;
+
+                if (visited.has(stateKey)) continue;
+                visited.add(stateKey);
+
+                // 到达终点
+                if (curR === endR && curC === endC && turns <= 2) {
+                    return path;
+                }
+
+                if (turns > 2) continue;
+
+                // 继续当前方向
+                const nr = curR + dirs[dir][0];
+                const nc = curC + dirs[dir][1];
+
+                if (nr >= 0 && nr < extendedRows && nc >= 0 && nc < extendedCols && extended[nr][nc] === -1) {
+                    const newPath = [...path, [nr, nc]];
+                    queue.push([nr, nc, dir, turns, newPath]);
+                }
+
+                // 转弯
+                for (let newDir = 0; newDir < 4; newDir++) {
+                    if (newDir === dir) continue;
+
+                    const newTurns = turns + 1;
+                    if (newTurns > 2) continue;
+
+                    const nextR = curR + dirs[newDir][0];
+                    const nextC = curC + dirs[newDir][1];
+
+                    if (nextR >= 0 && nextR < extendedRows && nextC >= 0 && nextC < extendedCols && extended[nextR][nextC] === -1) {
+                        const newPath = [...path, [nextR, nextC]];
+                        queue.push([nextR, nextC, newDir, newTurns, newPath]);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        // 绘制路径
+        function drawPath(r1, c1, r2, c2) {
+            const path = findPath(r1, c1, r2, c2);
+            if (!path) return;
+
+            const $board = $('#gameBoard');
+            const boardOffset = $board.offset();
+            const cellSize = $('.cell').outerWidth();
+
+            // 创建路径点（转换回原始坐标）
+            const points = [];
+            for (const [pr, pc] of path) {
+                points.push({
+                    x: (pc - 1) * (cellSize + 5) + cellSize / 2 + 15,
+                    y: (pr - 1) * (cellSize + 5) + cellSize / 2 + 15
+                });
+            }
+
+            // 绘制 SVG 路径
+            let pathD = '';
+            for (let i = 0; i < points.length; i++) {
+                if (i === 0) {
+                    pathD += `M ${points[i].x} ${points[i].y}`;
+                } else {
+                    pathD += ` L ${points[i].x} ${points[i].y}`;
+                }
+            }
+
+            const $svg = $(`<svg class="path-line" style="position:fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:1000;"></svg>`);
+            const $path = $(`<path d="${pathD}" stroke="#ff9800" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
+            $svg.append($path);
+            $('body').append($svg);
+
+            setTimeout(() => {
+                $svg.fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }, 300);
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const $msg = $('#message');
+            $msg.text(text).removeClass('success error').addClass(type);
+        }
+
+        // 隐藏消息
+        function hideMessage() {
+            $('#message').removeClass('success error').hide();
+        }
+
+        // 洗牌算法
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // 重新洗牌
+        function shuffleBoard() {
+            if (!gameState.isPlaying) return;
+
+            // 收集所有剩余的图标
+            const icons = [];
+            for (let i = 0; i < config.rows; i++) {
+                for (let j = 0; j < config.cols; j++) {
+                    if (gameState.board[i][j] !== null) {
+                        icons.push(gameState.board[i][j]);
+                    }
+                }
+            }
+
+            // 打乱
+            shuffleArray(icons);
+
+            // 重新填充
+            let idx = 0;
+            for (let i = 0; i < config.rows; i++) {
+                for (let j = 0; j < config.cols; j++) {
+                    if (gameState.board[i][j] !== null) {
+                        gameState.board[i][j] = icons[idx++];
+                    }
+                }
+            }
+
+            gameState.selected = null;
+            renderBoard();
+
+            // 检查是否有可消除的
+            if (!hasPossibleMoves()) {
+                // 如果还没有，再次洗牌
+                shuffleBoard();
+            }
+        }
+
+        // 提示
+        function showHint() {
+            if (!gameState.isPlaying) return;
+
+            // 寻找一对可以消除的
+            const cells = [];
+            for (let i = 0; i < config.rows; i++) {
+                for (let j = 0; j < config.cols; j++) {
+                    if (gameState.board[i][j] !== null) {
+                        cells.push({ row: i, col: j, value: gameState.board[i][j] });
+                    }
+                }
+            }
+
+            for (let i = 0; i < cells.length; i++) {
+                for (let j = i + 1; j < cells.length; j++) {
+                    if (cells[i].value === cells[j].value) {
+                        const path = findPath(cells[i].row, cells[i].col, cells[j].row, cells[j].col);
+                        if (path) {
+                            // 高亮显示
+                            const $cell1 = getCell(cells[i].row, cells[i].col);
+                            const $cell2 = getCell(cells[j].row, cells[j].col);
+
+                            $cell1.css('background', '#fff9c4');
+                            $cell2.css('background', '#fff9c4');
+
+                            setTimeout(() => {
+                                $cell1.css('background', '');
+                                $cell2.css('background', '');
+                            }, 1000);
+
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 事件绑定
+        $(document).ready(function() {
+            // 初始化游戏
+            initGame(config.rows, config.cols);
+
+            // 难度选择
+            $('.difficulty-btn').on('click', function() {
+                $('.difficulty-btn').removeClass('active');
+                $(this).addClass('active');
+
+                const rows = parseInt($(this).data('rows'));
+                const cols = parseInt($(this).data('cols'));
+
+                initGame(rows, cols);
+            });
+
+            // 重新开始
+            $('#restartBtn').on('click', function() {
+                const $active = $('.difficulty-btn.active');
+                const rows = parseInt($active.data('rows'));
+                const cols = parseInt($active.data('cols'));
+                initGame(rows, cols);
+            });
+
+            // 重新洗牌
+            $('#shuffleBtn').on('click', function() {
+                shuffleBoard();
+            });
+
+            // 提示
+            $('#hintBtn').on('click', function() {
+                showHint();
+            });
+        });
+    })(jQuery);
+    </script>
+</body>
+</html>
