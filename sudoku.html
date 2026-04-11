@@ -286,6 +286,21 @@
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
         }
 
+        .btn-notes {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: #1a1a2e;
+        }
+
+        .btn-notes:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(56, 239, 125, 0.4);
+        }
+
+        .btn-notes.active {
+            box-shadow: 0 0 20px rgba(56, 239, 125, 0.8), inset 0 0 10px rgba(0, 0, 0, 0.3);
+            transform: scale(1.05);
+        }
+
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -439,10 +454,11 @@
             <button class="btn btn-hint" id="hintBtn">提示</button>
             <button class="btn btn-erase" id="eraseBtn">擦除</button>
             <button class="btn btn-undo" id="undoBtn">撤销</button>
+            <button class="btn btn-notes" id="notesBtn">笔记</button>
         </div>
 
         <div class="instructions">
-            点击选中格子，再点击下方数字键填入。也可用 <kbd>1</kbd>-<kbd>9</kbd> 键输入，<kbd>Backspace</kbd> 擦除，<kbd>H</kbd> 提示
+            点击选中格子，再点击下方数字键填入。也可用 <kbd>1</kbd>-<kbd>9</kbd> 键输入，<kbd>Backspace</kbd> 擦除，<kbd>H</kbd> 提示，<kbd>N</kbd> 切换笔记模式
         </div>
     </div>
 
@@ -552,6 +568,7 @@
         let hintsLeft = 3;
         let history = [];      // 撤销栈
         let gameStarted = false;
+        let notesMode = false;  // 笔记模式开关
 
         // DOM 元素
         const boardEl = document.getElementById('board');
@@ -596,16 +613,6 @@
 
         function renderBoard() {
             const cells = boardEl.querySelectorAll('.cell');
-            const completedNumbers = new Set();
-
-            // 统计每个数字已放置数量
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    if (board[r][c] !== 0) {
-                        completedNumbers.add(board[r][c]);
-                    }
-                }
-            }
 
             cells.forEach((cellEl, idx) => {
                 const r = parseInt(cellEl.dataset.row);
@@ -746,6 +753,25 @@
             const [r, c] = selectedCell;
             if (givenCells.some(([gr, gc]) => gr === r && gc === c)) return;
 
+            if (notesMode) {
+                // 笔记模式：切换该格子的候选数字
+                history.push({
+                    row: r,
+                    col: c,
+                    prevValue: board[r][c],
+                    prevNotes: notes[r] ? new Set(notes[r][c] || []) : new Set()
+                });
+                if (board[r][c] !== 0) return; // 已有数字的格子不能记笔记
+                if (notes[r][c].has(num)) {
+                    notes[r][c].delete(num);
+                } else {
+                    notes[r][c].add(num);
+                }
+                renderBoard();
+                return;
+            }
+
+            // 普通模式：直接填入数字
             // 记录历史
             history.push({
                 row: r,
@@ -766,9 +792,6 @@
                     }
                 }
             }
-
-            // 自动填充笔记: 对于同行/列/宫的空格子，如果没有这个数字的可能了（简化：仅标记）
-            // 这里简化处理：不清除，由冲突检测来提示
 
             if (!gameStarted) {
                 gameStarted = true;
@@ -888,6 +911,7 @@
             history = [];
             selectedCell = null;
             gameStarted = false;
+            notesMode = false;
 
             const difficulty = difficultySelect.value;
             solution = generateCompleteSudoku();
@@ -929,6 +953,8 @@
                 eraseCell();
             } else if (e.key === 'h' || e.key === 'H') {
                 giveHint();
+            } else if (e.key === 'n' || e.key === 'N') {
+                toggleNotesMode();
             } else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 undoAction();
@@ -947,7 +973,13 @@
         document.getElementById('hintBtn').addEventListener('click', giveHint);
         document.getElementById('eraseBtn').addEventListener('click', eraseCell);
         document.getElementById('undoBtn').addEventListener('click', undoAction);
+        document.getElementById('notesBtn').addEventListener('click', toggleNotesMode);
         difficultySelect.addEventListener('change', newGame);
+
+        function toggleNotesMode() {
+            notesMode = !notesMode;
+            document.getElementById('notesBtn').classList.toggle('active', notesMode);
+        }
 
         // ============ 初始化 ============
 
