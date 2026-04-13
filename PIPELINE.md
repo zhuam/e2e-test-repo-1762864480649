@@ -153,3 +153,30 @@ Pipeline re-executed by `chat-c003474bf75eb187f9440feea8f84916`.
 - Updated `games.html` to add sudoku game card link
 
 **Sync**: Merged remote changes (bridge.html, mario.html, lianliankan.html, etc.), resolved add/add conflict on sudoku.html keeping our version. Pushed to main successfully. Issue #26 already closed.
+
+---
+
+## Re-execution Summary (2026-04-13) - chat-c003474bf75eb187f9440feea8f84916
+
+Pipeline re-executed by `chat-c003474bf75eb187f9440feea8f84916`.
+
+**Steps completed**:
+- Step 1 (需求分析): Skipped — already marked Completed from previous session.
+- Step 2 (开发): Completed — fixed missing notes mode toggle button
+- Step 3 (审查): Pending
+
+**Bug Fix**:
+- **Issue**: 笔记模式（notes mode）的 CSS 样式（`.num-btn.note-toggle`）和 JS 逻辑（line 825 尝试 `document.querySelector('.num-btn.note-toggle')`）都存在，但 HTML 中缺少实际的按钮元素，导致玩家无法通过 UI 切换笔记模式。
+- **Fix**:
+  - 在控制栏（controls）添加 `<button class="btn btn-note" id="noteBtn">笔记</button>`
+  - 添加 `.btn-note` CSS 样式（金色渐变背景 + 激活时发光效果）
+  - JS 中获取 `noteBtn` 元素引用，添加点击事件监听器
+  - 更新键盘 N 键处理器使用新的 `noteBtn` 引用
+  - 在 `newGame()` 中重置按钮状态
+
+**Verification**:
+- JS syntax validated ✅
+- Git pre-push conflict check passed (no new commits in bare repo)
+- Committed and pushed to main: `aa7dbf5`
+- Commented on issue #26
+- Issue #26 status: CLOSED

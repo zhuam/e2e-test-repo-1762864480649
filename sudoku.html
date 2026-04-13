@@ -227,17 +227,6 @@
             box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
         }
 
-        .num-btn.note-toggle {
-            background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
-            color: #1a1a2e;
-            font-size: 1rem;
-        }
-
-        .num-btn.note-toggle.active {
-            background: linear-gradient(135deg, #ffd200 0%, #f7971e 100%);
-            box-shadow: 0 0 20px rgba(255, 210, 0, 0.5);
-        }
-
         /* 底部按钮 */
         .controls {
             display: flex;
@@ -792,11 +781,6 @@
             }
         }
 
-        function closeWin() {
-            winOverlay.style.display = 'none';
-            newGame();
-        }
-
         function newGame() {
             winOverlay.style.display = 'none';
             const puzzle = generatePuzzle(difficultySelect.value);
@@ -812,7 +796,6 @@
             hintBtn.textContent = `提示 (${hintsLeft})`;
             history = [];
             gameActive = true;
-            difficultySelect.disabled = false;
 
             renderBoard();
             startTimer();
