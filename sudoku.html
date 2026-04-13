@@ -287,6 +287,20 @@
             box-shadow: 0 5px 20px rgba(255, 210, 0, 0.4);
         }
 
+        .btn-note {
+            background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+            color: #1a1a2e;
+        }
+
+        .btn-note:hover {
+            box-shadow: 0 5px 20px rgba(255, 210, 0, 0.4);
+        }
+
+        .btn-note.active {
+            box-shadow: 0 0 20px rgba(255, 210, 0, 0.6);
+            transform: translateY(-2px);
+        }
+
         .instructions {
             margin-top: 15px;
             padding: 12px;
@@ -425,6 +439,7 @@
             <button class="btn btn-new" id="newGameBtn">新游戏</button>
             <button class="btn btn-undo" id="undoBtn">撤销</button>
             <button class="btn btn-hint" id="hintBtn">提示 (3)</button>
+            <button class="btn btn-note" id="noteBtn">笔记</button>
         </div>
 
         <div class="instructions">
@@ -465,6 +480,7 @@
         const remainingEl = document.getElementById('remaining');
         const hintsEl = document.getElementById('hintsLeft');
         const hintBtn = document.getElementById('hintBtn');
+        const noteBtn = document.getElementById('noteBtn');
         const difficultySelect = document.getElementById('difficulty');
         const winOverlay = document.getElementById('winOverlay');
 
@@ -790,6 +806,7 @@
             notes = Array.from({ length: 81 }, () => new Set());
             selectedCell = -1;
             isNoteMode = false;
+            noteBtn.classList.remove('active');
             hintsLeft = 3;
             hintsEl.textContent = hintsLeft;
             hintBtn.textContent = `提示 (${hintsLeft})`;
@@ -822,7 +839,7 @@
                 e.preventDefault();
             } else if (e.key === 'n' || e.key === 'N') {
                 isNoteMode = !isNoteMode;
-                document.querySelector('.num-btn.note-toggle')?.classList.toggle('active', isNoteMode);
+                noteBtn.classList.toggle('active', isNoteMode);
             } else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
                 undo();
                 e.preventDefault();
@@ -841,6 +858,10 @@
         document.getElementById('newGameBtn').addEventListener('click', newGame);
         document.getElementById('undoBtn').addEventListener('click', undo);
         hintBtn.addEventListener('click', giveHint);
+        noteBtn.addEventListener('click', () => {
+            isNoteMode = !isNoteMode;
+            noteBtn.classList.toggle('active', isNoteMode);
+        });
 
         // 初始化
         newGame();
