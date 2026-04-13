@@ -669,7 +669,9 @@
                 passCount: 0,
                 leadSuit: null,
                 playerWaiting: null,
-                isDummyRevealed: false
+                isDummyRevealed: false,
+                firstTrumpBidder: null,
+                contractDoubled: false
             };
         }
 
@@ -869,13 +871,19 @@
             passBtn.onclick = () => submitBid(null, null, 'Pass', 'pass');
             grid.appendChild(passBtn);
 
-            // Double
+            // Double (仅当最后一次叫牌来自对手方时)
             if (G.lastBid && G.lastBid.type === 'bid') {
-                const dblBtn = document.createElement('button');
-                dblBtn.className = 'bid-btn double-btn';
-                dblBtn.textContent = 'Double';
-                dblBtn.onclick = () => submitBid(null, null, 'Double', 'double');
-                grid.appendChild(dblBtn);
+                // 判断最后一次叫牌的玩家是否与当前玩家是对手方
+                const lastBidder = G.bidding[G.bidding.length - 1].player;
+                const currentPartnership = (G.currentBidder === 'south' || G.currentBidder === 'north') ? 'NS' : 'EW';
+                const lastPartnership = (lastBidder === 'south' || lastBidder === 'north') ? 'NS' : 'EW';
+                if (currentPartnership !== lastPartnership) {
+                    const dblBtn = document.createElement('button');
+                    dblBtn.className = 'bid-btn double-btn';
+                    dblBtn.textContent = 'Double';
+                    dblBtn.onclick = () => submitBid(null, null, 'Double', 'double');
+                    grid.appendChild(dblBtn);
+                }
             }
         }
 
@@ -885,15 +893,13 @@
             G.bidding.push({ player: 'south', text });
             if (type === 'bid') {
                 G.lastBid = { level, trump, type, text };
-                G.declarer = 'south';
                 G.passCount = 0;
             } else if (type === 'pass') {
                 G.passCount++;
-            } else {
-                G.passCount = 0;
             }
+            // Double/ReDouble 不重置 passCount
 
-            if (G.passCount >= 4) {
+            if (G.passCount >= 3) {
                 endBidding();
                 return;
             }
@@ -908,15 +914,13 @@
 
             if (bid.type === 'bid') {
                 G.lastBid = bid;
-                G.declarer = player;
                 G.passCount = 0;
             } else if (bid.type === 'pass') {
                 G.passCount++;
-            } else {
-                G.passCount = 0;
             }
+            // Double/ReDouble 不重置 passCount（桥牌规则：3 个连续 Pass 结束竞标）
 
-            if (G.passCount >= 4) {
+            if (G.passCount >= 3) {
                 endBidding();
                 return;
             }
@@ -1015,6 +1019,33 @@
             }
 
             G.contract = { level: G.lastBid.level, trump: G.lastBid.trump };
+
+            // 正确确定庄家：定约方中第一个叫出该花色的玩家
+            const contractTrump = G.lastBid.trump;
+            // 确定赢标方：最后一次叫牌的玩家所在的搭档方
+            const lastBidPlayer = G.bidding[G.bidding.length - 1].player;
+            const isWinNS = (lastBidPlayer === 'south' || lastBidPlayer === 'north');
+            const winPlayers = isWinNS ? ['south', 'north'] : ['west', 'east'];
+            // 从叫牌历史中查找赢标方第一个叫出该花色的玩家
+            G.declarer = null;
+            for (const b of G.bidding) {
+                // 解析叫牌文本，提取花色（如 "3♥" 中的 "♥"，"2NT" 中的 "NT"）
+                let bidTrump = null;
+                if (b.text.endsWith('NT')) {
+                    bidTrump = 'NT';
+                } else {
+                    bidTrump = b.text[b.text.length - 1]; // 最后一个字符是花色
+                }
+                if (bidTrump === contractTrump && winPlayers.includes(b.player)) {
+                    G.declarer = b.player;
+                    break;
+                }
+            }
+            if (!G.declarer) {
+                // 极端情况回退
+                G.declarer = lastBidPlayer;
+            }
+
             updateInfo();
 
             const trumpLabel = G.contract.trump === 'NT' ? '无将' : (SUIT_NAMES[G.contract.trump] || G.contract.trump);
@@ -1031,9 +1062,8 @@
             const dealerIdx = PLAYERS.indexOf(G.declarer);
             G.leader = PLAYERS[(dealerIdx + 1) % 4];
 
-            // 明手永远是庄家的同伴，始终亮牌
-            G.isDummyRevealed = true;
-            renderHand(PARTNER[G.declarer]);
+            showMessage(`${PLAYER_NAMES[G.leader]} 首攻`, 2000);
+            await delay(2000);
 
             for (let trick = 0; trick < 13; trick++) {
                 G.currentTrick = {};
@@ -1042,11 +1072,28 @@
                 document.getElementById('trick-label').textContent = `第 ${trick + 1} 墩`;
                 clearTrick();
 
-                // 依次出牌
-                const leaderIdx = PLAYERS.indexOf(G.leader);
-                for (let i = 0; i < 4; i++) {
-                    const player = PLAYERS[(leaderIdx + i) % 4];
-                    await playCardForPlayer(player);
+                // 首攻后亮出明手牌
+                if (trick === 0 && !G.isDummyRevealed) {
+                    // 首攻者先出牌
+                    await playCardForPlayer(G.leader);
+                    G.isDummyRevealed = true;
+                    renderHand(PARTNER[G.declarer]);
+                    showMessage('明手亮牌', 1500);
+                    await delay(1500);
+
+                    // 其余玩家依次出牌
+                    const leaderIdx = PLAYERS.indexOf(G.leader);
+                    for (let i = 1; i < 4; i++) {
+                        const player = PLAYERS[(leaderIdx + i) % 4];
+                        await playCardForPlayer(player);
+                    }
+                } else {
+                    // 正常出牌
+                    const leaderIdx = PLAYERS.indexOf(G.leader);
+                    for (let i = 0; i < 4; i++) {
+                        const player = PLAYERS[(leaderIdx + i) % 4];
+                        await playCardForPlayer(player);
+                    }
                 }
 
                 // 计算赢家
@@ -1121,7 +1168,7 @@
                     const card = {
                         suit: el.dataset.suit,
                         rank: el.dataset.rank,
-                        value: parseInt(el.dataset.value),
+                        value: parseInt(el.dataset.value, 10),
                         isRed: el.classList.contains('red')
                     };
                     placeCard('south', card);
@@ -1223,20 +1270,38 @@
 
         function calculateScore(contract, tricksTaken, tricksNeeded, made) {
             if (made) {
-                const oddTricks = tricksTaken - 6;
+                // 定约墩分（基于定约阶数，而非实际赢得墩数）
+                const contractLevel = contract.level;
                 let base;
                 if (contract.trump === '♣' || contract.trump === '♦') {
-                    base = oddTricks * 20;
+                    base = contractLevel * 20;
                 } else {
-                    base = oddTricks * 30;
+                    base = contractLevel * 30;
                 }
                 if (contract.trump === 'NT') base += 10;
 
-                let bonus = 0;
-                if (base >= 100) bonus = 300; // 成局奖
-                else bonus = 50; // 部分定约奖
+                // 超墩奖分
+                const overtricks = tricksTaken - tricksNeeded;
+                let overtrickBonus = 0;
+                if (overtricks > 0) {
+                    if (contract.trump === '♣' || contract.trump === '♦') {
+                        overtrickBonus = overtricks * 20;
+                    } else {
+                        overtrickBonus = overtricks * 30;
+                    }
+                }
 
-                return base + bonus;
+                // 成局奖分：墩分 >= 100 为成局
+                let gameBonus = 0;
+                if (base >= 100) gameBonus = 300; // 成局奖
+                else gameBonus = 50; // 部分定约奖
+
+                // 小满贯/大满贯奖分
+                let slamBonus = 0;
+                if (contractLevel === 6) slamBonus = 500;
+                if (contractLevel === 7) slamBonus = 1000;
+
+                return base + overtrickBonus + gameBonus + slamBonus;
             } else {
                 return (tricksNeeded - tricksTaken) * 50;
             }
