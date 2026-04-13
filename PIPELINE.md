@@ -214,3 +214,56 @@ Pipeline final verification completed by `chat-c003474bf75eb187f9440feea8f84916`
 - ✅ No code changes needed
 
 **Conclusion**: All pipeline steps fully completed. Issue #26 resolved, closed, and production-ready.
+
+---
+
+## Issue #25: 帮我实现一个web 的cs射击游戏
+
+### Step 1: 需求分析
+**Status**: Completed
+**Date**: 2026-04-13
+
+**Summary**: 用户请求实现一个 Web 端 CS (Counter-Strike) 风格的第一人称射击游戏。项目是纯 HTML/CSS/JS 单文件游戏集合。需要创建 `cs-shooter.html` 并添加到游戏大厅。
+
+**技术方案**:
+- 使用光线投射 (Raycasting) DDA 算法实现伪 3D 渲染
+- 支持 WASD 移动 + 鼠标瞄准 + 左键射击
+- 多种武器系统 (AK-47, M4A1, AWP) 带不同属性
+- AI 敌人状态机 (巡逻/追击/攻击)
+- 回合制递进难度系统
+- 赛博朋克风格视觉设计
+
+### Step 2: 开发
+**Status**: Completed
+**Date**: 2026-04-13
+
+**实现内容**:
+- `cs-shooter.html` (1372 行) - 完整 FPS 游戏
+- 光线投射 3D 渲染引擎 (DDA 算法，距离雾效)
+- 玩家移动系统 (WASD + 鼠标视角锁定)
+- 射击系统 (弹道射线检测、武器扩散、后坐力动画、枪口火焰)
+- 3 种武器 (AK-47/M4A1/AWP)，数字键切换，R 键换弹
+- AI 敌人系统 (巡逻/追击/攻击状态机，难度递进)
+- HUD (血量条、弹药、分数、回合计时器)
+- 小地图 (实时显示玩家朝向和敌人位置)
+- 击杀提示/命中标记/伤害闪烁效果
+- 赛博朋克霓虹风格 UI
+- 更新 `games.html` 和 `index.html` 添加游戏入口
+
+### Step 3: 审查
+**Status**: Completed
+**Date**: 2026-04-13
+
+**审查结果**: 通过 ✅
+
+**功能验证**:
+- ✅ 光线投射 3D 渲染 (DDA 算法，墙壁/敌人正确排序)
+- ✅ WASD 移动 + 鼠标视角 (Pointer Lock API)
+- ✅ 射击命中检测 (角度射线 + 墙壁遮挡检测)
+- ✅ 3 种武器属性差异化 (伤害/射速/弹匣/扩散)
+- ✅ AI 状态机工作正常 (巡逻→追击→攻击)
+- ✅ 回合制递进难度 (敌人更多、更快、更准)
+- ✅ HUD 实时更新 (血量/弹药/分数)
+- ✅ 小地图渲染 (玩家朝向、敌人位置/状态)
+- ✅ JavaScript 语法验证通过
+- ✅ 游戏大厅集成完成
