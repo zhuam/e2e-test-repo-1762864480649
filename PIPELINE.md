@@ -103,3 +103,31 @@ Confirmed all previous review findings were addressed:
 **Conclusion**: All pipeline steps (需求分析 → 开发 → 审查) fully completed. Issue #26 resolved and closed.
 
 **Conclusion**: Implementation is complete and production-ready. No code changes required.
+
+---
+
+## Issue #23: 帮我实现一个 web 的桥牌游戏
+
+### Step 2: 开发
+**Status**: Completed
+**Date**: 2026-04-13
+
+**Summary**: 审查并修复了已有的 Web 桥牌游戏实现 (bridge.html)，包含以下功能和修复：
+
+**已有功能**:
+- 🎴 完整 52 张牌发牌与排序（按花色黑桃♥♦♣和大小排序）
+- 📢 竞标阶段：支持 1-7 阶 + ♣♦♥♠NT 叫牌，Pass 和 Double
+- 🃏 出牌阶段：跟牌规则（必须跟同花色）、将牌判定、赢墩计算
+- 🤖 AI 对手：基于 HCP 点力系统的智能竞标和出牌（≥13 HCP 主动叫牌）
+- 🎨 赛博朋克风格 UI（霓虹渐变、粒子动画）
+- 📊 完整计分系统（成局奖、部分定约奖、未完成罚分）
+- 📱 响应式设计（移动端适配）
+- 📖 游戏规则说明
+
+**修复的 Bug**:
+1. **明手(dummy)牌未正面显示**: 修改 `renderHand()` 函数，当 `G.isDummyRevealed` 为 true 且玩家是庄家的同伴时，显示正面牌（带 disabled 样式）而非牌背。
+2. **明手亮牌时机错误**: 修改 `startPlaying()` 函数，将条件判断 `if (G.leader === PARTNER[G.declarer])` 改为无条件始终亮出明手牌（符合桥牌规则，明手永远是庄家的同伴）。
+
+**集成**: 确认 `games.html` 已包含桥牌游戏卡片链接（本次已存在于修改列表中）。
+
+**提交信息**: `feat: 实现 Web 桥牌游戏 - 支持竞标、出牌、AI 对战和计分 (Fixes #23)`
