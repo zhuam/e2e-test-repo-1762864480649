@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>斗地主 - 经典纸牌游戏</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(ellipse at center, #1a5c2a 0%, #0d3318 40%, #071a0c 100%);
+        }
+        .game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; position: relative; }
+
+        /* ===== Layout ===== */
+        .top-area { flex: 0 0 auto; padding: 8px 20px; display: flex; justify-content: center; min-height: 100px; }
+        .top-player { display: flex; align-items: center; gap: 12px; }
+        .middle-area { flex: 1; display: flex; position: relative; overflow: hidden; }
+        .left-area { flex: 0 0 auto; display: flex; align-items: center; padding: 0 10px; gap: 8px; }
+        .left-cards { display: flex; flex-direction: column; }
+        .center-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .bottom-area { flex: 0 0 auto; padding: 8px 15px 12px; display: flex; flex-direction: column; align-items: center; }
+
+        /* ===== Player Info ===== */
+        .player-info {
+            background: rgba(0,0,0,0.5); border-radius: 12px; padding: 5px 12px; color: #fff;
+            display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(5px); white-space: nowrap;
+        }
+        .player-info.landlord { border-color: rgba(255,215,0,0.5); }
+        .player-info .avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+        .player-info.landlord .avatar { background: linear-gradient(135deg, #ffd700, #ff8c00); }
+        .player-info .name { font-size: 12px; font-weight: 700; }
+        .player-info .card-count { font-size: 10px; color: #aaa; }
+        .landlord-tag {
+            background: linear-gradient(135deg, #ffd700, #ff8c00); color: #333;
+            padding: 1px 6px; border-radius: 8px; font-size: 9px; font-weight: 700;
+        }
+        .score-text { color: #ffd700; font-size: 12px; font-weight: 700; margin-left: 5px; }
+
+        /* ===== Card Backs ===== */
+        .mini-card-back {
+            width: 20px; height: 28px; background: linear-gradient(145deg, #1a3a8a, #0d2266);
+            border-radius: 3px; border: 1px solid #3355cc; box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .mini-card-back.h { margin-left: -6px; }
+        .mini-card-back.v { margin-bottom: -6px; }
+        .full-card-back {
+            width: 55px; height: 77px; border-radius: 6px;
+            background: linear-gradient(145deg, #1a3a8a, #0d2266); border: 2px solid #3355cc;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3); position: relative; overflow: hidden;
+        }
+        .full-card-back::before {
+            content: ''; position: absolute; inset: 4px; border: 1.5px solid rgba(255,255,255,0.2);
+            border-radius: 4px; background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.05) 4px, rgba(255,255,255,0.05) 8px);
+        }
+
+        /* ===== Cards ===== */
+        .card {
+            width: 62px; height: 88px; border-radius: 7px; position: relative;
+            background: linear-gradient(180deg, #ffffff 0%, #f8f8f8 100%);
+            border: 1.5px solid #ccc; cursor: pointer; flex-shrink: 0; user-select: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .card:hover { transform: translateY(-6px); box-shadow: 0 5px 12px rgba(0,0,0,0.25); }
+        .card.selected { transform: translateY(-14px); border-color: #667eea; box-shadow: 0 6px 16px rgba(102,126,234,0.5); }
+        .card .tl, .card .br { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+        .card .tl { top: 3px; left: 4px; }
+        .card .br { bottom: 3px; right: 4px; transform: rotate(180deg); }
+        .card .rank { font-size: 14px; font-weight: 800; }
+        .card .suit { font-size: 11px; margin-top: -1px; }
+        .card .center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 28px; }
+        .card.red .rank, .card.red .suit, .card.red .center { color: #cc0000; }
+        .card.black .rank, .card.black .suit, .card.black .center { color: #1a1a1a; }
+        .card.joker-r { background: linear-gradient(180deg,#fff5f5,#ffe8e8); border-color: #cc0000; }
+        .card.joker-r .rank, .card.joker-r .center { color: #cc0000; }
+        .card.joker-b { background: linear-gradient(180deg,#f5f5f5,#e8e8e8); border-color: #555; }
+        .card.joker-b .rank, .card.joker-b .center { color: #1a1a1a; }
+        .card.joker-r .suit, .card.joker-b .suit { font-size: 8px; }
+
+        /* ===== Pool Cards ===== */
+        .pool-area { display: flex; gap: 6px; margin-bottom: 10px; min-height: 85px; align-items: center; }
+        .pool-card {
+            width: 45px; height: 63px; border-radius: 5px; position: relative;
+            background: linear-gradient(180deg, #fff, #f8f8f8); border: 1.5px solid #ccc;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15); user-select: none;
+        }
+        .pool-card .tl, .pool-card .br { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+        .pool-card .tl { top: 2px; left: 3px; }
+        .pool-card .br { bottom: 2px; right: 3px; transform: rotate(180deg); }
+        .pool-card .rank { font-size: 11px; font-weight: 800; }
+        .pool-card .suit { font-size: 9px; }
+        .pool-card .center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 18px; }
+        .pool-card.red .rank, .pool-card.red .suit, .pool-card.red .center { color: #cc0000; }
+        .pool-card.black .rank, .pool-card.black .suit, .pool-card.black .center { color: #1a1a1a; }
+
+        /* ===== Played Cards ===== */
+        .played-zone {
+            position: absolute; display: flex; min-height: 90px; align-items: center; justify-content: center;
+        }
+        .played-zone.top { top: 15px; left: 50%; transform: translateX(-50%); }
+        .played-zone.left { left: 15px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .played-zone .card { width: 48px; height: 68px; }
+        .played-zone .card .rank { font-size: 11px; }
+        .played-zone .card .suit { font-size: 8px; }
+        .played-zone .card .center { font-size: 20px; }
+        .played-zone .card:first-child { margin-left: 0; }
+        .played-zone .card:not(:first-child) { margin-left: -18px; }
+        .pass-text {
+            color: rgba(255,255,255,0.45); font-size: 16px; font-weight: 700; font-style: italic;
+            background: rgba(0,0,0,0.25); padding: 3px 12px; border-radius: 8px;
+        }
+
+        /* ===== Status / Multiplier ===== */
+        .status-bar {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            background: rgba(0,0,0,0.65); color: #fff; padding: 6px 18px; border-radius: 18px;
+            font-size: 13px; backdrop-filter: blur(5px); z-index: 50; white-space: nowrap;
+            transition: opacity 0.3s;
+        }
+        .multiplier-box {
+            position: absolute; top: 8px; right: 10px; background: rgba(0,0,0,0.55);
+            color: #ffd700; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
+        }
+
+        /* ===== Hand ===== */
+        .cards-hand { display: flex; justify-content: center; min-height: 95px; align-items: flex-end; padding: 0 10px; }
+
+        /* ===== Controls ===== */
+        .controls { display: flex; gap: 10px; margin-top: 8px; min-height: 38px; align-items: center; }
+        .btn {
+            padding: 7px 20px; border: none; border-radius: 22px; font-size: 13px; font-weight: 700;
+            cursor: pointer; font-family: inherit; transition: all 0.15s ease;
+        }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-warn { background: linear-gradient(135deg,#ffd700,#ff8c00); color: #333; box-shadow: 0 2px 8px rgba(255,215,0,0.35); }
+        .btn-warn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(255,215,0,0.55); }
+        .btn-ok { background: linear-gradient(135deg,#11998e,#38ef7d); color: #fff; box-shadow: 0 2px 8px rgba(17,153,142,0.35); }
+        .btn-ok:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn-sub { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
+        .btn-sub:hover:not(:disabled) { background: rgba(255,255,255,0.22); transform: translateY(-2px); }
+        .btn-danger { background: linear-gradient(135deg,#eb3349,#f45c43); color: #fff; }
+
+        /* ===== Bid Panel ===== */
+        .bid-panel {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            background: rgba(0,0,0,0.82); border-radius: 18px; padding: 22px 30px;
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.12); z-index: 100;
+        }
+        .bid-panel h3 { color: #ffd700; font-size: 17px; text-shadow: 0 0 10px rgba(255,215,0,0.4); }
+        .bid-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .bid-btn {
+            padding: 9px 18px; border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+            cursor: pointer; font-family: inherit; background: linear-gradient(135deg,#ffd700,#ff8c00);
+            color: #333; box-shadow: 0 2px 8px rgba(255,215,0,0.3); transition: all 0.15s;
+        }
+        .bid-btn:hover { transform: translateY(-2px) scale(1.04); }
+        .bid-btn.pass-btn { background: linear-gradient(135deg,#666,#444); color: #fff; }
+
+        /* ===== Modal ===== */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: flex;
+            align-items: center; justify-content: center; z-index: 200; backdrop-filter: blur(4px);
+        }
+        .modal {
+            background: linear-gradient(145deg, rgba(25,25,45,0.96), rgba(12,12,28,0.96));
+            border-radius: 22px; padding: 35px; text-align: center;
+            border: 2px solid rgba(255,215,0,0.25); box-shadow: 0 18px 50px rgba(0,0,0,0.5);
+            max-width: 380px; width: 90%;
+        }
+        .modal h2 { font-size: 26px; margin-bottom: 12px; }
+        .modal h2.win { background: linear-gradient(135deg,#ffd700,#ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .modal h2.lose { color: #ff4444; }
+        .modal p { color: #aaa; margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
+        @keyframes glow { 0%,100%{box-shadow:0 0 18px rgba(255,215,0,0.25)} 50%{box-shadow:0 0 35px rgba(255,215,0,0.7),0 0 55px rgba(255,140,0,0.35)} }
+        .modal.win-glow { animation: glow 1s ease-in-out infinite; }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .card { width: 48px; height: 68px; }
+            .card .rank { font-size: 11px; } .card .suit { font-size: 8px; } .card .center { font-size: 20px; }
+            .cards-hand { min-height: 75px; }
+            .played-zone .card { width: 40px; height: 56px; }
+            .played-zone .card .rank { font-size: 9px; } .played-zone .card .center { font-size: 16px; }
+            .btn { padding: 6px 14px; font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <!-- Top: Player 2 (AI) -->
+    <div class="top-area">
+        <div class="top-player">
+            <div class="player-info" id="p2-info">
+                <div class="avatar">&#x1F916;</div>
+                <div><div class="name">电脑玩家2</div><div class="card-count" id="p2-count">17 张</div></div>
+            </div>
+            <div id="p2-backs" style="display:flex;"></div>
+        </div>
+    </div>
+
+    <!-- Middle -->
+    <div class="middle-area">
+        <!-- Left: Player 1 (AI) -->
+        <div class="left-area">
+            <div id="p1-backs" style="display:flex;flex-direction:column;"></div>
+            <div class="player-info" id="p1-info">
+                <div class="avatar">&#x1F916;</div>
+                <div><div class="name">电脑玩家1</div><div class="card-count" id="p1-count">17 张</div></div>
+            </div>
+        </div>
+
+        <!-- Center -->
+        <div class="center-area">
+            <div class="pool-area" id="pool-area"></div>
+            <div class="status-bar" id="status">点击「开始游戏」</div>
+            <div class="multiplier-box" id="mult-box">倍数: x1</div>
+            <div class="played-zone top" id="play-top"></div>
+            <div class="played-zone left" id="play-left"></div>
+        </div>
+    </div>
+
+    <!-- Bottom: Human Player -->
+    <div class="bottom-area">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+            <div class="player-info" id="p0-info">
+                <div class="avatar">&#x1F464;</div>
+                <div><div class="name">你</div><div class="card-count" id="p0-count">17 张</div></div>
+            </div>
+            <span class="score-text" id="score-text"></span>
+        </div>
+        <div class="cards-hand" id="hand"></div>
+        <div class="controls" id="controls">
+            <button class="btn btn-warn" onclick="startGame()">&#x1F3AE; 开始游戏</button>
+        </div>
+    </div>
+</div>
+
+<div id="bid-container"></div>
+<div id="modal-container"></div>
+
+<script>
+/* ================================================================
+   CONSTANTS
+   ================================================================ */
+const SUITS = ['\u2660','\u2665','\u2663','\u2666']; // ♠ ♥ ♣ ♦
+const RANKS = ['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
+const VAL = {'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14,'2':15,'X':16,'D':17};
+const RANK_DISPLAY = {'3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','10':'10','J':'J','Q':'Q','K':'K','A':'A','2':'2','X':'小','D':'大'};
+const SUIT_DISPLAY = {'\u2660':'\u2660','\u2665':'\u2665','\u2663':'\u2663','\u2666':'\u2666',null:'★'};
+
+// Combo types (higher = stronger category)
+const T = {PASS:0, SINGLE:1, PAIR:2, TRIPLE:3, TRIPLE_1:4, TRIPLE_2:5,
+           STRAIGHT:6, PAIR_STRAIGHT:7, AIRPLANE:8, AIRPLANE_1:9, AIRPLANE_2:10,
+           FOUR_2:11, BOMB:12, ROCKET:13};
+const TNAME = {1:'单张',2:'对子',3:'三条',4:'三带一',5:'三带二',6:'顺子',7:'连对',
+               8:'飞机',9:'飞机带单',10:'飞机带对',11:'四带二',12:'炸弹',13:'火箭'};
+
+/* ================================================================
+   CARD HELPERS
+   ================================================================ */
+function makeCard(r, s) { return {r, s, v: VAL[r], id: r+(s||'')}; }
+function makeDeck() {
+    const d = [];
+    for (const r of RANKS) for (const s of SUITS) d.push(makeCard(r, s));
+    d.push(makeCard('X', null));
+    d.push(makeCard('D', null));
+    return d;
+}
+function shuffle(a) { for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function sortByVal(cards) { return [...cards].sort((a,b) => a.v!==b.v ? a.v-b.v : (a.s||'').localeCompare(b.s||'')); }
+function isRed(c) { return c.s==='\u2665'||c.s==='\u2666'||c.r==='D'; }
+
+/* ================================================================
+   RENDERING
+   ================================================================ */
+function cardClass(c) {
+    if (c.r==='D') return 'card joker-r';
+    if (c.r==='X') return 'card joker-b';
+    return 'card ' + (isRed(c)?'red':'black');
+}
+function makeCardEl(c, extra='') {
+    const d = document.createElement('div');
+    d.className = cardClass(c) + ' ' + extra;
+    d.dataset.id = c.id;
+    const rk = RANK_DISPLAY[c.r], su = SUIT_DISPLAY[c.s];
+    const ctr = (c.r==='D'||c.r==='X') ? (c.r==='D'?'🃏':'🃏') : su;
+    d.innerHTML = `<div class="tl"><span class="rank">${rk}</span><span class="suit">${su}</span></div><div class="center">${ctr}</div><div class="br"><span class="rank">${rk}</span><span class="suit">${su}</span></div>`;
+    return d;
+}
+function makePoolEl(c) {
+    const d = document.createElement('div');
+    d.className = 'pool-card ' + (isRed(c)?'red':'black');
+    const rk = RANK_DISPLAY[c.r], su = SUIT_DISPLAY[c.s];
+    d.innerHTML = `<div class="tl"><span class="rank">${rk}</span><span class="suit">${su}</span></div><div class="center">${su}</div><div class="br"><span class="rank">${rk}</span><span class="suit">${su}</span></div>`;
+    return d;
+}
+function makeBack() { const d=document.createElement('div'); d.className='full-card-back'; return d; }
+
+/* ================================================================
+   COMBO ANALYSIS  —  returns {type, val, len}
+   ================================================================ */
+function analyze(cards) {
+    cards = sortByVal(cards);
+    const n = cards.length;
+    if (!n) return {type:T.PASS, val:0, len:0};
+
+    // Rocket
+    if (n===2 && cards[0].r==='X' && cards[1].r==='D') return {type:T.ROCKET, val:17, len:2};
+
+    // Groups by value
+    const g = {};
+    for (const c of cards) { if(!g[c.v]) g[c.v]={v:c.v,n:0}; g[c.v].n++; }
+    const gs = Object.values(g).sort((a,b)=>a.v-b.v);
+
+    // Single
+    if (n===1) return {type:T.SINGLE, val:cards[0].v, len:1};
+    // Pair
+    if (n===2 && gs[0].n===2) return {type:T.PAIR, val:gs[0].v, len:2};
+    // Triple
+    if (n===3 && gs[0].n===3) return {type:T.TRIPLE, val:gs[0].v, len:3};
+
+    // Triple+1  (4 cards: 3+1)
+    if (n===4) {
+        if (gs[0].n===3) return {type:T.TRIPLE_1, val:gs[0].v, len:4};
+        if (gs[1].n===3) return {type:T.TRIPLE_1, val:gs[1].v, len:4};
+        if (gs[0].n===4) return {type:T.BOMB, val:gs[0].v, len:4};
+    }
+
+    // Triple+2  (5 cards: 3+2)
+    if (n===5) {
+        if (gs[0].n===3 && gs[1].n===2) return {type:T.TRIPLE_2, val:gs[0].v, len:5};
+        if (gs[0].n===2 && gs[1].n===3) return {type:T.TRIPLE_2, val:gs[1].v, len:5};
+    }
+
+    // Bomb already covered above (n===4), check here too
+    if (n===4 && gs[0].n===4) return {type:T.BOMB, val:gs[0].v, len:4};
+
+    // Four+2  (6 cards: 4+1+1 or 4+2)
+    if (n===6) {
+        const four = gs.find(x=>x.n===4);
+        if (four) return {type:T.FOUR_2, val:four.v, len:6};
+    }
+    // Four+2 (8 cards: 4+2+2)
+    if (n===8) {
+        const four = gs.find(x=>x.n===4);
+        const pairs = gs.filter(x=>x.n>=2 && x.v!==(four&&four.v));
+        if (four && pairs.length>=2) return {type:T.FOUR_2, val:four.v, len:8};
+    }
+
+    // Straight  (n>=5, consecutive, no 2/jokers)
+    if (n>=5) {
+        if (cards[n-1].v <= 14) {
+            let ok = true;
+            for (let i=1;i<n;i++) if (cards[i].v !== cards[i-1].v+1) { ok=false; break; }
+            if (ok) return {type:T.STRAIGHT, val:cards[0].v, len:n};
+        }
+
+        // Pair straight  (n even, >=6, consecutive pairs)
+        if (n%2===0 && n>=6) {
+            let ok = true;
+            for (let i=0;i<n;i+=2) {
+                if (cards[i].v !== cards[i+1].v || cards[i].v > 14) { ok=false; break; }
+                if (i>=2 && cards[i].v !== cards[i-2].v+1) { ok=false; break; }
+            }
+            if (ok) return {type:T.PAIR_STRAIGHT, val:cards[0].v, len:n};
+        }
+
+        // Airplane  (n%3===0, consecutive triples, no wings)
+        if (n%3===0 && n>=6) {
+            const tc = n/3;
+            if (cards[n-1].v <= 14) {
+                let ok = true;
+                for (let i=0;i<n;i+=3) {
+                    if (cards[i].v!==cards[i+1].v || cards[i+1].v!==cards[i+2].v) { ok=false; break; }
+                    if (i>=3 && cards[i].v !== cards[i-3].v+1) { ok=false; break; }
+                }
+                if (ok) return {type:T.AIRPLANE, val:cards[0].v, len:n};
+            }
+        }
+
+        // Airplane + singles  (N triples + N singles)
+        if (n>=4) {
+            const res = findAirplane(gs, cards, false);
+            if (res) return res;
+        }
+
+        // Airplane + pairs  (N triples + N pairs)
+        if (n>=8) {
+            const res = findAirplane(gs, cards, true);
+            if (res) return res;
+        }
+    }
+
+    return {type:T.PASS, val:0, len:0};
+}
+
+function findAirplane(gs, cards, needPairs) {
+    const triples = gs.filter(x=>x.n>=3 && x.v<=14);
+    for (let i=0;i<triples.length;i++) {
+        let seq = 1;
+        for (let j=i+1;j<triples.length;j++) {
+            if (triples[j].v === triples[j-1].v+1) seq++; else break;
+        }
+        if (seq < 2) continue;
+        const triCards = seq * 3;
+        const needed = needPairs ? seq * 2 : seq;
+        const rest = cards.length - triCards;
+        if (rest === needed) {
+            return { type: needPairs ? T.AIRPLANE_2 : T.AIRPLANE_1, val: triples[i].v, len: cards.length };
+        }
+        // Also try longer sequences
+        for (let s = seq; s >= 2; s--) {
+            const tc2 = s * 3;
+            const rest2 = cards.length - tc2;
+            const need2 = needPairs ? s * 2 : s;
+            if (rest2 === need2 && rest2 > 0) {
+                return { type: needPairs ? T.AIRPLANE_2 : T.AIRPLANE_1, val: triples[i].v, len: cards.length };
+            }
+        }
+    }
+    return null;
+}
+
+function canBeat(c1, c2) {
+    if (c1.type === T.PASS) return false;
+    if (c2.type === T.ROCKET) return false;
+    if (c1.type === T.ROCKET) return true;
+    if (c2.type === T.BOMB) return c1.type === T.BOMB && c1.val > c2.val;
+    if (c1.type === T.BOMB) return true;
+    return c1.type === c2.type && c1.len === c2.len && c1.val > c2.val;
+}
+
+/* ================================================================
+   FIND VALID COMBOS FROM HAND
+   ================================================================ */
+function findCombos(hand, mustBeat) {
+    const results = [];
+    const sorted = sortByVal(hand);
+    const n = sorted.length;
+
+    // Singles
+    for (let i=0;i<n;i++) {
+        const c = {type:T.SINGLE, val:sorted[i].v, len:1, cards:[sorted[i]]};
+        if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+    }
+    // Pairs
+    for (let i=0;i<n-1;i++) {
+        if (sorted[i].v===sorted[i+1].v) {
+            const c = {type:T.PAIR, val:sorted[i].v, len:2, cards:[sorted[i],sorted[i+1]]};
+            if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+        }
+    }
+    // Triples
+    for (let i=0;i<n-2;i++) {
+        if (sorted[i].v===sorted[i+1].v && sorted[i+1].v===sorted[i+2].v) {
+            const c = {type:T.TRIPLE, val:sorted[i].v, len:3, cards:[sorted[i],sorted[i+1],sorted[i+2]]};
+            if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+        }
+    }
+    // Bombs (4 of a kind)
+    for (let i=0;i<n-3;i++) {
+        if (sorted[i].v===sorted[i+1].v && sorted[i+1].v===sorted[i+2].v && sorted[i+2].v===sorted[i+3].v) {
+            const c = {type:T.BOMB, val:sorted[i].v, len:4, cards:[sorted[i],sorted[i+1],sorted[i+2],sorted[i+3]]};
+            if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+        }
+    }
+    // Rocket
+    const xj = sorted.find(c=>c.r==='X'), dj = sorted.find(c=>c.r==='D');
+    if (xj && dj) {
+        const c = {type:T.ROCKET, val:17, len:2, cards:[xj,dj]};
+        if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+    }
+    // Triple+1
+    const triples = findGroups(sorted, 3);
+    for (const tri of triples) {
+        for (let i=0;i<n;i++) {
+            if (!tri.cards.includes(sorted[i])) {
+                const c = {type:T.TRIPLE_1, val:tri.val, len:4, cards:[...tri.cards, sorted[i]]};
+                if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+            }
+        }
+    }
+    // Triple+2
+    const pairs = findGroups(sorted, 2);
+    for (const tri of triples) {
+        for (const pa of pairs) {
+            if (!tri.cards.some(c=>pa.cards.includes(c))) {
+                const c = {type:T.TRIPLE_2, val:tri.val, len:5, cards:[...tri.cards,...pa.cards]};
+                if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+            }
+        }
+    }
+    // Straights
+    const singles = sorted.filter(c=>c.v<=14);
+    const unique = [];
+    const seen = new Set();
+    for (const c of singles) { if (!seen.has(c.v)) { seen.add(c.v); unique.push(c); } }
+    let run = [unique[0]];
+    for (let i=1;i<unique.length;i++) {
+        if (unique[i].v === unique[i-1].v+1) {
+            run.push(unique[i]);
+            if (run.length >= 5) {
+                const c = {type:T.STRAIGHT, val:run[0].v, len:run.length, cards:[...run]};
+                if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+            }
+        } else {
+            run = [unique[i]];
+        }
+    }
+    // Pair straights
+    const pairGroups = pairs.filter(p=>p.v<=14);
+    let prun = [pairGroups[0]];
+    for (let i=1;i<pairGroups.length;i++) {
+        if (pairGroups[i].v === pairGroups[i-1].v+1) {
+            prun.push(pairGroups[i]);
+            if (prun.length >= 3) {
+                const allCards = prun.flatMap(p=>p.cards);
+                const c = {type:T.PAIR_STRAIGHT, val:prun[0].v, len:allCards.length, cards:allCards};
+                if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+            }
+        } else {
+            prun = [pairGroups[i]];
+        }
+    }
+    // Airplane (consecutive triples)
+    for (let i=0;i<triples.length;i++) {
+        let seq = [triples[i]];
+        for (let j=i+1;j<triples.length;j++) {
+            if (triples[j].v === triples[j-1].v+1) seq.push(triples[j]);
+            else break;
+        }
+        if (seq.length >= 2 && seq[seq.length-1].v <= 14) {
+            const allCards = seq.flatMap(t=>t.cards);
+            const c = {type:T.AIRPLANE, val:seq[0].v, len:allCards.length, cards:allCards};
+            if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+
+            // Airplane + singles
+            const remain = sorted.filter(c => !allCards.includes(c));
+            if (remain.length >= seq.length) {
+                const wingCards = remain.slice(0, seq.length);
+                const c2 = {type:T.AIRPLANE_1, val:seq[0].v, len:allCards.length+wingCards.length, cards:[...allCards,...wingCards]};
+                if (!mustBeat || canBeat(c2, mustBeat)) results.push(c2);
+            }
+            // Airplane + pairs
+            if (remain.length >= seq.length * 2) {
+                const remPairs = findGroups(remain, 2);
+                if (remPairs.length >= seq.length) {
+                    const wingCards2 = remPairs.slice(0, seq.length).flatMap(p=>p.cards);
+                    const c3 = {type:T.AIRPLANE_2, val:seq[0].v, len:allCards.length+wingCards2.length, cards:[...allCards,...wingCards2]};
+                    if (!mustBeat || canBeat(c3, mustBeat)) results.push(c3);
+                }
+            }
+        }
+    }
+    // Four+2
+    const quads = findGroups(sorted, 4);
+    for (const q of quads) {
+        const remain = sorted.filter(c => !q.cards.includes(c));
+        if (remain.length >= 2) {
+            const extras = remain.slice(0, 2);
+            const c = {type:T.FOUR_2, val:q.val, len:q.cards.length+extras.length, cards:[...q.cards,...extras]};
+            if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+        }
+        // Four + two pairs
+        if (remain.length >= 4) {
+            const remPairs = findGroups(remain, 2);
+            if (remPairs.length >= 2) {
+                const extras = [...remPairs[0].cards, ...remPairs[1].cards];
+                const c = {type:T.FOUR_2, val:q.val, len:q.cards.length+extras.length, cards:[...q.cards,...extras]};
+                if (!mustBeat || canBeat(c, mustBeat)) results.push(c);
+            }
+        }
+    }
+
+    // Deduplicate by card id set
+    const seen2 = new Set();
+    return results.filter(c => {
+        const key = c.cards.map(x=>x.id).sort().join(',');
+        if (seen2.has(key)) return false;
+        seen2.add(key);
+        return true;
+    });
+}
+
+function findGroups(cards, size) {
+    const g = {};
+    for (const c of cards) { if(!g[c.v]) g[c.v]={v:c.v,n:0,cards:[]}; g[c.v].n++; g[c.v].cards.push(c); }
+    return Object.values(g).filter(x=>x.n>=size).map(x=>({v:x.v, cards:x.cards.slice(0,size)}));
+}
+
+/* ================================================================
+   AI
+   ================================================================ */
+function aiPick(hand, lastCombo, isLandlord) {
+    if (!lastCombo || lastCombo.type === T.PASS) return aiLead(hand, isLandlord);
+    const options = findCombos(hand, lastCombo);
+    if (!options.length) return null;
+    // Prefer non-bomb for non-bomb attacks
+    if (lastCombo.type !== T.BOMB && lastCombo.type !== T.ROCKET) {
+        const cheap = options.filter(o=>o.type!==T.BOMB && o.type!==T.ROCKET);
+        if (cheap.length) return cheap.sort((a,b)=>a.val-b.val)[0].cards;
+    }
+    return options.sort((a,b)=>a.val-b.val)[0].cards;
+}
+
+function aiLead(hand, isLandlord) {
+    const sorted = sortByVal(hand);
+    const g = {};
+    for (const c of hand) { if(!g[c.v]) g[c.v]={v:c.v,n:0,cards:[]}; g[c.v].n++; g[c.v].cards.push(c); }
+    const gs = Object.values(g).sort((a,b)=>a.v-b.v);
+    const pairs = gs.filter(x=>x.n>=2 && x.v<=14);
+    const triples = gs.filter(x=>x.n>=3 && x.v<=14);
+
+    // Try pair straight
+    let prun = [pairs[0]];
+    for (let i=1;i<pairs.length;i++) {
+        if (pairs[i].v===pairs[i-1].v+1) { prun.push(pairs[i]); if(prun.length>=3) return prun.flatMap(p=>p.cards.slice(0,2)); }
+        else prun=[pairs[i]];
+    }
+
+    // Try straight
+    const uniq = []; const s2 = new Set();
+    for (const c of sorted) { if(c.v<=14 && !s2.has(c.v)) { s2.add(c.v); uniq.push(c); } }
+    let run=[uniq[0]];
+    for (let i=1;i<uniq.length;i++) {
+        if (uniq[i].v===uniq[i-1].v+1) { run.push(uniq[i]); if(run.length>=5) return [...run]; }
+        else run=[uniq[i]];
+    }
+
+    // Try airplane
+    for (let i=0;i<triples.length;i++) {
+        let seq=[triples[i]];
+        for (let j=i+1;j<triples.length;j++) { if(triples[j].v===triples[j-1].v+1) seq.push(triples[j]); else break; }
+        if (seq.length>=2) {
+            const allCards = seq.flatMap(t=>t.cards);
+            const remain = sorted.filter(c=>!allCards.includes(c));
+            if (remain.length >= seq.length) {
+                return [...allCards, ...remain.slice(0, seq.length)];
+            }
+            return allCards;
+        }
+    }
+
+    // Try triple + carry
+    if (triples.length) {
+        const tri = triples[0];
+        const remain = sorted.filter(c=>!tri.cards.includes(c));
+        if (remain.length >= 2) {
+            // try to find a pair to carry
+            const rp = findGroups(remain, 2);
+            if (rp.length) return [...tri.cards, ...rp[0].cards];
+            return [...tri.cards, remain[0]];
+        }
+        return tri.cards;
+    }
+
+    // Try pair
+    if (pairs.length) return pairs[0].cards.slice(0,2);
+
+    // Try single (avoid 2 and jokers)
+    for (const c of sorted) { if(c.v<=13) return [c]; }
+    return [sorted[0]];
+}
+
+function evaluateHand(hand) {
+    let score = 0;
+    const g = {};
+    for (const c of hand) { if(!g[c.v]) g[c.v]={v:c.v,n:0}; g[c.v].n++; }
+    for (const x of Object.values(g)) {
+        if (x.v===17) score+=4; else if(x.v===16) score+=3; else if(x.v===15) score+=2*x.n; else if(x.v>=13) score+=0.5*x.n;
+        if (x.n===4) score+=6;
+    }
+    if (hand.some(c=>c.r==='X') && hand.some(c=>c.r==='D')) score+=8;
+    const vals = [...new Set(hand.filter(c=>c.v<=14).map(c=>c.v))].sort((a,b)=>a-b);
+    let run=1; for(let i=1;i<vals.length;i++) { if(vals[i]===vals[i-1]+1){run++; if(run>=5) score+=2;} else run=1; }
+    return Math.min(3, Math.max(1, Math.round(score/4)));
+}
+
+/* ================================================================
+   GAME STATE
+   ================================================================ */
+let G = resetState();
+function resetState() {
+    return {
+        players:[[],[],[]], pool:[], landlord:-1, cur:0,
+        lastPlay:null, lastPlayer:-1, passCount:0,
+        bid:0, bidLeader:-1, bidCount:0, bidMax:0,
+        mult:1, phase:'idle', selected:new Set(), score:0
+    };
+}
+
+/* ================================================================
+   UI
+   ================================================================ */
+function $(id) { return document.getElementById(id); }
+
+function updateAll() {
+    for (let i=0;i<3;i++) {
+        const info = $('p'+i+'-info');
+        info.className = 'player-info' + (G.landlord===i?' landlord':'');
+        if (G.landlord===i && !info.querySelector('.landlord-tag')) {
+            const t = document.createElement('span'); t.className='landlord-tag'; t.textContent='地主'; info.appendChild(t);
+        }
+        $('p'+i+'-count').textContent = G.players[i].length + ' 张';
+    }
+    $('score-text').textContent = '积分: ' + G.score;
+    renderHand();
+    renderAIBacks();
+    renderPool();
+    renderPlayed();
+    renderControls();
+    $('mult-box').textContent = '倍数: x' + G.mult;
+}
+
+function renderHand() {
+    const el = $('hand'); el.innerHTML = '';
+    const hand = sortByVal(G.players[0]);
+    const overlap = hand.length > 12 ? Math.max(18, Math.floor((window.innerWidth - 60) / hand.length)) : 28;
+
+    hand.forEach((c, i) => {
+        const e = makeCardEl(c, G.selected.has(c.id)?'selected':'');
+        e.style.marginLeft = i > 0 ? (-overlap) + 'px' : '0';
+        e.style.zIndex = i;
+        e.addEventListener('click', () => {
+            if (G.phase !== 'playing' || G.cur !== 0) return;
+            G.selected.has(c.id) ? G.selected.delete(c.id) : G.selected.add(c.id);
+            renderHand(); renderControls();
+        });
+        el.appendChild(e);
+    });
+}
+
+function renderAIBacks() {
+    for (let p=1;p<=2;p++) {
+        const el = $('p'+p+'-backs'); el.innerHTML = '';
+        const cnt = Math.min(G.players[p].length, 18);
+        for (let i=0;i<cnt;i++) {
+            const b = document.createElement('div');
+            b.className = 'mini-card-back ' + (p===1?'v':'h');
+            el.appendChild(b);
+        }
+    }
+}
+
+function renderPool() {
+    const el = $('pool-area'); el.innerHTML = '';
+    if (!G.pool.length) return;
+    const revealed = G.landlord >= 0;
+    if (revealed) {
+        G.pool.forEach(c => el.appendChild(makePoolEl(c)));
+    } else {
+        for (let i=0;i<3;i++) el.appendChild(makeBack());
+    }
+}
+
+function renderPlayed() {
+    $('play-top').innerHTML = '';
+    $('play-left').innerHTML = '';
+    if (!G.lastPlay) return;
+    const {player, cards} = G.lastPlay;
+    const el = player===2 ? $('play-top') : player===1 ? $('play-left') : null;
+    if (!el) return;
+    el.innerHTML = '';
+    sortByVal(cards).forEach((c,i) => {
+        const e = makeCardEl(c);
+        if (i>0) e.style.marginLeft = '-18px';
+        el.appendChild(e);
+    });
+}
+
+function renderControls() {
+    const el = $('controls');
+    if (G.phase==='idle'||G.phase==='ended') {
+        el.innerHTML = '<button class="btn btn-warn" onclick="startGame()">&#x1F3AE; 开始游戏</button>';
+        return;
+    }
+    if (G.phase==='playing' && G.cur===0) {
+        const free = !G.lastPlay || G.lastPlayer===0;
+        let h = '';
+        if (!free) h += '<button class="btn btn-sub" onclick="playerPass()">不出</button>';
+        h += '<button class="btn btn-ok" id="btn-play" onclick="playerPlay()"'+(G.selected.size?'':' disabled')+'>出牌</button>';
+        h += '<button class="btn btn-sub" onclick="clearSel()">取消</button>';
+        h += '<button class="btn btn-sub" onclick="autoSel()">提示</button>';
+        el.innerHTML = h;
+    } else {
+        el.innerHTML = '';
+    }
+}
+
+function setStatus(t) { $('status').textContent = t; }
+
+/* ================================================================
+   GAME FLOW
+   ================================================================ */
+function startGame() {
+    $('modal-container').innerHTML = '';
+    $('bid-container').innerHTML = '';
+    G = resetState();
+    G.score = G.score; // keep score
+    G.phase = 'dealing';
+
+    const deck = shuffle(makeDeck());
+    for (let i=0;i<51;i++) G.players[i%3].push(deck[i]);
+    G.pool = deck.slice(51);
+    for (let i=0;i<3;i++) G.players[i] = sortByVal(G.players[i]);
+
+    updateAll();
+    setStatus('叫地主阶段');
+
+    setTimeout(() => { G.phase='bidding'; G.cur = Math.floor(Math.random()*3); G.bid=0; G.bidCount=0; doBid(); }, 600);
+}
+
+function doBid() {
+    if (G.bidCount >= 3) { finishBid(); return; }
+    if (G.cur === 0) { showBidUI(); return; }
+    setTimeout(() => {
+        const hand = G.players[G.cur];
+        const ev = evaluateHand(hand);
+        if (ev > G.bid) {
+            G.bid = ev; G.bidLeader = G.cur; G.bidMax = ev;
+            setStatus('电脑玩家'+G.cur+' 叫了 '+ev+' 分');
+        } else {
+            setStatus('电脑玩家'+G.cur+' 不叫');
+        }
+        G.bidCount++;
+        G.cur = (G.cur+1)%3;
+        setTimeout(doBid, 800);
+    }, 600+Math.random()*400);
+}
+
+function showBidUI() {
+    const el = $('bid-container');
+    let btns = '';
+    for (let i=G.bid+1;i<=3;i++) btns += `<button class="bid-btn" onclick="doPlayerBid(${i})">${i} 分</button>`;
+    btns += `<button class="bid-btn pass-btn" onclick="doPlayerBid(0)">不叫</button>`;
+    el.innerHTML = `<div class="bid-panel"><h3>&#x1F3E0; 叫地主 ${G.bid>0?'(当前:'+G.bid+'分)':''}</h3><div class="bid-btns">${btns}</div></div>`;
+}
+
+function doPlayerBid(s) {
+    $('bid-container').innerHTML = '';
+    if (s===0) { setStatus('你选择不叫'); }
+    else { G.bid=s; G.bidLeader=0; G.bidMax=s; setStatus('你叫了 '+s+' 分'); }
+    G.bidCount++;
+    G.cur = (G.cur+1)%3;
+    setTimeout(doBid, 800);
+}
+
+function finishBid() {
+    $('bid-container').innerHTML = '';
+    if (G.bidLeader < 0) { setStatus('无人叫地主，重新发牌...'); setTimeout(startGame, 1500); return; }
+
+    G.landlord = G.bidLeader;
+    G.mult = Math.max(1, G.bid);
+    G.players[G.landlord].push(...G.pool);
+    G.players[G.landlord] = sortByVal(G.players[G.landlord]);
+    setStatus((G.landlord===0?'你':'电脑玩家'+G.landlord)+' 是地主！');
+    updateAll();
+
+    setTimeout(() => {
+        G.phase = 'playing';
+        G.cur = G.landlord;
+        G.lastPlay = null;
+        G.lastPlayer = -1;
+        G.passCount = 0;
+        updateAll();
+        nextTurn();
+    }, 1200);
+}
+
+function nextTurn() {
+    if (G.phase !== 'playing') return;
+    if (G.players[G.cur].length === 0) { endGame(G.cur); return; }
+
+    if (G.cur !== 0) {
+        setTimeout(() => aiTurn(), 500+Math.random()*400);
+    } else {
+        updateAll();
+    }
+}
+
+function aiTurn() {
+    const hand = G.players[G.cur];
+    const isFree = !G.lastPlay || G.lastPlayer === G.cur;
+    const cards = isFree ? aiLead(hand, G.cur===G.landlord) : aiPick(hand, G.lastPlay?G.lastPlay.combo:null, G.cur===G.landlord);
+
+    if (!cards || !cards.length) {
+        aiPass();
+        return;
+    }
+    doPlay(G.cur, cards);
+}
+
+function aiPass() {
+    showPass(G.cur);
+    G.passCount++;
+    if (G.passCount >= 2) {
+        G.lastPlay = null;
+        G.cur = G.lastPlayer;
+        G.passCount = 0;
+        if (G.cur === 0) { updateAll(); return; }
+        setTimeout(aiTurn, 400);
+        return;
+    }
+    G.cur = (G.cur+1)%3;
+    nextTurn();
+}
+
+function showPass(p) {
+    // briefly show pass text
+    const ids = {1:'play-left', 2:'play-top'};
+    const el = $(ids[p]);
+    if (!el) return;
+    const orig = el.innerHTML;
+    el.innerHTML = '<span class="pass-text">不出</span>';
+    setTimeout(() => { if (el.innerHTML === '<span class="pass-text">不出</span>') el.innerHTML = orig; }, 1200);
+}
+
+function doPlay(player, cards) {
+    const combo = analyze(cards);
+    if (combo.type === T.PASS) { aiPass(); return; }
+
+    if (combo.type===T.BOMB || combo.type===T.ROCKET) G.mult *= 2;
+
+    const ids = new Set(cards.map(c=>c.id));
+    G.players[player] = G.players[player].filter(c=>!ids.has(c.id));
+    G.lastPlay = {player, cards, combo};
+    G.lastPlayer = player;
+    G.passCount = 0;
+
+    updateAll();
+
+    if (G.players[player].length === 0) { setTimeout(()=>endGame(player), 400); return; }
+
+    G.cur = (player+1)%3;
+    nextTurn();
+}
+
+/* ================================================================
+   PLAYER ACTIONS
+   ================================================================ */
+function playerPlay() {
+    const sel = G.players[0].filter(c=>G.selected.has(c.id));
+    if (!sel.length) return;
+    const combo = analyze(sel);
+    if (combo.type === T.PASS) { setStatus('无效的牌型！'); return; }
+    const free = !G.lastPlay || G.lastPlayer===0;
+    if (!free && !canBeat(combo, G.lastPlay.combo)) { setStatus('打不过！'); return; }
+    G.selected.clear();
+    doPlay(0, sel);
+}
+
+function playerPass() {
+    G.selected.clear();
+    showPass(0);
+    G.passCount++;
+    if (G.passCount >= 2) {
+        G.lastPlay = null;
+        G.cur = G.lastPlayer;
+        G.passCount = 0;
+        if (G.cur===0) { updateAll(); return; }
+        setTimeout(aiTurn, 400);
+        return;
+    }
+    G.cur = (G.cur+1)%3;
+    nextTurn();
+}
+
+function clearSel() { G.selected.clear(); renderHand(); renderControls(); }
+
+function autoSel() {
+    const hand = G.players[0];
+    const free = !G.lastPlay || G.lastPlayer===0;
+    const combos = findCombos(hand, free ? null : G.lastPlay.combo);
+    if (!combos.length) return;
+    // Prefer cheapest non-bomb
+    const cheap = combos.filter(c=>c.type!==T.BOMB && c.type!==T.ROCKET);
+    const pick = (cheap.length ? cheap : combos).sort((a,b)=>a.val-b.val)[0];
+    G.selected = new Set(pick.cards.map(c=>c.id));
+    renderHand(); renderControls();
+}
+
+/* ================================================================
+   END GAME
+   ================================================================ */
+function endGame(winner) {
+    G.phase = 'ended';
+    const isLWin = winner === G.landlord;
+    const pWin = (G.landlord===0 && isLWin) || (G.landlord!==0 && !isLWin);
+    const base = Math.max(1, G.bid);
+    const pts = base * G.mult;
+    G.score += pWin ? pts : -pts;
+
+    const who = G.landlord===0 ? '你是地主' : '电脑玩家'+G.landlord+'是地主';
+    const el = $('modal-container');
+    el.innerHTML = `<div class="modal-overlay"><div class="modal ${pWin?'win-glow':''}">
+        <h2 class="${pWin?'win':'lose'}">${pWin?'\u{1F389} 你赢了！':'\u{1F614} 你输了'}</h2>
+        <p>${who}<br>倍数: x${G.mult} | 得分: ${pWin?'+':''}${pts}</p>
+        <div style="color:#ffd700;margin-bottom:12px;font-size:13px;">当前积分: ${G.score}</div>
+        <button class="btn btn-warn" onclick="$('modal-container').innerHTML='';startGame();">再来一局</button>
+    </div></div>`;
+    renderControls();
+}
+</script>
+</body>
+</html>
