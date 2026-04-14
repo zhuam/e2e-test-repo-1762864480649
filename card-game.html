@@ -571,7 +571,7 @@ function canBeat(p2,p1){
 let gameMode='doudizhu', hands=[[],[],[]], bottomCards=[], currentPlayer=0, landlord=-1;
 let lastPlayed=null, passCount=0, selected=new Set(), gameActive=false, isPlayerTurn=false;
 let multiplier=1, firstMove=true, mustPlayHeart3=false, aiThinking=false;
-let doubleCallback=null;
+let doubleCallback=null, bidHistory=[];
 
 // ===== 渲染 =====
 function renderCardHTML(card, selected, hint){
@@ -648,7 +648,7 @@ function startGame(){
     gameMode=document.getElementById('mode-select').value;
     const deck=shuffle(createDeck());
     hands=[[],[],[]]; bottomCards=[]; selected.clear(); lastPlayed=null; passCount=0;
-    landlord=-1; gameActive=false; isPlayerTurn=false; multiplier=1; firstMove=true; mustPlayHeart3=false; aiThinking=false; doubleCallback=null;
+    landlord=-1; gameActive=false; isPlayerTurn=false; multiplier=1; firstMove=true; mustPlayHeart3=false; aiThinking=false; doubleCallback=null; bidHistory=[];
 
     if(gameMode==='doudizhu') startDouDiZhu(deck);
     else startPaoDeKuai(deck);
@@ -668,12 +668,14 @@ function startBidding(order,idx,curBidder,curScore){
     const pid=order[idx];
     if(pid===0){
         setTimeout(()=>showBidDialog(curScore,(score)=>{
+            bidHistory.push({player:0,score});
             if(score>curScore){ curBidder=0; curScore=score; }
             if(score===3) finishBidding(curBidder,curScore);
             else startBidding(order,idx+1,curBidder,curScore);
         }),500);
     } else {
         const aiScore=aiBid(hands[pid],curScore);
+        bidHistory.push({player:pid,score:aiScore});
         const name='玩家'+(pid+1);
         if(aiScore>0) setStatus(name+'叫'+aiScore+'分'); else setStatus(name+'不叫');
         if(aiScore>curScore){ curBidder=pid; curScore=aiScore; }
@@ -846,6 +848,11 @@ function aiTurn(){
 
 function aiPlayFree(hand){
     if(hand.length<=5){const p=getPattern(hand);if(p)return[...hand];}
+    // 跑得快报单规则：上家有玩家报单时，出最大单牌
+    if(gameMode==='paodekuai'){
+        const otherAIs=[1,2].filter(p=>p!==currentPlayer);
+        if(otherAIs.some(p=>hands[p].length===1)) return [hand[hand.length-1]];
+    }
     return [hand[hand.length-1]];
 }
 
