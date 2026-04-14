@@ -809,8 +809,15 @@
                 if (this.history.length === 0 || this.gameOver) return;
 
                 const action = this.history.pop();
+                const oldVal = this.board[action.index];
                 this.board[action.index] = action.oldValue;
                 this.notes[action.index] = action.oldNotes;
+
+                // Restore mistakes count if undoing an incorrect input
+                if (action.type === 'input' && action.oldValue !== this.solution[action.index]
+                    && oldVal === this.solution[action.index] && oldVal !== 0) {
+                    this.mistakes = Math.max(0, this.mistakes - 1);
+                }
 
                 this.updateBoard();
                 this.updateInfo();
@@ -852,6 +859,13 @@
                 } else {
                     hintIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
                 }
+
+                this.history.push({
+                    index: hintIndex,
+                    oldValue: this.board[hintIndex],
+                    oldNotes: new Set(this.notes[hintIndex]),
+                    type: 'hint'
+                });
 
                 this.board[hintIndex] = this.solution[hintIndex];
                 this.notes[hintIndex].clear();
