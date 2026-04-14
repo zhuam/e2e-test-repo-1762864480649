@@ -108,6 +108,7 @@
         }
         .played-zone.top { top: 15px; left: 50%; transform: translateX(-50%); }
         .played-zone.left { left: 15px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+        .played-zone.right { right: 15px; top: 50%; transform: translateY(-50%); flex-direction: column; }
         .played-zone .card { width: 48px; height: 68px; }
         .played-zone .card .rank { font-size: 11px; }
         .played-zone .card .suit { font-size: 8px; }
@@ -184,6 +185,27 @@
         @keyframes glow { 0%,100%{box-shadow:0 0 18px rgba(255,215,0,0.25)} 50%{box-shadow:0 0 35px rgba(255,215,0,0.7),0 0 55px rgba(255,140,0,0.35)} }
         .modal.win-glow { animation: glow 1s ease-in-out infinite; }
 
+        /* ===== Dealing Animation ===== */
+        @keyframes dealCard {
+            0% { opacity: 0; transform: translate(0, -200px) scale(0.3) rotate(180deg); }
+            60% { opacity: 1; transform: translate(0, 0) scale(1.1) rotate(-5deg); }
+            100% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
+        }
+        .card.dealing { animation: dealCard 0.35s ease-out; }
+        @keyframes playCard {
+            0% { opacity: 0; transform: translateY(30px) scale(0.8); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .card.played { animation: playCard 0.25s ease-out; }
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .confetti {
+            position: fixed; top: 0; width: 10px; height: 10px; z-index: 9999; pointer-events: none;
+            animation: confetti-fall 2s ease-in forwards;
+        }
+
         /* ===== Responsive ===== */
         @media (max-width: 768px) {
             .card { width: 48px; height: 68px; }
@@ -226,6 +248,7 @@
             <div class="multiplier-box" id="mult-box">倍数: x1</div>
             <div class="played-zone top" id="play-top"></div>
             <div class="played-zone left" id="play-left"></div>
+            <div class="played-zone right" id="play-right"></div>
         </div>
     </div>
 
@@ -341,9 +364,6 @@ function analyze(cards) {
         if (gs[0].n===3 && gs[1].n===2) return {type:T.TRIPLE_2, val:gs[0].v, len:5};
         if (gs[0].n===2 && gs[1].n===3) return {type:T.TRIPLE_2, val:gs[1].v, len:5};
     }
-
-    // Bomb already covered above (n===4), check here too
-    if (n===4 && gs[0].n===4) return {type:T.BOMB, val:gs[0].v, len:4};
 
     // Four+2  (6 cards: 4+1+1 or 4+2)
     if (n===6) {
@@ -605,10 +625,15 @@ function aiPick(hand, lastCombo, isLandlord) {
     if (!lastCombo || lastCombo.type === T.PASS) return aiLead(hand, isLandlord);
     const options = findCombos(hand, lastCombo);
     if (!options.length) return null;
-    // Prefer non-bomb for non-bomb attacks
+    
+    // Don't waste bombs on low-value plays unless necessary
     if (lastCombo.type !== T.BOMB && lastCombo.type !== T.ROCKET) {
         const cheap = options.filter(o=>o.type!==T.BOMB && o.type!==T.ROCKET);
         if (cheap.length) return cheap.sort((a,b)=>a.val-b.val)[0].cards;
+        // Only use bomb if opponent (non-landlord) is about to win or we're landlord
+        if (isLandlord) return options.sort((a,b)=>a.val-b.val)[0].cards;
+        // AI partner: only use bomb if the play value is high
+        if (lastCombo.val >= 12) return options.sort((a,b)=>a.val-b.val)[0].cards;
     }
     return options.sort((a,b)=>a.val-b.val)[0].cards;
 }
@@ -621,27 +646,17 @@ function aiLead(hand, isLandlord) {
     const pairs = gs.filter(x=>x.n>=2 && x.v<=14);
     const triples = gs.filter(x=>x.n>=3 && x.v<=14);
 
-    // Try pair straight
-    let prun = [pairs[0]];
-    for (let i=1;i<pairs.length;i++) {
-        if (pairs[i].v===pairs[i-1].v+1) { prun.push(pairs[i]); if(prun.length>=3) return prun.flatMap(p=>p.cards.slice(0,2)); }
-        else prun=[pairs[i]];
-    }
+    // If only a few cards left, try to play everything
+    if (hand.length <= 2) return [sorted[0]];
+    
+    // If only one pair left, play it
+    if (hand.length === 2 && sorted[0].v === sorted[1].v) return [sorted[0], sorted[1]];
 
-    // Try straight
-    const uniq = []; const s2 = new Set();
-    for (const c of sorted) { if(c.v<=14 && !s2.has(c.v)) { s2.add(c.v); uniq.push(c); } }
-    let run=[uniq[0]];
-    for (let i=1;i<uniq.length;i++) {
-        if (uniq[i].v===uniq[i-1].v+1) { run.push(uniq[i]); if(run.length>=5) return [...run]; }
-        else run=[uniq[i]];
-    }
-
-    // Try airplane
+    // Try airplane (best way to dump many cards)
     for (let i=0;i<triples.length;i++) {
         let seq=[triples[i]];
         for (let j=i+1;j<triples.length;j++) { if(triples[j].v===triples[j-1].v+1) seq.push(triples[j]); else break; }
-        if (seq.length>=2) {
+        if (seq.length>=2 && seq[seq.length-1].v <= 14) {
             const allCards = seq.flatMap(t=>t.cards);
             const remain = sorted.filter(c=>!allCards.includes(c));
             if (remain.length >= seq.length) {
@@ -651,12 +666,27 @@ function aiLead(hand, isLandlord) {
         }
     }
 
-    // Try triple + carry
+    // Try pair straight (good for mid-game)
+    let prun = [pairs[0]];
+    for (let i=1;i<pairs.length;i++) {
+        if (pairs[i].v===pairs[i-1].v+1) { prun.push(pairs[i]); if(prun.length>=3) return prun.flatMap(p=>p.cards.slice(0,2)); }
+        else prun=[pairs[i]];
+    }
+
+    // Try straight (dump low cards efficiently)
+    const uniq = []; const s2 = new Set();
+    for (const c of sorted) { if(c.v<=14 && !s2.has(c.v)) { s2.add(c.v); uniq.push(c); } }
+    let run=[uniq[0]];
+    for (let i=1;i<uniq.length;i++) {
+        if (uniq[i].v===uniq[i-1].v+1) { run.push(uniq[i]); if(run.length>=5) return [...run]; }
+        else run=[uniq[i]];
+    }
+
+    // Try triple + carry (dump 3+2 or 3+1)
     if (triples.length) {
         const tri = triples[0];
         const remain = sorted.filter(c=>!tri.cards.includes(c));
         if (remain.length >= 2) {
-            // try to find a pair to carry
             const rp = findGroups(remain, 2);
             if (rp.length) return [...tri.cards, ...rp[0].cards];
             return [...tri.cards, remain[0]];
@@ -664,10 +694,11 @@ function aiLead(hand, isLandlord) {
         return tri.cards;
     }
 
-    // Try pair
+    // Try pair (prefer low pairs)
     if (pairs.length) return pairs[0].cards.slice(0,2);
 
-    // Try single (avoid 2 and jokers)
+    // Try single - avoid playing 2 and jokers early, play lowest
+    for (const c of sorted) { if(c.v<=10) return [c]; }
     for (const c of sorted) { if(c.v<=13) return [c]; }
     return [sorted[0]];
 }
@@ -695,7 +726,8 @@ function resetState() {
         players:[[],[],[]], pool:[], landlord:-1, cur:0,
         lastPlay:null, lastPlayer:-1, passCount:0,
         bid:0, bidLeader:-1, bidCount:0, bidMax:0,
-        mult:1, phase:'idle', selected:new Set(), score:0
+        mult:1, phase:'idle', selected:new Set(), score:0,
+        farmersPlayed:0, landlordPlays:0
     };
 }
 
@@ -766,13 +798,14 @@ function renderPool() {
 function renderPlayed() {
     $('play-top').innerHTML = '';
     $('play-left').innerHTML = '';
+    $('play-right').innerHTML = '';
     if (!G.lastPlay) return;
     const {player, cards} = G.lastPlay;
-    const el = player===2 ? $('play-top') : player===1 ? $('play-left') : null;
+    const el = player===2 ? $('play-top') : player===1 ? $('play-left') : player===0 ? $('play-right') : null;
     if (!el) return;
     el.innerHTML = '';
     sortByVal(cards).forEach((c,i) => {
-        const e = makeCardEl(c);
+        const e = makeCardEl(c, 'played');
         if (i>0) e.style.marginLeft = '-18px';
         el.appendChild(e);
     });
@@ -815,9 +848,30 @@ function startGame() {
     for (let i=0;i<3;i++) G.players[i] = sortByVal(G.players[i]);
 
     updateAll();
-    setStatus('叫地主阶段');
+    setStatus('发牌中...');
 
-    setTimeout(() => { G.phase='bidding'; G.cur = Math.floor(Math.random()*3); G.bid=0; G.bidCount=0; doBid(); }, 600);
+    // Card dealing animation
+    animateDealing(() => {
+        setStatus('叫地主阶段');
+        setTimeout(() => { G.phase='bidding'; G.cur = Math.floor(Math.random()*3); G.bid=0; G.bidCount=0; doBid(); }, 600);
+    });
+}
+
+function animateDealing(callback) {
+    const hand = $('hand');
+    const cards = sortByVal(G.players[0]);
+    const overlap = cards.length > 12 ? Math.max(18, Math.floor((window.innerWidth - 60) / cards.length)) : 28;
+    
+    hand.innerHTML = '';
+    cards.forEach((c, i) => {
+        const e = makeCardEl(c, 'dealing');
+        e.style.marginLeft = i > 0 ? (-overlap) + 'px' : '0';
+        e.style.zIndex = i;
+        e.style.animationDelay = (i * 0.04) + 's';
+        hand.appendChild(e);
+    });
+    
+    setTimeout(callback, 51 * 40 + 400);
 }
 
 function doBid() {
@@ -865,6 +919,13 @@ function finishBid() {
     G.players[G.landlord] = sortByVal(G.players[G.landlord]);
     setStatus((G.landlord===0?'你':'电脑玩家'+G.landlord)+' 是地主！');
     updateAll();
+
+    // Reveal pool cards with animation
+    G.poolRevealed = false;
+    setTimeout(() => {
+        G.poolRevealed = true;
+        renderPool();
+    }, 600);
 
     setTimeout(() => {
         G.phase = 'playing';
@@ -917,7 +978,7 @@ function aiPass() {
 
 function showPass(p) {
     // briefly show pass text
-    const ids = {1:'play-left', 2:'play-top'};
+    const ids = {0:'play-right', 1:'play-left', 2:'play-top'};
     const el = $(ids[p]);
     if (!el) return;
     const orig = el.innerHTML;
@@ -930,6 +991,10 @@ function doPlay(player, cards) {
     if (combo.type === T.PASS) { aiPass(); return; }
 
     if (combo.type===T.BOMB || combo.type===T.ROCKET) G.mult *= 2;
+
+    // Track spring/anti-spring
+    if (player !== G.landlord) { G.farmersPlayed++; }
+    if (player === G.landlord) { G.landlordPlays++; }
 
     const ids = new Set(cards.map(c=>c.id));
     G.players[player] = G.players[player].filter(c=>!ids.has(c.id));
@@ -996,19 +1061,58 @@ function endGame(winner) {
     G.phase = 'ended';
     const isLWin = winner === G.landlord;
     const pWin = (G.landlord===0 && isLWin) || (G.landlord!==0 && !isLWin);
+    
+    // Spring/Anti-spring detection
+    let isSpring = false, isAntiSpring = false;
+    if (isLWin && G.farmersPlayed === 0) {
+        // 春天: landlord won, farmers never played
+        isSpring = true;
+        G.mult *= 2;
+    }
+    if (!isLWin && G.landlordPlays === 1) {
+        // 反春天: farmer won, landlord only played once
+        isAntiSpring = true;
+        G.mult *= 2;
+    }
+
     const base = Math.max(1, G.bid);
     const pts = base * G.mult;
     G.score += pWin ? pts : -pts;
 
     const who = G.landlord===0 ? '你是地主' : '电脑玩家'+G.landlord+'是地主';
+    let bonusText = '';
+    if (isSpring) bonusText += '<div style="color:#ffd700;font-size:15px;font-weight:700;margin:5px 0;">🌿 春天! 倍数×2</div>';
+    if (isAntiSpring) bonusText += '<div style="color:#ffd700;font-size:15px;font-weight:700;margin:5px 0;">🔄 反春天! 倍数×2</div>';
+    
     const el = $('modal-container');
     el.innerHTML = `<div class="modal-overlay"><div class="modal ${pWin?'win-glow':''}">
-        <h2 class="${pWin?'win':'lose'}">${pWin?'\u{1F389} 你赢了！':'\u{1F614} 你输了'}</h2>
+        <h2 class="${pWin?'win':'lose'}">${pWin?'🎉 你赢了！':'😔 你输了'}</h2>
         <p>${who}<br>倍数: x${G.mult} | 得分: ${pWin?'+':''}${pts}</p>
+        ${bonusText}
         <div style="color:#ffd700;margin-bottom:12px;font-size:13px;">当前积分: ${G.score}</div>
         <button class="btn btn-warn" onclick="$('modal-container').innerHTML='';startGame();">再来一局</button>
     </div></div>`;
     renderControls();
+    
+    if (pWin) spawnConfetti();
+}
+
+function spawnConfetti() {
+    const colors = ['#ffd700','#ff6b6b','#48dbfb','#ff9ff3','#54a0ff','#5f27cd','#01a3a4','#f368e0','#ff6348','#7bed9f'];
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 1.5 + 's';
+        confetti.style.animationDuration = (1.5 + Math.random()) + 's';
+        const size = 6 + Math.random() * 8;
+        confetti.style.width = size + 'px';
+        confetti.style.height = size + 'px';
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        document.body.appendChild(confetti);
+        setTimeout(() => confetti.remove(), 3500);
+    }
 }
 </script>
 </body>
