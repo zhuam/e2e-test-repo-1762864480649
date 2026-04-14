@@ -316,7 +316,7 @@ function makeCardEl(c, extra='') {
     d.className = cardClass(c) + ' ' + extra;
     d.dataset.id = c.id;
     const rk = RANK_DISPLAY[c.r], su = SUIT_DISPLAY[c.s];
-    const ctr = (c.r==='D'||c.r==='X') ? (c.r==='D'?'🃏':'🃏') : su;
+    const ctr = (c.r==='D'||c.r==='X') ? (c.r==='D'?'大':'小') : su;
     d.innerHTML = `<div class="tl"><span class="rank">${rk}</span><span class="suit">${su}</span></div><div class="center">${ctr}</div><div class="br"><span class="rank">${rk}</span><span class="suit">${su}</span></div>`;
     return d;
 }
@@ -525,6 +525,7 @@ function findCombos(hand, mustBeat) {
     const unique = [];
     const seen = new Set();
     for (const c of singles) { if (!seen.has(c.v)) { seen.add(c.v); unique.push(c); } }
+    if (unique.length > 0) {
     let run = [unique[0]];
     for (let i=1;i<unique.length;i++) {
         if (unique[i].v === unique[i-1].v+1) {
@@ -537,8 +538,10 @@ function findCombos(hand, mustBeat) {
             run = [unique[i]];
         }
     }
+    }
     // Pair straights
     const pairGroups = pairs.filter(p=>p.v<=14);
+    if (pairGroups.length > 0) {
     let prun = [pairGroups[0]];
     for (let i=1;i<pairGroups.length;i++) {
         if (pairGroups[i].v === pairGroups[i-1].v+1) {
@@ -551,6 +554,7 @@ function findCombos(hand, mustBeat) {
         } else {
             prun = [pairGroups[i]];
         }
+    }
     }
     // Airplane (consecutive triples)
     for (let i=0;i<triples.length;i++) {
@@ -708,13 +712,13 @@ function evaluateHand(hand) {
     const g = {};
     for (const c of hand) { if(!g[c.v]) g[c.v]={v:c.v,n:0}; g[c.v].n++; }
     for (const x of Object.values(g)) {
-        if (x.v===17) score+=4; else if(x.v===16) score+=3; else if(x.v===15) score+=2*x.n; else if(x.v>=13) score+=0.5*x.n;
-        if (x.n===4) score+=6;
+        if (x.v===17) score+=5; else if(x.v===16) score+=4; else if(x.v===15) score+=3*x.n; else if(x.v>=13) score+=x.n;
+        if (x.n===4) score+=8; else if (x.n===3) score+=2;
     }
-    if (hand.some(c=>c.r==='X') && hand.some(c=>c.r==='D')) score+=8;
+    if (hand.some(c=>c.r==='X') && hand.some(c=>c.r==='D')) score+=10;
     const vals = [...new Set(hand.filter(c=>c.v<=14).map(c=>c.v))].sort((a,b)=>a-b);
-    let run=1; for(let i=1;i<vals.length;i++) { if(vals[i]===vals[i-1]+1){run++; if(run>=5) score+=2;} else run=1; }
-    return Math.min(3, Math.max(1, Math.round(score/4)));
+    let run=1; for(let i=1;i<vals.length;i++) { if(vals[i]===vals[i-1]+1){run++; if(run>=5) score+=3;} else run=1; }
+    return Math.min(5, Math.max(1, Math.round(score/3)));
 }
 
 /* ================================================================
@@ -727,7 +731,7 @@ function resetState() {
         lastPlay:null, lastPlayer:-1, passCount:0,
         bid:0, bidLeader:-1, bidCount:0, bidMax:0,
         mult:1, phase:'idle', selected:new Set(), score:0,
-        farmersPlayed:0, landlordPlays:0
+        farmersPlayed:0, landlordPlays:0, landlordFirstBeaten:false
     };
 }
 
@@ -895,7 +899,7 @@ function doBid() {
 function showBidUI() {
     const el = $('bid-container');
     let btns = '';
-    for (let i=G.bid+1;i<=3;i++) btns += `<button class="bid-btn" onclick="doPlayerBid(${i})">${i} 分</button>`;
+    for (let i=G.bid+1;i<=5;i++) btns += `<button class="bid-btn" onclick="doPlayerBid(${i})">${i} 分</button>`;
     btns += `<button class="bid-btn pass-btn" onclick="doPlayerBid(0)">不叫</button>`;
     el.innerHTML = `<div class="bid-panel"><h3>&#x1F3E0; 叫地主 ${G.bid>0?'(当前:'+G.bid+'分)':''}</h3><div class="bid-btns">${btns}</div></div>`;
 }
@@ -914,7 +918,7 @@ function finishBid() {
     if (G.bidLeader < 0) { setStatus('无人叫地主，重新发牌...'); setTimeout(startGame, 1500); return; }
 
     G.landlord = G.bidLeader;
-    G.mult = Math.max(1, G.bid);
+    G.mult = 1;
     G.players[G.landlord].push(...G.pool);
     G.players[G.landlord] = sortByVal(G.players[G.landlord]);
     setStatus((G.landlord===0?'你':'电脑玩家'+G.landlord)+' 是地主！');
@@ -993,7 +997,11 @@ function doPlay(player, cards) {
     if (combo.type===T.BOMB || combo.type===T.ROCKET) G.mult *= 2;
 
     // Track spring/anti-spring
-    if (player !== G.landlord) { G.farmersPlayed++; }
+    if (player !== G.landlord) {
+        G.farmersPlayed++;
+        // If landlord has played before and this is the first farmer play, mark landlord's first as beaten
+        if (G.landlordPlays >= 1 && !G.landlordFirstBeaten) G.landlordFirstBeaten = true;
+    }
     if (player === G.landlord) { G.landlordPlays++; }
 
     const ids = new Set(cards.map(c=>c.id));
@@ -1020,12 +1028,12 @@ function playerPlay() {
     if (combo.type === T.PASS) { setStatus('无效的牌型！'); return; }
     const free = !G.lastPlay || G.lastPlayer===0;
     if (!free && !canBeat(combo, G.lastPlay.combo)) { setStatus('打不过！'); return; }
-    G.selected.clear();
+    G.selected = new Set();
     doPlay(0, sel);
 }
 
 function playerPass() {
-    G.selected.clear();
+    G.selected = new Set();
     showPass(0);
     G.passCount++;
     if (G.passCount >= 2) {
@@ -1040,7 +1048,7 @@ function playerPass() {
     nextTurn();
 }
 
-function clearSel() { G.selected.clear(); renderHand(); renderControls(); }
+function clearSel() { G.selected = new Set(); renderHand(); renderControls(); }
 
 function autoSel() {
     const hand = G.players[0];
@@ -1069,7 +1077,7 @@ function endGame(winner) {
         isSpring = true;
         G.mult *= 2;
     }
-    if (!isLWin && G.landlordPlays === 1) {
+    if (!isLWin && G.landlordFirstBeaten) {
         // 反春天: farmer won, landlord only played once
         isAntiSpring = true;
         G.mult *= 2;
