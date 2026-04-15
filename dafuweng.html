@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>大富豪 - Big Tycoon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1628 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+            touch-action: manipulation;
+            position: relative;
+        }
+
+        .stars-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: white;
+            animation: twinkle var(--duration, 3s) ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+        }
+
+        .ambient-light {
+            position: fixed;
+            width: 500px; height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            animation: ambientFloat 15s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .ambient-light:nth-child(1) { top: -150px; left: -150px; background: radial-gradient(circle, rgba(102, 126, 234, 0.12) 0%, transparent 70%); }
+        .ambient-light:nth-child(2) { bottom: -150px; right: -150px; background: radial-gradient(circle, rgba(118, 75, 162, 0.12) 0%, transparent 70%); animation-delay: -7s; }
+        .ambient-light:nth-child(3) { top: 50%; left: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle, rgba(0, 255, 135, 0.06) 0%, transparent 70%); animation-duration: 20s; }
+
+        @keyframes ambientFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -30px) scale(1.15); }
+        }
+
+        .game-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 8px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Orbitron', 'Noto Sans SC', sans-serif;
+            font-size: clamp(1.2rem, 4vw, 2rem);
+            background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease infinite;
+            margin-bottom: 4px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .role-bar {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .role-bar .role {
+            color: #ffd700;
+            font-weight: 700;
+        }
+
+        .opponent-area {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            min-height: 70px;
+            padding: 4px 0;
+        }
+
+        .opponent {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .opponent-name {
+            font-size: 0.75rem;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .opponent-name.active {
+            color: #00ff87;
+            text-shadow: 0 0 10px rgba(0, 255, 135, 0.5);
+        }
+
+        .opponent-name .role-tag {
+            font-size: 0.6rem;
+            padding: 1px 6px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 140, 0, 0.3));
+            color: #ffd700;
+        }
+
+        .opponent-name .role-tag.poor {
+            background: linear-gradient(135deg, rgba(150, 75, 0, 0.3), rgba(100, 50, 0, 0.3));
+            color: #cc7700;
+        }
+
+        .opponent-cards {
+            display: flex;
+            gap: -4px;
+        }
+
+        .mini-card {
+            width: 18px;
+            height: 26px;
+            background: linear-gradient(145deg, #1a1a3e, #0d0d2b);
+            border: 1px solid #333;
+            border-radius: 3px;
+            margin-left: -6px;
+            position: relative;
+        }
+        .mini-card:first-child { margin-left: 0; }
+
+        .middle-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-height: 0;
+            gap: 10px;
+            padding: 4px 0;
+        }
+
+        .side-player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 60px;
+        }
+
+        .play-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .played-cards {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+            min-height: 60px;
+            align-items: center;
+            padding: 6px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            max-width: 100%;
+        }
+
+        .played-cards .pass-text {
+            color: #ff4444;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .game-status {
+            font-size: 0.8rem;
+            color: #00ff87;
+            text-align: center;
+            margin-top: 4px;
+            min-height: 1.2em;
+        }
+
+        .player-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .player-name {
+            font-size: 0.85rem;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .player-name.active {
+            color: #00ff87;
+            text-shadow: 0 0 10px rgba(0, 255, 135, 0.5);
+        }
+
+        .player-hand {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 3px;
+            max-width: 100%;
+            padding: 4px;
+        }
+
+        .card {
+            width: 44px;
+            height: 62px;
+            background: linear-gradient(145deg, #1e1e4a, #12123a);
+            border: 2px solid #444;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            user-select: none;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: #667eea;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .card.selected {
+            transform: translateY(-14px);
+            border-color: #ffd700;
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+            background: linear-gradient(145deg, #2a2a5a, #1a1a4a);
+        }
+
+        .card .card-value {
+            font-size: 0.9rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .card .card-suit {
+            font-size: 0.75rem;
+            line-height: 1;
+        }
+
+        .card.red {
+            color: #ff4444;
+        }
+
+        .card.black {
+            color: #ddd;
+        }
+
+        .card.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .played-card {
+            width: 40px;
+            height: 56px;
+            background: linear-gradient(145deg, #2a2a5a, #1a1a4a);
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .played-card .card-value {
+            font-size: 0.85rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .played-card .card-suit {
+            font-size: 0.7rem;
+            line-height: 1;
+        }
+
+        .played-card.red { color: #ff4444; }
+        .played-card.black { color: #ddd; }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            padding: 6px 0;
+        }
+
+        .action-btn {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .btn-play {
+            background: linear-gradient(135deg, #00ff87, #00cc6a);
+            color: #000;
+        }
+        .btn-play:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0, 255, 135, 0.4); }
+        .btn-play:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-pass {
+            background: linear-gradient(135deg, #ff4444, #cc3333);
+            color: #fff;
+        }
+        .btn-pass:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4); }
+        .btn-pass:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-new-game {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            padding: 10px 30px;
+            font-size: 1rem;
+        }
+        .btn-new-game:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .overlay.hidden { display: none; }
+
+        .overlay-content {
+            text-align: center;
+            padding: 30px;
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(26, 26, 60, 0.95), rgba(18, 18, 50, 0.95));
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+        }
+
+        .overlay-content h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .overlay-content p {
+            color: #aaa;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .overlay-content .result-win {
+            color: #00ff87;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .overlay-content .result-lose {
+            color: #ff4444;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .overlay-content .exchange-info {
+            color: #ffd700;
+            font-size: 0.85rem;
+            margin: 12px 0;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .score-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .score-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                width: 36px;
+                height: 52px;
+            }
+            .card .card-value { font-size: 0.75rem; }
+            .card .card-suit { font-size: 0.65rem; }
+            .played-card { width: 34px; height: 48px; }
+            .played-card .card-value { font-size: 0.7rem; }
+            .played-card .card-suit { font-size: 0.6rem; }
+            .action-btn { padding: 6px 18px; font-size: 0.8rem; }
+            .mini-card { width: 14px; height: 20px; }
+        }
+
+        @keyframes dealCard {
+            from { transform: translateY(-50px) rotate(-10deg); opacity: 0; }
+            to { transform: translateY(0) rotate(0); opacity: 1; }
+        }
+
+        .deal-anim {
+            animation: dealCard 0.3s ease-out;
+        }
+
+        @keyframes playCard {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .play-anim {
+            animation: playCard 0.25s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars-container" id="starsContainer"></div>
+    <div class="ambient-light"></div>
+    <div class="ambient-light"></div>
+    <div class="ambient-light"></div>
+
+    <div class="game-container">
+        <h1>大富豪</h1>
+        <div class="role-bar">
+            <span>你是 <span class="role" id="playerRole">平民</span></span>
+        </div>
+
+        <div class="opponent-area" id="opponentArea">
+            <div class="opponent" id="opp2">
+                <div class="opponent-name">AI-2 <span class="role-tag">平民</span></div>
+                <div class="opponent-cards" id="opp2Cards"></div>
+            </div>
+            <div class="opponent" id="opp1">
+                <div class="opponent-name">AI-1 <span class="role-tag">平民</span></div>
+                <div class="opponent-cards" id="opp1Cards"></div>
+            </div>
+            <div class="opponent" id="opp3">
+                <div class="opponent-name">AI-3 <span class="role-tag">平民</span></div>
+                <div class="opponent-cards" id="opp3Cards"></div>
+            </div>
+        </div>
+
+        <div class="middle-area">
+            <div class="side-player" id="sideLeft">
+                <div class="opponent-name">AI-2</div>
+                <div id="sideLeftInfo" style="font-size:0.7rem;color:#666;"></div>
+            </div>
+
+            <div class="play-area">
+                <div class="played-cards" id="playedCards">
+                    <span style="color:#555;">等待出牌...</span>
+                </div>
+                <div class="game-status" id="gameStatus"></div>
+            </div>
+
+            <div class="side-player" id="sideRight">
+                <div class="opponent-name">AI-3</div>
+                <div id="sideRightInfo" style="font-size:0.7rem;color:#666;"></div>
+            </div>
+        </div>
+
+        <div class="player-area">
+            <div class="player-name" id="playerName">你</div>
+            <div class="player-hand" id="playerHand"></div>
+            <div class="action-buttons">
+                <button class="action-btn btn-play" id="btnPlay" disabled onclick="playerPlay()">出牌</button>
+                <button class="action-btn btn-pass" id="btnPass" disabled onclick="playerPass()">不出</button>
+            </div>
+        </div>
+
+        <div class="score-board" id="scoreBoard"></div>
+    </div>
+
+    <!-- Start Overlay -->
+    <div class="overlay" id="startOverlay">
+        <div class="overlay-content">
+            <h2>大富豪 Big Tycoon</h2>
+            <p>经典卡牌游戏，先出完牌者获胜</p>
+            <div style="text-align:left; color:#888; font-size:0.8rem; margin:15px 0; line-height:1.8;">
+                <div>🃏 卡牌大小: 3 &lt; 4 &lt; ... &lt; K &lt; A &lt; 2</div>
+                <div>📋 合法牌型: 单张 / 对子 / 三条 / 顺子(5+张)</div>
+                <div>💣 炸弹(4张同值)可打断任何牌型</div>
+                <div>👑 大富豪和大贫民每轮结束后交换卡牌</div>
+            </div>
+            <button class="action-btn btn-new-game" onclick="startGame()">开始游戏</button>
+        </div>
+    </div>
+
+    <!-- End Overlay -->
+    <div class="overlay hidden" id="endOverlay">
+        <div class="overlay-content">
+            <h2 id="endTitle">本轮结束</h2>
+            <p id="endResult"></p>
+            <div class="exchange-info" id="exchangeInfo"></div>
+            <button class="action-btn btn-new-game" onclick="nextRound()">下一轮</button>
+        </div>
+    </div>
+
+    <script>
+    // ============ CONSTANTS ============
+    const SUITS = ['♠', '♥', '♣', '♦'];
+    const VALUES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1, 2];
+    const VALUE_NAMES = {
+        3:'3', 4:'4', 5:'5', 6:'6', 7:'7', 8:'8', 9:'9', 10:'10',
+        11:'J', 12:'Q', 13:'K', 1:'A', 2:'2'
+    };
+    const VALUE_RANK = {};
+    VALUES.forEach((v, i) => { VALUE_RANK[v] = i; });
+    const PLAYER_NAMES = ['你', 'AI-1', 'AI-2', 'AI-3'];
+    const ROLES = ['大贫民', '贫民', '平民', '平民', '富豪', '大富豪'];
+
+    // ============ GAME STATE ============
+    let gameState = {
+        players: [[], [], [], []],    // each player's hand: [{value, suit}]
+        roles: [2, 2, 2, 2],          // role index for each player (0=大贫民, 5=大富豪)
+        currentPlayer: 0,
+        lastPlay: null,               // {playerIdx, cards, type, rank}
+        passCount: 0,
+        isFreePlay: true,
+        roundOrder: [0, 1, 2, 3],
+        roundResults: [],             // order of players finishing
+        gamePhase: 'idle',            // idle, dealing, playing, ended
+        selectedCards: [],
+        roundNum: 1,
+        scores: [0, 0, 0, 0],
+    };
+
+    // ============ DECK & DEALING ============
+    function createDeck() {
+        let deck = [];
+        for (let v of VALUES) {
+            for (let s of SUITS) {
+                deck.push({ value: v, suit: s });
+            }
+        }
+        return deck;
+    }
+
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function dealCards() {
+        let deck = shuffle(createDeck());
+        gameState.players = [[], [], [], []];
+        for (let i = 0; i < 52; i++) {
+            gameState.players[i % 4].push(deck[i]);
+        }
+        // sort each player's hand
+        for (let i = 0; i < 4; i++) {
+            gameState.players[i].sort((a, b) => VALUE_RANK[a.value] - VALUE_RANK[b.value]);
+        }
+    }
+
+    // ============ COMBINATION LOGIC ============
+    function getCardRank(card) {
+        return VALUE_RANK[card.value];
+    }
+
+    function analyzeCombination(cards) {
+        if (cards.length === 0) return null;
+        const ranks = cards.map(c => VALUE_RANK[c.value]).sort((a, b) => a - b);
+
+        // Single
+        if (cards.length === 1) return { type: 'single', rank: ranks[0] };
+
+        // Pair
+        if (cards.length === 2) {
+            if (ranks[0] === ranks[1]) return { type: 'pair', rank: ranks[0] };
+            return null;
+        }
+
+        // Triple
+        if (cards.length === 3) {
+            if (ranks[0] === ranks[1] && ranks[1] === ranks[2]) return { type: 'triple', rank: ranks[0] };
+            return null;
+        }
+
+        // Bomb (4 same value)
+        if (cards.length === 4) {
+            if (ranks[0] === ranks[3]) return { type: 'bomb', rank: ranks[0] };
+            return null;
+        }
+
+        // Straight (5+ consecutive, no 2/A)
+        if (cards.length >= 5) {
+            const unique = [...new Set(ranks)].sort((a, b) => a - b);
+            if (unique.length !== cards.length) return null; // duplicates
+            // Check no 2 (rank 13) or A (rank 12) in straight
+            if (unique.some(r => r >= 12)) return null; // 2 and A can't be in straight
+            for (let i = 1; i < unique.length; i++) {
+                if (unique[i] !== unique[i-1] + 1) return null;
+            }
+            return { type: 'straight', rank: unique[0], length: unique.length };
+        }
+
+        return null;
+    }
+
+    function canBeat(play, newCards) {
+        if (!play || play.isFree) return analyzeCombination(newCards) !== null;
+        const newCombo = analyzeCombination(newCards);
+        if (!newCombo) return false;
+        // Bomb can beat anything
+        if (newCombo.type === 'bomb') return true;
+        if (play.type === 'bomb') return false; // only bomb beats bomb
+        // Same type and same length
+        if (newCombo.type !== play.type) return false;
+        if (newCombo.type === 'straight' && newCombo.length !== play.length) return false;
+        return newCombo.rank > play.rank;
+    }
+
+    function getValidCombinations(hand, currentPlay) {
+        const combos = [];
+        const n = hand.length;
+
+        if (!currentPlay || currentPlay.isFree) {
+            // Free play: any valid combo
+            // Singles
+            for (let i = 0; i < n; i++) combos.push([hand[i]]);
+            // Pairs
+            for (let i = 0; i < n - 1; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    if (VALUE_RANK[hand[i].value] === VALUE_RANK[hand[j].value]) {
+                        combos.push([hand[i], hand[j]]);
+                    }
+                }
+            }
+            // Triples
+            for (let i = 0; i < n - 2; i++) {
+                for (let j = i + 1; j < n - 1; j++) {
+                    for (let k = j + 1; k < n; k++) {
+                        if (VALUE_RANK[hand[i].value] === VALUE_RANK[hand[j].value] &&
+                            VALUE_RANK[hand[j].value] === VALUE_RANK[hand[k].value]) {
+                            combos.push([hand[i], hand[j], hand[k]]);
+                        }
+                    }
+                }
+            }
+            // Bombs
+            for (let i = 0; i < n - 3; i++) {
+                for (let j = i + 1; j < n - 2; j++) {
+                    for (let k = j + 1; k < n - 1; k++) {
+                        for (let l = k + 1; l < n; l++) {
+                            if (VALUE_RANK[hand[i].value] === VALUE_RANK[hand[j].value] &&
+                                VALUE_RANK[hand[j].value] === VALUE_RANK[hand[k].value] &&
+                                VALUE_RANK[hand[k].value] === VALUE_RANK[hand[l].value]) {
+                                combos.push([hand[i], hand[j], hand[k], hand[l]]);
+                            }
+                        }
+                    }
+                }
+            }
+            // Straights (5+)
+            const sorted = [...hand].sort((a, b) => VALUE_RANK[a.value] - VALUE_RANK[b.value]);
+            const uniqueByRank = [];
+            const rankMap = {};
+            for (const c of sorted) {
+                const r = VALUE_RANK[c.value];
+                if (!rankMap[r]) { rankMap[r] = []; uniqueByRank.push(r); }
+                rankMap[r].push(c);
+            }
+            // Find consecutive sequences (only ranks 0-11, no A/2)
+            for (let i = 0; i < uniqueByRank.length; i++) {
+                if (uniqueByRank[i] >= 12) continue; // skip A and 2
+                let j = i;
+                while (j + 1 < uniqueByRank.length && uniqueByRank[j+1] === uniqueByRank[j] + 1 && uniqueByRank[j+1] < 12) {
+                    j++;
+                }
+                const len = j - i + 1;
+                if (len >= 5) {
+                    // All sub-sequences of length 5+
+                    for (let l = 5; l <= len; l++) {
+                        for (let start = i; start + l - 1 <= j; start++) {
+                            const seq = [];
+                            for (let k = start; k < start + l; k++) {
+                                seq.push(rankMap[uniqueByRank[k]][0]);
+                            }
+                            combos.push(seq);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Must beat current play
+            if (currentPlay.type === 'single') {
+                for (let i = 0; i < n; i++) {
+                    if (VALUE_RANK[hand[i].value] > currentPlay.rank) combos.push([hand[i]]);
+                }
+            } else if (currentPlay.type === 'pair') {
+                for (let i = 0; i < n - 1; i++) {
+                    for (let j = i + 1; j < n; j++) {
+                        if (VALUE_RANK[hand[i].value] === VALUE_RANK[hand[j].value] &&
+                            VALUE_RANK[hand[i].value] > currentPlay.rank) {
+                            combos.push([hand[i], hand[j]]);
+                        }
+                    }
+                }
+            } else if (currentPlay.type === 'triple') {
+                for (let i = 0; i < n - 2; i++) {
+                    for (let j = i + 1; j < n - 1; j++) {
+                        for (let k = j + 1; k < n; k++) {
+                            if (VALUE_RANK[hand[i].value] === VALUE_RANK[hand[j].value] &&
+                                VALUE_RANK[hand[j].value] === VALUE_RANK[hand[k].value] &&
+                                VALUE_RANK[hand[i].value] > currentPlay.rank) {
+                                combos.push([hand[i], hand[j], hand[k]]);
+                            }
+                        }
+                    }
+                }
+            } else if (currentPlay.type === 'bomb') {
+                // Only bomb with higher rank can beat bomb
+                for (let i = 0; i < n - 3; i++) {
+                    for (let j = i + 1; j < n - 2; j++) {
+                        for (let k = j + 1; k < n - 1; k++) {
+                            for (let l = k + 1; l < n; l++) {
+                                if (VALUE_RANK[hand[i].value] === VALUE_RANK[hand[j].value] &&
+                                    VALUE_RANK[hand[j].value] === VALUE_RANK[hand[k].value] &&
+                                    VALUE_RANK[hand[k].value] === VALUE_RANK[hand[l].value] &&
+                                    VALUE_RANK[hand[i].value] > currentPlay.rank) {
+                                    combos.push([hand[i], hand[j], hand[k], hand[l]]);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (currentPlay.type === 'straight') {
+                const sorted = [...hand].sort((a, b) => VALUE_RANK[a.value] - VALUE_RANK[b.value]);
+                const rankMap = {};
+                const uniqueRanks = [];
+                for (const c of sorted) {
+                    const r = VALUE_RANK[c.value];
+                    if (!rankMap[r]) { rankMap[r] = []; uniqueRanks.push(r); }
+                    rankMap[r].push(c);
+                }
+                for (let i = 0; i < uniqueRanks.length; i++) {
+                    if (uniqueRanks[i] >= 12) continue;
+                    let j = i;
+                    while (j + 1 < uniqueRanks.length && uniqueRanks[j+1] === uniqueRanks[j] + 1 && uniqueRanks[j+1] < 12) {
+                        j++;
+                    }
+                    const seqLen = j - i + 1;
+                    if (seqLen >= currentPlay.length && uniqueRanks[i] > currentPlay.rank) {
+                        const seq = [];
+                        for (let k = i; k < i + currentPlay.length; k++) {
+                            seq.push(rankMap[uniqueRanks[k]][0]);
+                        }
+                        combos.push(seq);
+                    }
+                }
+            }
+            // Bomb can always beat non-bomb
+            if (currentPlay.type !== 'bomb') {
+                for (let i = 0; i < n - 3; i++) {
+                    for (let j = i + 1; j < n - 2; j++) {
+                        for (let k = j + 1; k < n - 1; k++) {
+                            for (let l = k + 1; l < n; l++) {
+                                if (VALUE_RANK[hand[i].value] === VALUE_RANK[hand[j].value] &&
+                                    VALUE_RANK[hand[j].value] === VALUE_RANK[hand[k].value] &&
+                                    VALUE_RANK[hand[k].value] === VALUE_RANK[hand[l].value]) {
+                                    combos.push([hand[i], hand[j], hand[k], hand[l]]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return combos;
+    }
+
+    // ============ AI LOGIC ============
+    function aiDecide(playerIdx) {
+        const hand = gameState.players[playerIdx];
+        const currentPlay = gameState.isFreePlay ? null : gameState.lastPlay;
+        const validCombos = getValidCombinations(hand, currentPlay);
+
+        if (validCombos.length === 0) return null; // must pass
+
+        // Simple AI strategy:
+        // 1. If free play, play smallest combo
+        // 2. If following, play smallest beating combo
+        // 3. Don't use bombs unless necessary (hand is small)
+
+        let bestCombo = null;
+        let bestScore = Infinity;
+
+        for (const combo of validCombos) {
+            const comboInfo = analyzeCombination(combo);
+            let score = comboInfo.rank;
+
+            // Prefer lower cards
+            // Penalize bombs unless hand is small
+            if (comboInfo.type === 'bomb' && hand.length > 6) {
+                score += 100;
+            }
+
+            // If AI has few cards, try to win
+            if (hand.length <= 3) {
+                score -= 20;
+            }
+
+            if (score < bestScore) {
+                bestScore = score;
+                bestCombo = combo;
+            }
+        }
+
+        return bestCombo;
+    }
+
+    // ============ UI ============
+    function createStars() {
+        const container = document.getElementById('starsContainer');
+        for (let i = 0; i < 50; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.setProperty('--duration', (2 + Math.random() * 4) + 's');
+            star.style.animationDelay = Math.random() * 3 + 's';
+            const size = 1 + Math.random() * 2;
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            container.appendChild(star);
+        }
+    }
+
+    function renderCardHTML(card, extraClass = '') {
+        const isRed = card.suit === '♥' || card.suit === '♦';
+        return `<div class="${isRed ? 'red' : 'black'} ${extraClass}">
+            <span class="card-value">${VALUE_NAMES[card.value]}</span>
+            <span class="card-suit">${card.suit}</span>
+        </div>`;
+    }
+
+    function renderPlayedCardHTML(card, extraClass = '') {
+        const isRed = card.suit === '♥' || card.suit === '♦';
+        return `<div class="played-card play-anim ${isRed ? 'red' : 'black'} ${extraClass}">
+            <span class="card-value">${VALUE_NAMES[card.value]}</span>
+            <span class="card-suit">${card.suit}</span>
+        </div>`;
+    }
+
+    function renderOpponentCards() {
+        for (let i = 1; i <= 3; i++) {
+            const el = document.getElementById(`opp${i}Cards`);
+            const count = gameState.players[i].length;
+            el.innerHTML = '';
+            for (let j = 0; j < Math.min(count, 13); j++) {
+                el.innerHTML += '<div class="mini-card"></div>';
+            }
+            if (count > 13) {
+                el.innerHTML += `<span style="font-size:0.6rem;color:#666;margin-left:4px;">+${count-13}</span>`;
+            }
+        }
+    }
+
+    function renderPlayerHand() {
+        const hand = gameState.players[0];
+        const el = document.getElementById('playerHand');
+        el.innerHTML = '';
+
+        hand.forEach((card, idx) => {
+            const cardEl = document.createElement('div');
+            cardEl.className = `card ${gameState.selectedCards.includes(idx) ? 'selected' : ''} deal-anim`;
+            cardEl.style.animationDelay = (idx * 0.02) + 's';
+
+            const isRed = card.suit === '♥' || card.suit === '♦';
+            cardEl.classList.add(isRed ? 'red' : 'black');
+
+            cardEl.innerHTML = `<span class="card-value">${VALUE_NAMES[card.value]}</span><span class="card-suit">${card.suit}</span>`;
+            cardEl.addEventListener('click', () => toggleCardSelect(idx));
+            el.appendChild(cardEl);
+        });
+    }
+
+    function toggleCardSelect(idx) {
+        if (gameState.currentPlayer !== 0 || gameState.gamePhase !== 'playing') return;
+
+        const selIdx = gameState.selectedCards.indexOf(idx);
+        if (selIdx >= 0) {
+            gameState.selectedCards.splice(selIdx, 1);
+        } else {
+            gameState.selectedCards.push(idx);
+        }
+        gameState.selectedCards.sort((a, b) => a - b);
+        renderPlayerHand();
+        updatePlayButton();
+    }
+
+    function updatePlayButton() {
+        const btnPlay = document.getElementById('btnPlay');
+        const btnPass = document.getElementById('btnPass');
+        const isMyTurn = gameState.currentPlayer === 0 && gameState.gamePhase === 'playing';
+
+        btnPlay.disabled = !isMyTurn;
+        btnPass.disabled = !isMyTurn;
+
+        if (isMyTurn && !gameState.isFreePlay) {
+            btnPass.disabled = false;
+        }
+
+        if (isMyTurn && gameState.isFreePlay) {
+            btnPass.disabled = true;
+        }
+
+        // Check if selected cards form valid combo
+        if (gameState.selectedCards.length > 0 && isMyTurn) {
+            const hand = gameState.players[0];
+            const selected = gameState.selectedCards.map(i => hand[i]);
+            const currentPlay = gameState.isFreePlay ? null : gameState.lastPlay;
+            const valid = canBeat(currentPlay, selected);
+            btnPlay.disabled = !valid;
+        } else if (isMyTurn && gameState.isFreePlay) {
+            // Free play but no cards selected
+            btnPlay.disabled = true;
+        }
+    }
+
+    function updateActivePlayer() {
+        // Player 0
+        const playerName = document.getElementById('playerName');
+        playerName.className = `player-name ${gameState.currentPlayer === 0 ? 'active' : ''}`;
+
+        // Opponents
+        for (let i = 1; i <= 3; i++) {
+            const el = document.querySelector(`#opp${i} .opponent-name`);
+            el.className = `opponent-name ${gameState.currentPlayer === i ? 'active' : ''}`;
+        }
+    }
+
+    function updateRoles() {
+        const roleNames = ['大贫民', '贫民', '平民', '平民', '富豪', '大富豪'];
+        document.getElementById('playerRole').textContent = roleNames[gameState.roles[0]] || '平民';
+
+        // Update opponent role tags
+        const oppIds = ['opp1', 'opp2', 'opp3'];
+        const playerIdxs = [1, 2, 3];
+        for (let i = 0; i < 3; i++) {
+            const el = document.querySelector(`#${oppIds[i]} .role-tag`);
+            const role = gameState.roles[playerIdxs[i]];
+            el.textContent = roleNames[role] || '平民';
+            el.className = role >= 4 ? 'role-tag' : role <= 1 ? 'role-tag poor' : 'role-tag';
+        }
+    }
+
+    function updateScoreBoard() {
+        const el = document.getElementById('scoreBoard');
+        el.innerHTML = gameState.scores.map((s, i) =>
+            `<span class="score-item">${PLAYER_NAMES[i]}: ${s}</span>`
+        ).join('');
+    }
+
+    function renderPlayedArea(cards, playerName, passed) {
+        const el = document.getElementById('playedCards');
+        if (passed) {
+            el.innerHTML = `<span style="color:#666;font-size:0.8rem;">${PLAYER_NAMES[playerName]}: </span><span class="pass-text">不出</span>`;
+        } else if (cards && cards.length > 0) {
+            el.innerHTML = `<span style="color:#666;font-size:0.75rem;margin-right:4px;">${PLAYER_NAMES[playerName]}</span>` +
+                cards.map(c => renderPlayedCardHTML(c)).join('');
+        }
+    }
+
+    function setStatus(msg) {
+        document.getElementById('gameStatus').textContent = msg;
+    }
+
+    // ============ GAME FLOW ============
+    function startGame() {
+        document.getElementById('startOverlay').classList.add('hidden');
+        gameState.roundNum = 1;
+        gameState.roles = [2, 2, 2, 2];
+        gameState.scores = [0, 0, 0, 0];
+        updateRoles();
+        updateScoreBoard();
+        startRound();
+    }
+
+    function startRound() {
+        dealCards();
+        gameState.lastPlay = null;
+        gameState.passCount = 0;
+        gameState.isFreePlay = true;
+        gameState.roundResults = [];
+        gameState.gamePhase = 'playing';
+        gameState.selectedCards = [];
+
+        // Determine who starts: player with 3 of clubs (smallest card)
+        let starter = 0;
+        let minRank = Infinity;
+        for (let i = 0; i < 4; i++) {
+            for (const card of gameState.players[i]) {
+                const rank = VALUE_RANK[card.value];
+                if (rank < minRank) {
+                    minRank = rank;
+                    starter = i;
+                }
+            }
+            if (minRank === 0) break; // found 3
+        }
+        gameState.currentPlayer = starter;
+        gameState.roundOrder = [];
+
+        renderOpponentCards();
+        renderPlayerHand();
+        updateActivePlayer();
+        updatePlayButton();
+        updateRoles();
+        renderPlayedArea([], -1, false);
+        document.getElementById('playedCards').innerHTML = '<span style="color:#555;">等待出牌...</span>';
+
+        if (starter === 0) {
+            setStatus('轮到你出牌！');
+        } else {
+            setStatus(`${PLAYER_NAMES[starter]} 先出牌...`);
+            setTimeout(() => aiTurn(starter), 800);
+        }
+    }
+
+    function nextPlayer() {
+        // Find next player who hasn't finished
+        const order = [0, 1, 2, 3];
+        const currentIdx = order.indexOf(gameState.currentPlayer);
+        for (let i = 1; i <= 4; i++) {
+            const next = order[(currentIdx + i) % 4];
+            if (!gameState.roundResults.includes(next)) {
+                return next;
+            }
+        }
+        return -1;
+    }
+
+    function advanceTurn() {
+        gameState.currentPlayer = nextPlayer();
+
+        if (gameState.currentPlayer === -1 || gameState.roundResults.length >= 3) {
+            // Round ends
+            endRound();
+            return;
+        }
+
+        // If last player's play and everyone else passed, reset
+        if (gameState.passCount >= getRemainingPlayers() - 1) {
+            gameState.isFreePlay = true;
+            gameState.lastPlay = null;
+            gameState.passCount = 0;
+            document.getElementById('playedCards').innerHTML = '<span style="color:#555;">等待出牌...</span>';
+        }
+
+        renderOpponentCards();
+        updateActivePlayer();
+
+        if (gameState.currentPlayer === 0) {
+            renderPlayerHand();
+            updatePlayButton();
+            if (gameState.isFreePlay) {
+                setStatus('轮到你出牌！');
+            } else {
+                setStatus('跟牌或选择不出');
+            }
+        } else {
+            updatePlayButton();
+            setTimeout(() => aiTurn(gameState.currentPlayer), 600 + Math.random() * 400);
+        }
+    }
+
+    function getRemainingPlayers() {
+        return 4 - gameState.roundResults.length;
+    }
+
+    function playCards(playerIdx, cards) {
+        const hand = gameState.players[playerIdx];
+
+        // Remove cards from hand
+        for (const card of cards) {
+            const idx = hand.findIndex(c => c.value === card.value && c.suit === card.suit);
+            if (idx >= 0) hand.splice(idx, 1);
+        }
+
+        const combo = analyzeCombination(cards);
+        gameState.lastPlay = {
+            playerIdx: playerIdx,
+            cards: cards,
+            type: combo.type,
+            rank: combo.rank,
+            length: combo.length || cards.length,
+            isFree: false
+        };
+        gameState.passCount = 0;
+        gameState.isFreePlay = false;
+
+        renderPlayedArea(cards, playerIdx, false);
+
+        if (hand.length === 0) {
+            // Player finished!
+            gameState.roundResults.push(playerIdx);
+            const position = gameState.roundResults.length;
+            setStatus(`${PLAYER_NAMES[playerIdx]} 出完牌了！排名第${position}`);
+        }
+    }
+
+    function playerPassAction(playerIdx) {
+        gameState.passCount++;
+        renderPlayedArea([], playerIdx, true);
+        setStatus(`${PLAYER_NAMES[playerIdx]} 不出`);
+    }
+
+    function aiTurn(playerIdx) {
+        if (gameState.gamePhase !== 'playing') return;
+        if (gameState.currentPlayer !== playerIdx) return;
+
+        const combo = aiDecide(playerIdx);
+
+        if (combo) {
+            playCards(playerIdx, combo);
+        } else {
+            playerPassAction(playerIdx);
+        }
+
+        setTimeout(() => advanceTurn(), 400);
+    }
+
+    function playerPlay() {
+        if (gameState.currentPlayer !== 0) return;
+
+        const hand = gameState.players[0];
+        const selected = gameState.selectedCards.map(i => hand[i]);
+        const currentPlay = gameState.isFreePlay ? null : gameState.lastPlay;
+
+        if (!canBeat(currentPlay, selected)) return;
+
+        playCards(0, selected);
+        gameState.selectedCards = [];
+        renderPlayerHand();
+
+        setTimeout(() => advanceTurn(), 500);
+    }
+
+    function playerPass() {
+        if (gameState.currentPlayer !== 0) return;
+        if (gameState.isFreePlay) return; // Can't pass on free play
+
+        playerPassAction(0);
+        gameState.selectedCards = [];
+        renderPlayerHand();
+
+        setTimeout(() => advanceTurn(), 500);
+    }
+
+    // ============ ROUND END & EXCHANGE ============
+    function endRound() {
+        gameState.gamePhase = 'ended';
+
+        // Last player gets remaining position
+        const remaining = [0, 1, 2, 3].filter(i => !gameState.roundResults.includes(i));
+        for (const p of remaining) {
+            gameState.roundResults.push(p);
+        }
+
+        // Update scores based on position
+        const scoreMap = [3, 1, -1, -3]; // 1st, 2nd, 3rd, 4th
+        for (let i = 0; i < 4; i++) {
+            const pos = gameState.roundResults.indexOf(i);
+            gameState.scores[i] += scoreMap[pos];
+        }
+
+        // Determine new roles based on this round's results
+        // 1st -> 大富豪, 2nd -> 富豪, 3rd -> 贫民, 4th -> 大贫民
+        const newRoles = [0, 0, 0, 0];
+        for (let i = 0; i < 4; i++) {
+            const player = gameState.roundResults[i];
+            if (i === 0) newRoles[player] = 5;       // 大富豪
+            else if (i === 1) newRoles[player] = 4;   // 富豪
+            else if (i === 2) newRoles[player] = 1;   // 贫民
+            else newRoles[player] = 0;                 // 大贫民
+        }
+
+        // Card exchange: 大富豪 gives best cards to 大贫民, 大贫民 gives worst to 大富豪
+        const winner = gameState.roundResults[0];
+        const loser = gameState.roundResults[3];
+
+        const exchangeInfo = [];
+        exchangeInfo.push(`本轮排名: ${gameState.roundResults.map((p, i) => `${i+1}. ${PLAYER_NAMES[p]}`).join(', ')}`);
+
+        // Exchange between 大富豪 and 大贫民
+        if (winner !== loser) {
+            // 大富豪 gives 2 best cards to 大贫民
+            const winnerHand = gameState.players[winner];
+            const loserHand = gameState.players[loser];
+
+            // Sort by rank descending to get best cards
+            winnerHand.sort((a, b) => VALUE_RANK[b.value] - VALUE_RANK[a.value]);
+            const giveCards = winnerHand.splice(0, Math.min(2, winnerHand.length));
+            loserHand.push(...giveCards);
+
+            // 大贫民 gives 2 worst cards to 大富豪
+            loserHand.sort((a, b) => VALUE_RANK[a.value] - VALUE_RANK[b.value]);
+            const takeCards = loserHand.splice(0, Math.min(2, loserHand.length));
+            winnerHand.push(...takeCards);
+
+            // Re-sort hands
+            winnerHand.sort((a, b) => VALUE_RANK[a.value] - VALUE_RANK[b.value]);
+            loserHand.sort((a, b) => VALUE_RANK[a.value] - VALUE_RANK[b.value]);
+
+            exchangeInfo.push(`${PLAYER_NAMES[winner]}(${gameState.roundResults[0] === 0 ? '你' : 'AI'}) 给出 ${giveCards.map(c => VALUE_NAMES[c.value]).join(', ')} 给 ${PLAYER_NAMES[loser]}`);
+            exchangeInfo.push(`${PLAYER_NAMES[loser]} 给出 ${takeCards.map(c => VALUE_NAMES[c.value]).join(', ')} 给 ${PLAYER_NAMES[winner]}`);
+        }
+
+        // Apply roles
+        gameState.roles = newRoles;
+
+        // Show end overlay
+        const playerPos = gameState.roundResults.indexOf(0) + 1;
+        const isWin = playerPos === 1;
+
+        document.getElementById('endTitle').textContent = isWin ? '🎉 恭喜获胜！' : `本轮结束 - 第${playerPos}名`;
+        document.getElementById('endResult').className = isWin ? 'result-win' : 'result-lose';
+        document.getElementById('endResult').textContent = `你的排名: 第${playerPos}名`;
+        document.getElementById('exchangeInfo').innerHTML = exchangeInfo.join('<br>');
+
+        updateScoreBoard();
+        updateRoles();
+
+        setTimeout(() => {
+            document.getElementById('endOverlay').classList.remove('hidden');
+        }, 800);
+    }
+
+    function nextRound() {
+        document.getElementById('endOverlay').classList.add('hidden');
+        gameState.roundNum++;
+        updateRoles();
+        updateScoreBoard();
+        startRound();
+    }
+
+    // ============ INIT ============
+    createStars();
+    </script>
+</body>
+</html>
