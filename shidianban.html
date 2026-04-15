@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>十点半 - 经典卡牌游戏</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.08) 0%, transparent 70%);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-circle:nth-child(1) { width: 400px; height: 400px; top: 5%; left: 10%; }
+        .bg-circle:nth-child(2) { width: 300px; height: 300px; bottom: 10%; right: 5%; animation-delay: -7s; }
+        .bg-circle:nth-child(3) { width: 250px; height: 250px; top: 50%; left: 50%; animation-delay: -14s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); opacity: 0.5; }
+            50% { transform: translate(40px, -40px); opacity: 0.8; }
+        }
+
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #ffd700, #ff8c00, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        header p {
+            color: #aaa;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 15px 25px;
+            margin: 15px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .scoreboard-item {
+            text-align: center;
+        }
+
+        .scoreboard-item .label {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .scoreboard-item .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .vs {
+            font-size: 1.5em;
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .table {
+            background: linear-gradient(145deg, rgba(0, 100, 0, 0.3) 0%, rgba(0, 80, 0, 0.2) 100%);
+            border-radius: 24px;
+            padding: 30px 20px;
+            margin: 20px 0;
+            border: 3px solid rgba(255, 215, 0, 0.3);
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.3), 0 10px 40px rgba(0, 0, 0, 0.4);
+            position: relative;
+            min-height: 350px;
+        }
+
+        .table::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            pointer-events: none;
+        }
+
+        .player-area {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .player-label {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-label .name {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .player-label .score {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            color: #ffd700;
+        }
+
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 100px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            width: 70px;
+            height: 100px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: cardDeal 0.5s ease-out;
+        }
+
+        @keyframes cardDeal {
+            from {
+                transform: translateY(-100px) rotate(20deg) scale(0.5);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) rotate(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .card.face-up {
+            background: linear-gradient(145deg, #fff 0%, #f0f0f0 100%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.8);
+            border: 2px solid rgba(255,255,255,0.9);
+        }
+
+        .card.face-down {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0d1b3e 100%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(100, 150, 255, 0.3);
+        }
+
+        .card.face-down::before {
+            content: '?';
+            font-size: 2em;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .card.face-down::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+        }
+
+        .card .rank {
+            font-size: 1.4em;
+            line-height: 1;
+        }
+
+        .card .suit {
+            font-size: 1.8em;
+            line-height: 1;
+        }
+
+        .card.red {
+            color: #e74c3c;
+        }
+
+        .card.black {
+            color: #2c3e50;
+        }
+
+        .card .value-tag {
+            position: absolute;
+            bottom: 4px;
+            font-size: 0.65em;
+            color: #888;
+            background: rgba(0,0,0,0.05);
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            margin: 15px 0;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 35px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Noto Sans SC', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            transition: all 0.5s ease;
+            transform: translate(-50%, -50%);
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:disabled::before {
+            display: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #1a1a2e;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 6px 25px rgba(255, 215, 0, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            box-shadow: 0 6px 25px rgba(255, 107, 107, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .bet-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .bet-area label {
+            color: #ccc;
+            font-size: 1.1em;
+        }
+
+        .bet-area select, .bet-area input {
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+            color: #ffd700;
+            font-size: 1em;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .bet-area select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .result-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .result-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .result-box {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: resultPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        @keyframes resultPop {
+            from { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+            to { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        .result-box .result-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+
+        .result-box h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .result-box p {
+            color: #aaa;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+        }
+
+        .result-box.win h2 {
+            color: #ffd700;
+        }
+
+        .result-box.lose h2 {
+            color: #ff6b6b;
+        }
+
+        .result-box.draw h2 {
+            color: #667eea;
+        }
+
+        .history {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .history-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            animation: dotPop 0.3s ease;
+        }
+
+        @keyframes dotPop {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        .history-dot.win { background: #ffd700; }
+        .history-dot.lose { background: #ff6b6b; }
+        .history-dot.draw { background: #667eea; }
+
+        .rules-toggle {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .rules-toggle button {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 1em;
+            text-decoration: underline;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .rules-panel {
+            display: none;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .rules-panel.show {
+            display: block;
+        }
+
+        .rules-panel h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .rules-panel ul {
+            color: #aaa;
+            padding-left: 20px;
+        }
+
+        .rules-panel li {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+
+        .rules-panel li strong {
+            color: #ddd;
+        }
+
+        footer {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .card {
+                width: 55px;
+                height: 80px;
+            }
+
+            .card .rank {
+                font-size: 1.1em;
+            }
+
+            .card .suit {
+                font-size: 1.4em;
+            }
+
+            .btn {
+                padding: 12px 25px;
+                font-size: 1em;
+            }
+
+            .table {
+                padding: 20px 15px;
+            }
+
+            .scoreboard {
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+    </div>
+
+    <div class="game-container">
+        <header>
+            <h1>十点半</h1>
+            <p>经典卡牌游戏</p>
+        </header>
+
+        <div class="scoreboard">
+            <div class="scoreboard-item">
+                <div class="label">玩家</div>
+                <div class="value" id="playerWins">0</div>
+            </div>
+            <div class="vs">VS</div>
+            <div class="scoreboard-item">
+                <div class="label">电脑</div>
+                <div class="value" id="dealerWins">0</div>
+            </div>
+            <div class="scoreboard-item">
+                <div class="label">总局数</div>
+                <div class="value" id="totalGames">0</div>
+            </div>
+        </div>
+
+        <div class="history" id="history"></div>
+
+        <div class="bet-area">
+            <label>下注金额：</label>
+            <select id="betAmount">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+            </select>
+            <label>金币：</label>
+            <span id="coins" style="color: #ffd700; font-size: 1.2em; font-weight: bold;">1000</span>
+        </div>
+
+        <div class="table">
+            <div class="player-area">
+                <div class="player-label">
+                    <span class="name">🤖 电脑</span>
+                    <span class="score" id="dealerScore">0</span>
+                </div>
+                <div class="cards-container" id="dealerCards"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="player-area">
+                <div class="player-label">
+                    <span class="name">👤 玩家</span>
+                    <span class="score" id="playerScore">0</span>
+                </div>
+                <div class="cards-container" id="playerCards"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="dealBtn" onclick="deal()">发牌</button>
+            <button class="btn btn-secondary" id="hitBtn" onclick="hit()" disabled>要牌</button>
+            <button class="btn btn-danger" id="standBtn" onclick="stand()" disabled>停牌</button>
+        </div>
+
+        <div class="rules-toggle">
+            <button onclick="toggleRules()">📖 查看游戏规则</button>
+        </div>
+
+        <div class="rules-panel" id="rulesPanel">
+            <h3>📖 游戏规则</h3>
+            <ul>
+                <li><strong>牌面点数：</strong>A = 1点，2-9 = 牌面点数，10/J/Q/K = 0.5点</li>
+                <li><strong>目标：</strong>手中牌的总点数尽量接近 <strong>10.5点</strong> 但不能超过</li>
+                <li><strong>要牌/停牌：</strong>玩家可以选择继续要牌或停牌，超过10.5点即爆掉</li>
+                <li><strong>电脑规则：</strong>玩家停牌后，电脑自动要牌直到 7 点或以上停牌</li>
+                <li><strong>十点半：</strong>刚好10.5点为最大牌型，通杀（除非对方也是十点半则平局）</li>
+                <li><strong>五龙：</strong>拿到5张牌未爆掉为特殊牌型，仅次于十点半</li>
+                <li><strong>胜负判定：</strong>点数大者获胜，爆掉者直接判负</li>
+                <li><strong>十点半赔率：</strong>十点半胜利获得 2 倍赌注，五龙胜利获得 1.5 倍赌注</li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>纯 HTML/CSS/JS 实现 | 十点半卡牌游戏</p>
+        </footer>
+    </div>
+
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-box" id="resultBox">
+            <div class="result-icon" id="resultIcon"></div>
+            <h2 id="resultTitle"></h2>
+            <p id="resultMsg"></p>
+            <button class="btn btn-primary" onclick="closeResult()">继续游戏</button>
+        </div>
+    </div>
+
+    <script>
+        // ============ Game State ============
+        const suits = ['♠', '♥', '♣', '♦'];
+        const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+        let deck = [];
+        let playerHand = [];
+        let dealerHand = [];
+        let gameActive = false;
+        let playerWins = 0;
+        let dealerWins = 0;
+        let totalGames = 0;
+        let history = [];
+        let coins = 1000;
+
+        // ============ Deck Functions ============
+        function createDeck() {
+            deck = [];
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 13; j++) {
+                    deck.push({ suit: suits[i], rank: ranks[j] });
+                }
+            }
+        }
+
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        function drawCard() {
+            if (deck.length < 10) {
+                createDeck();
+                shuffleDeck();
+            }
+            return deck.pop();
+        }
+
+        function getCardValue(card) {
+            if (['J', 'Q', 'K', '10'].includes(card.rank)) {
+                return 0.5;
+            }
+            if (card.rank === 'A') {
+                return 1;
+            }
+            return parseInt(card.rank);
+        }
+
+        function calculateScore(hand) {
+            let score = 0;
+            for (const card of hand) {
+                score += getCardValue(card);
+            }
+            return Math.round(score * 10) / 10;
+        }
+
+        function isRed(card) {
+            return card.suit === '♥' || card.suit === '♦';
+        }
+
+        // ============ UI Functions ============
+        function renderCard(card, faceDown = false) {
+            if (faceDown) {
+                return `<div class="card face-down"></div>`;
+            }
+            const color = isRed(card) ? 'red' : 'black';
+            const value = getCardValue(card);
+            return `
+                <div class="card face-up ${color}">
+                    <span class="rank">${card.rank}</span>
+                    <span class="suit">${card.suit}</span>
+                    <span class="value-tag">${value}点</span>
+                </div>
+            `;
+        }
+
+        function renderHands(dealerRevealed = false) {
+            const dealerCards = document.getElementById('dealerCards');
+            const playerCards = document.getElementById('playerCards');
+
+            dealerCards.innerHTML = dealerHand.map((card, i) => {
+                if (!dealerRevealed && i === 0) {
+                    return renderCard(card, true);
+                }
+                return renderCard(card);
+            }).join('');
+
+            playerCards.innerHTML = playerHand.map(card => renderCard(card)).join('');
+
+            const playerScore = calculateScore(playerHand);
+            document.getElementById('playerScore').textContent = playerScore;
+
+            if (dealerRevealed) {
+                const dealerScore = calculateScore(dealerHand);
+                document.getElementById('dealerScore').textContent = dealerScore;
+            } else {
+                document.getElementById('dealerScore').textContent = '?';
+            }
+        }
+
+        function updateScoreboard() {
+            document.getElementById('playerWins').textContent = playerWins;
+            document.getElementById('dealerWins').textContent = dealerWins;
+            document.getElementById('totalGames').textContent = totalGames;
+            document.getElementById('coins').textContent = coins;
+        }
+
+        function renderHistory() {
+            const el = document.getElementById('history');
+            el.innerHTML = history.slice(-20).map(h =>
+                `<div class="history-dot ${h}"></div>`
+            ).join('');
+        }
+
+        function setControls(state) {
+            const dealBtn = document.getElementById('dealBtn');
+            const hitBtn = document.getElementById('hitBtn');
+            const standBtn = document.getElementById('standBtn');
+
+            switch (state) {
+                case 'betting':
+                    dealBtn.disabled = false;
+                    hitBtn.disabled = true;
+                    standBtn.disabled = true;
+                    break;
+                case 'playing':
+                    dealBtn.disabled = true;
+                    hitBtn.disabled = false;
+                    standBtn.disabled = false;
+                    break;
+                case 'ended':
+                    dealBtn.disabled = false;
+                    hitBtn.disabled = true;
+                    standBtn.disabled = true;
+                    break;
+            }
+        }
+
+        // ============ Game Logic ============
+        function deal() {
+            const bet = parseInt(document.getElementById('betAmount').value);
+            if (coins < bet) {
+                alert('金币不足，请降低赌注！');
+                return;
+            }
+
+            coins -= bet;
+            updateScoreboard();
+
+            createDeck();
+            shuffleDeck();
+
+            playerHand = [drawCard(), drawCard()];
+            dealerHand = [drawCard(), drawCard()];
+
+            gameActive = true;
+            totalGames++;
+
+            renderHands(false);
+            setControls('playing');
+
+            // Check if player already has 10.5
+            const playerScore = calculateScore(playerHand);
+            if (playerScore === 10.5) {
+                setTimeout(() => endGame(), 600);
+            } else if (playerScore > 10.5) {
+                setTimeout(() => endGame(), 600);
+            }
+        }
+
+        function hit() {
+            if (!gameActive) return;
+
+            playerHand.push(drawCard());
+            renderHands(false);
+
+            const score = calculateScore(playerHand);
+            if (score > 10.5) {
+                gameActive = false;
+                setTimeout(() => endGame(), 500);
+            } else if (score === 10.5) {
+                gameActive = false;
+                setTimeout(() => endGame(), 500);
+            } else if (playerHand.length >= 5) {
+                // 五龙 - 5 cards without busting
+                gameActive = false;
+                setTimeout(() => endGame(), 500);
+            }
+        }
+
+        function stand() {
+            if (!gameActive) return;
+            gameActive = false;
+            setTimeout(() => endGame(), 300);
+        }
+
+        function endGame() {
+            gameActive = false;
+
+            // Dealer's turn
+            let dealerScore = calculateScore(dealerHand);
+            const playerScore = calculateScore(playerHand);
+
+            // Dealer only plays if player hasn't busted
+            if (playerScore <= 10.5) {
+                while (dealerScore < 7 && dealerHand.length < 5) {
+                    dealerHand.push(drawCard());
+                    dealerScore = calculateScore(dealerHand);
+                }
+            }
+
+            renderHands(true);
+
+            const bet = parseInt(document.getElementById('betAmount').value);
+            const playerBusted = playerScore > 10.5;
+            const dealerBusted = dealerScore > 10.5;
+            const playerTenHalf = playerScore === 10.5;
+            const dealerTenHalf = dealerScore === 10.5;
+            const playerWuLong = playerHand.length >= 5 && !playerBusted;
+            const dealerWuLong = dealerHand.length >= 5 && !dealerBusted;
+
+            let result, title, icon, winAmount = 0;
+
+            if (playerBusted) {
+                result = 'lose';
+                icon = '💥';
+                title = '爆掉了！';
+            } else if (dealerBusted) {
+                result = 'win';
+                icon = '🎉';
+                title = '电脑爆掉了！';
+                if (playerTenHalf) {
+                    winAmount = bet * 2;
+                } else if (playerWuLong) {
+                    winAmount = Math.floor(bet * 1.5);
+                } else {
+                    winAmount = bet;
+                }
+            } else if (playerTenHalf && dealerTenHalf) {
+                result = 'draw';
+                icon = '🤝';
+                title = '双方十点半！';
+                winAmount = bet;
+            } else if (playerTenHalf) {
+                result = 'win';
+                icon = '👑';
+                title = '十点半！';
+                winAmount = bet * 2;
+            } else if (dealerTenHalf) {
+                result = 'lose';
+                icon = '😰';
+                title = '电脑十点半！';
+            } else if (playerWuLong && dealerWuLong) {
+                result = 'draw';
+                icon = '🤝';
+                title = '双方五龙！';
+                winAmount = bet;
+            } else if (playerWuLong) {
+                result = 'win';
+                icon = '🐉';
+                title = '五龙！';
+                winAmount = Math.floor(bet * 1.5);
+            } else if (dealerWuLong) {
+                result = 'lose';
+                icon = '😰';
+                title = '电脑五龙！';
+            } else if (playerScore > dealerScore) {
+                result = 'win';
+                icon = '🎉';
+                title = '胜利！';
+                winAmount = bet;
+            } else if (playerScore === dealerScore) {
+                result = 'draw';
+                icon = '🤝';
+                title = '平局！';
+                winAmount = bet;
+            } else {
+                result = 'lose';
+                icon = '😢';
+                title = '失败！';
+            }
+
+            if (result === 'win') {
+                coins += winAmount;
+                playerWins++;
+            } else if (result === 'draw') {
+                coins += winAmount;
+            } else {
+                dealerWins++;
+            }
+
+            history.push(result);
+
+            updateScoreboard();
+            renderHistory();
+
+            const dealerFinalScore = calculateScore(dealerHand);
+            const msg = `玩家: ${playerScore} | 电脑: ${dealerFinalScore}${result === 'win' && winAmount > bet ? ` (+${winAmount - bet}金币)` : ''}`;
+
+            showResult(result, icon, title, msg);
+            setControls('ended');
+        }
+
+        function showResult(result, icon, title, msg) {
+            const overlay = document.getElementById('resultOverlay');
+            const box = document.getElementById('resultBox');
+
+            box.className = `result-box ${result}`;
+            document.getElementById('resultIcon').textContent = icon;
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('resultMsg').textContent = msg;
+
+            overlay.classList.add('show');
+        }
+
+        function closeResult() {
+            document.getElementById('resultOverlay').classList.remove('show');
+
+            if (coins <= 0) {
+                coins = 1000;
+                updateScoreboard();
+                alert('金币已重置为 1000！');
+            }
+        }
+
+        function toggleRules() {
+            const panel = document.getElementById('rulesPanel');
+            panel.classList.toggle('show');
+        }
+
+        // ============ Init ============
+        createDeck();
+        shuffleDeck();
+        updateScoreboard();
+        setControls('betting');
+    </script>
+</body>
+</html>
