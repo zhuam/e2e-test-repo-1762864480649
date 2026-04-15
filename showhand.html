@@ -2,1444 +2,616 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>梭哈 Show Hand</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: 'Orbitron', 'Noto Sans SC', sans-serif;
-            background: linear-gradient(135deg, #030014 0%, #090029 50%, #1a0a2e 100%);
-            min-height: 100vh;
-            color: #fff;
-            overflow-x: hidden;
-            touch-action: manipulation;
-            user-select: none;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            min-height:100vh; background:#0a0a0a; overflow-x:hidden; user-select:none;
         }
-
-        .cyber-grid {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-image:
-                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
-            pointer-events: none;
-            z-index: 0;
-            animation: gridMove 20s linear infinite;
+        .casino-bg {
+            position:fixed; inset:0;
+            background: radial-gradient(ellipse at 50% 40%, #1a3a1a 0%, #0d1f0d 50%, #050f05 100%);
+            z-index:0;
         }
-
-        @keyframes gridMove {
-            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
-            100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
+        .casino-bg::after {
+            content:''; position:absolute; inset:0;
+            background: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,0.008) 35px, rgba(255,255,255,0.008) 70px);
         }
-
-        .crt-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.15) 0px,
-                rgba(0, 0, 0, 0.15) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            pointer-events: none;
-            z-index: 1000;
-            opacity: 0.3;
+        .top-bar {
+            position:relative; z-index:10; display:flex; justify-content:space-between; align-items:center;
+            padding:10px 20px; background:rgba(0,0,0,0.6); border-bottom:2px solid #c8a84e; flex-wrap:wrap; gap:8px;
         }
-
-        .game-container {
-            position: relative;
-            z-index: 1;
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 10px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+        .top-bar .title {
+            font-size:1.4em; font-weight:700;
+            background: linear-gradient(135deg, #f5d76e, #c8a84e);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
         }
-
-        /* Header */
-        .game-header {
-            text-align: center;
-            padding: 10px 0;
+        .top-bar .info { display:flex; gap:16px; color:#ddd; font-size:0.9em; }
+        .table-wrap {
+            position:relative; z-index:5; display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            min-height:calc(100vh - 52px - 76px); padding:15px;
         }
-
-        .game-header h1 {
-            font-size: 2em;
-            background: linear-gradient(45deg, #ffd700, #ff8c00, #ffd700);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
-            animation: titleGlow 2s ease-in-out infinite;
-        }
-
-        @keyframes titleGlow {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.2); }
-        }
-
-        .game-header .subtitle {
-            font-size: 0.8em;
-            color: #00ffff;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-        }
-
-        /* Table */
         .poker-table {
-            flex: 1;
-            background: radial-gradient(ellipse at center, #0d4f2b 0%, #0a3d21 40%, #072a17 80%, #041f10 100%);
-            border-radius: 20px;
-            border: 4px solid #ffd700;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3), inset 0 0 50px rgba(0, 0, 0, 0.5);
-            position: relative;
-            padding: 15px;
-            margin: 10px 0;
-            display: flex;
-            flex-direction: column;
+            position:relative; width:100%; max-width:1100px; height:540px;
+            background: radial-gradient(ellipse at center, #2d7a2d 0%, #1b5e1b 60%, #145214 100%);
+            border-radius:50%/40%; border:12px solid #5a3a1a;
+            box-shadow: 0 0 0 4px #3d2a0f, 0 0 0 8px #5a3a1a, inset 0 0 80px rgba(0,0,0,0.4), 0 20px 60px rgba(0,0,0,0.6);
         }
-
         .poker-table::before {
-            content: '';
-            position: absolute;
-            top: 5px; left: 5px; right: 5px; bottom: 5px;
-            border-radius: 15px;
-            border: 2px solid rgba(255, 215, 0, 0.2);
-            pointer-events: none;
+            content:''; position:absolute; inset:15px;
+            border:2px solid rgba(255,255,255,0.1); border-radius:50%/40%; pointer-events:none;
         }
-
-        /* Pot display */
-        .pot-display {
-            text-align: center;
-            padding: 5px 15px;
-            background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.4) 100%);
-            border-radius: 10px;
-            margin: 5px auto;
-            border: 1px solid rgba(255, 215, 0, 0.3);
+        .pot-area {
+            position:absolute; top:44%; left:50%; transform:translate(-50%,-50%);
+            text-align:center; z-index:20;
         }
-
-        .pot-display .label {
-            font-size: 0.7em;
-            color: #aaa;
+        .pot-label { font-size:0.8em; color:rgba(255,255,255,0.7); }
+        .pot-amount { font-size:1.6em; font-weight:700; color:#f5d76e; text-shadow:0 2px 8px rgba(245,215,110,0.5); }
+        .gmsg {
+            margin-top:6px; font-size:0.82em; color:#fff;
+            background:rgba(0,0,0,0.5); padding:5px 14px; border-radius:20px; max-width:340px;
         }
-
-        .pot-display .amount {
-            font-size: 1.5em;
-            color: #ffd700;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        .seat { position:absolute; text-align:center; z-index:15; transition:opacity 0.3s; }
+        .seat.folded { opacity:0.35; }
+        .seat.cur-turn .pinfo { box-shadow:0 0 20px rgba(245,215,110,0.9); border-color:#f5d76e; }
+        .s-bottom { bottom:-12px; left:50%; transform:translateX(-50%); }
+        .s-top    { top:-12px;    left:50%; transform:translateX(-50%); }
+        .s-left   { top:50%; left:-25px;  transform:translateY(-50%); }
+        .s-right  { top:50%; right:-25px; transform:translateY(-50%); }
+        .pinfo {
+            background:rgba(0,0,0,0.75); border:2px solid rgba(255,255,255,0.15);
+            border-radius:12px; padding:6px 12px; display:inline-block; min-width:115px;
+            backdrop-filter:blur(5px); transition:box-shadow 0.3s, border-color 0.3s;
         }
-
-        /* Community cards area */
-        .community-area {
-            text-align: center;
-            padding: 8px 0;
-        }
-
-        .community-label {
-            font-size: 0.7em;
-            color: #00ffff;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-            margin-bottom: 5px;
-        }
-
-        /* Player areas */
-        .players-row {
-            display: flex;
-            justify-content: space-around;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .player-area {
-            flex: 1;
-            min-width: 140px;
-            max-width: 260px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 12px;
-            padding: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .player-area.active {
-            border-color: #ffd700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-            animation: activePulse 1.5s ease-in-out infinite;
-        }
-
-        .player-area.folded {
-            opacity: 0.4;
-        }
-
-        .player-area.human {
-            border-color: rgba(0, 255, 255, 0.3);
-        }
-
-        .player-area.human.active {
-            border-color: #00ffff;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-        }
-
-        @keyframes activePulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-            50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); }
-        }
-
-        .player-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .player-name {
-            font-size: 0.75em;
-            font-weight: 700;
-        }
-
-        .player-area.human .player-name {
-            color: #00ffff;
-        }
-
-        .player-chips {
-            font-size: 0.65em;
-            color: #ffd700;
-        }
-
-        .player-bet {
-            font-size: 0.6em;
-            color: #ff6b6b;
-            text-align: center;
-            margin-top: 5px;
-        }
-
-        .player-hand-type {
-            font-size: 0.55em;
-            color: #aaa;
-            text-align: center;
-            margin-top: 2px;
-        }
-
-        /* Cards */
-        .cards-container {
-            display: flex;
-            justify-content: center;
-            gap: 4px;
-            margin: 5px 0;
-            min-height: 70px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
+        .pname { font-size:0.82em; font-weight:600; color:#fff; }
+        .pchips { font-size:0.72em; color:#f5d76e; }
+        .pbet { font-size:0.68em; color:#aaa; }
+        .pstatus { font-size:0.68em; color:#ff6b6b; font-weight:600; min-height:1em; }
+        .carea { display:flex; gap:5px; justify-content:center; margin-top:5px; min-height:66px; align-items:center; }
         .card {
-            width: 42px;
-            height: 60px;
-            border-radius: 5px;
-            position: relative;
-            transition: all 0.3s ease;
-            font-size: 11px;
-            line-height: 1;
+            width:46px; height:66px; border-radius:6px; display:inline-flex;
+            flex-direction:column; align-items:center; justify-content:center;
+            font-weight:700; position:relative;
         }
-
-        .card-face {
-            background: linear-gradient(145deg, #ffffff 0%, #e8e8e8 100%);
-            border: 2px solid #333;
-            border-radius: 5px;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        .card.face-up {
+            background:linear-gradient(145deg,#fff 0%,#f0f0f0 100%);
+            border:1.5px solid #ccc; box-shadow:0 3px 8px rgba(0,0,0,0.3);
         }
-
-        .card-face.red {
-            color: #dc143c;
+        .card.face-up .ctl { position:absolute; top:2px; left:4px; font-size:9px; line-height:1.1; text-align:left; }
+        .card.face-up .cbr { position:absolute; bottom:2px; right:4px; font-size:9px; transform:rotate(180deg); line-height:1.1; text-align:left; }
+        .card.face-up .crank { font-size:17px; }
+        .card.face-up .csuit { font-size:19px; margin-top:-2px; }
+        .card.red   { color:#d32f2f; }
+        .card.black { color:#1a1a1a; }
+        .card.face-down {
+            background:linear-gradient(135deg,#1a237e 0%,#283593 50%,#1a237e 100%);
+            border:2px solid #3949ab; box-shadow:0 3px 8px rgba(0,0,0,0.4);
         }
-
-        .card-face.black {
-            color: #1a1a1a;
+        .card.face-down::after {
+            content:''; position:absolute; inset:4px;
+            border:1.5px solid rgba(255,255,255,0.12); border-radius:4px;
+            background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,255,255,0.05) 4px,rgba(255,255,255,0.05) 8px);
         }
-
-        .card-rank {
-            font-size: 14px;
-            font-weight: 900;
-            font-family: 'Noto Sans SC', sans-serif;
+        .card.deal-anim { animation:dealC 0.4s ease-out; }
+        @keyframes dealC {
+            from { transform:translateY(-55px) scale(0.5) rotate(10deg); opacity:0; }
+            to   { transform:translateY(0) scale(1) rotate(0); opacity:1; }
         }
-
-        .card-suit {
-            font-size: 16px;
-            line-height: 1;
+        .actbar {
+            position:relative; z-index:20; display:flex; justify-content:center; align-items:center;
+            gap:8px; padding:10px 15px; background:rgba(0,0,0,0.7);
+            border-top:2px solid #c8a84e; flex-wrap:wrap; min-height:68px;
         }
-
-        .card-corner {
-            position: absolute;
-            font-size: 7px;
-            line-height: 1;
-            text-align: center;
-        }
-
-        .card-corner.top { top: 2px; left: 3px; }
-        .card-corner.bottom { bottom: 2px; right: 3px; transform: rotate(180deg); }
-
-        .card-back {
-            background: linear-gradient(135deg, #1a3a8a 0%, #0d2266 50%, #1a3a8a 100%);
-            border: 2px solid #4a6aff;
-            border-radius: 5px;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card-back::before {
-            content: '';
-            position: absolute;
-            top: 4px; left: 4px; right: 4px; bottom: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-            background: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 3px,
-                rgba(255, 255, 255, 0.05) 3px,
-                rgba(255, 255, 255, 0.05) 6px
-            );
-        }
-
-        .card-back::after {
-            content: '?';
-            font-size: 20px;
-            color: rgba(255, 255, 255, 0.5);
-            z-index: 1;
-        }
-
-        .card.new-card {
-            animation: dealCard 0.4s ease-out;
-        }
-
-        @keyframes dealCard {
-            0% { transform: scale(0) rotateY(180deg); opacity: 0; }
-            60% { transform: scale(1.1) rotateY(0deg); }
-            100% { transform: scale(1) rotateY(0deg); opacity: 1; }
-        }
-
-        /* Action buttons */
-        .action-panel {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            padding: 10px 0;
-            flex-wrap: wrap;
-        }
-
+        .actbar.disabled { pointer-events:none; opacity:0.4; }
         .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-family: 'Orbitron', 'Noto Sans SC', sans-serif;
-            font-size: 0.8em;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            position: relative;
-            overflow: hidden;
+            padding:9px 18px; font-size:0.88em; font-weight:600; border:none; border-radius:8px;
+            cursor:pointer; transition:all 0.2s; letter-spacing:0.5px;
         }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, #fff, transparent);
-            transform: translateX(-100%);
-            transition: transform 0.5s ease;
+        .btn:hover:not(:disabled) { transform:translateY(-2px); }
+        .btn:disabled { opacity:0.35; cursor:not-allowed; }
+        .btn-fold   { background:linear-gradient(135deg,#e74c3c,#c0392b); color:#fff; }
+        .btn-check  { background:linear-gradient(135deg,#3498db,#2980b9); color:#fff; }
+        .btn-call   { background:linear-gradient(135deg,#2ecc71,#27ae60); color:#fff; }
+        .btn-raise  { background:linear-gradient(135deg,#f39c12,#e67e22); color:#fff; }
+        .btn-allin  { background:linear-gradient(135deg,#9b59b6,#8e44ad); color:#fff; }
+        .btn-newgame { background:linear-gradient(135deg,#f5d76e,#c8a84e); color:#1a1a1a; font-size:1em; padding:12px 35px; }
+        .btn-start  { background:linear-gradient(135deg,#2ecc71,#27ae60); color:#fff; font-size:1.15em; padding:14px 42px; border-radius:12px; box-shadow:0 5px 20px rgba(46,204,113,0.4); }
+        .rctrl { display:flex; align-items:center; gap:6px; }
+        .rctrl input[type=range] { width:100px; accent-color:#f39c12; }
+        .rctrl .rv { color:#f5d76e; font-weight:700; min-width:42px; font-size:0.82em; }
+        .ovl {
+            position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.85);
+            display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px);
         }
-
-        .btn:hover::before {
-            transform: translateX(100%);
+        .ovl.hidden { display:none; }
+        .ovl-box {
+            background:linear-gradient(145deg,#1a1a2e,#16213e); border:2px solid #c8a84e;
+            border-radius:20px; padding:32px; text-align:center; max-width:470px; width:92%;
+            box-shadow:0 20px 60px rgba(0,0,0,0.5);
         }
-
-        .btn:active {
-            transform: scale(0.95);
+        .ovl-box h2 { font-size:1.7em; color:#f5d76e; margin-bottom:10px; }
+        .ovl-box p  { color:#ccc; margin-bottom:6px; line-height:1.5; }
+        .rdet {
+            background:rgba(255,255,255,0.05); border-radius:10px; padding:12px;
+            margin:10px 0; text-align:left; font-size:0.82em; color:#ddd; line-height:2;
         }
-
-        .btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none;
+        .rdet .wl { color:#f5d76e; font-weight:700; }
+        .rdet .ht { color:#2ecc71; font-weight:600; }
+        @media(max-width:768px){
+            .poker-table { height:390px; border-width:8px; }
+            .card { width:38px; height:54px; }
+            .card.face-up .crank { font-size:14px; }
+            .card.face-up .csuit { font-size:15px; }
+            .pinfo { min-width:95px; padding:5px 8px; }
+            .pname { font-size:0.72em; }
+            .pot-amount { font-size:1.3em; }
+            .btn { padding:7px 12px; font-size:0.78em; }
+            .s-left{left:-8px;} .s-right{right:-8px;}
         }
-
-        .btn-fold {
-            background: linear-gradient(135deg, #4a4a4a 0%, #2a2a2a 100%);
-            color: #fff;
-            border: 1px solid #666;
-        }
-
-        .btn-fold:hover:not(:disabled) {
-            background: linear-gradient(135deg, #5a5a5a 0%, #3a3a3a 100%);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-check {
-            background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
-            color: #fff;
-            border: 1px solid #00e5ff;
-        }
-
-        .btn-check:hover:not(:disabled) {
-            background: linear-gradient(135deg, #00d4e8 0%, #00b5c7 100%);
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-        }
-
-        .btn-call {
-            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
-            color: #fff;
-            border: 1px solid #66bb6a;
-        }
-
-        .btn-call:hover:not(:disabled) {
-            background: linear-gradient(135deg, #5cbf60 0%, #489e4c 100%);
-            box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
-        }
-
-        .btn-raise {
-            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-            color: #fff;
-            border: 1px solid #ffa726;
-        }
-
-        .btn-raise:hover:not(:disabled) {
-            background: linear-gradient(135deg, #ffaa30 0%, #ff8c00 100%);
-            box-shadow: 0 0 15px rgba(255, 152, 0, 0.3);
-        }
-
-        .btn-allin {
-            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
-            color: #fff;
-            border: 1px solid #ef5350;
-            animation: allinPulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes allinPulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(244, 67, 54, 0.3); }
-            50% { box-shadow: 0 0 25px rgba(244, 67, 54, 0.6); }
-        }
-
-        .btn-allin:hover:not(:disabled) {
-            background: linear-gradient(135deg, #ff5545 0%, #e53935 100%);
-        }
-
-        .btn-deal {
-            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
-            color: #000;
-            border: 1px solid #ffe44d;
-            font-size: 1em;
-            padding: 12px 30px;
-        }
-
-        .btn-deal:hover:not(:disabled) {
-            background: linear-gradient(135deg, #ffe44d 0%, #ffaa00 100%);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        }
-
-        /* Bet controls */
-        .bet-controls {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 5px;
-        }
-
-        .bet-slider {
-            -webkit-appearance: none;
-            width: 100px;
-            height: 6px;
-            border-radius: 3px;
-            background: linear-gradient(90deg, #4caf50, #ff9800, #f44336);
-            outline: none;
-        }
-
-        .bet-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #fff;
-            border: 2px solid #ffd700;
-            cursor: pointer;
-            box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
-        }
-
-        .bet-amount {
-            color: #ffd700;
-            font-size: 0.8em;
-            min-width: 40px;
-            text-align: center;
-        }
-
-        /* Message log */
-        .message-log {
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin: 8px 0;
-            border: 1px solid rgba(0, 255, 255, 0.2);
-            max-height: 100px;
-            overflow-y: auto;
-            font-size: 0.65em;
-        }
-
-        .message-log::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .message-log::-webkit-scrollbar-thumb {
-            background: rgba(0, 255, 255, 0.3);
-            border-radius: 2px;
-        }
-
-        .message-log .msg {
-            padding: 2px 0;
-            color: #aaa;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .message-log .msg:last-child {
-            border-bottom: none;
-        }
-
-        .message-log .msg.highlight {
-            color: #ffd700;
-        }
-
-        .message-log .msg.win {
-            color: #4caf50;
-        }
-
-        /* Result overlay */
-        .result-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 500;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .result-overlay.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .result-box {
-            background: linear-gradient(145deg, rgba(20, 20, 50, 0.95) 0%, rgba(10, 10, 30, 0.95) 100%);
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            border: 2px solid #ffd700;
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
-            max-width: 90%;
-        }
-
-        .result-box h2 {
-            font-size: 1.8em;
-            margin-bottom: 10px;
-        }
-
-        .result-box.win h2 {
-            color: #ffd700;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        }
-
-        .result-box.lose h2 {
-            color: #f44336;
-        }
-
-        .result-box .result-details {
-            color: #aaa;
-            font-size: 0.8em;
-            margin: 10px 0;
-        }
-
-        .result-box .btn {
-            margin-top: 15px;
-        }
-
-        /* Neon text effects */
-        .neon-text {
-            text-shadow:
-                0 0 7px #fff,
-                0 0 10px #fff,
-                0 0 21px #fff,
-                0 0 42px #0fa,
-                0 0 82px #0fa;
-        }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            .game-header h1 { font-size: 1.4em; }
-            .players-row { flex-direction: column; align-items: center; }
-            .player-area { min-width: 90%; max-width: 100%; }
-            .card { width: 36px; height: 52px; }
-            .card-rank { font-size: 12px; }
-            .card-suit { font-size: 14px; }
-            .btn { padding: 8px 14px; font-size: 0.7em; }
-            .poker-table { padding: 10px; }
-        }
-
-        .game-status {
-            text-align: center;
-            padding: 5px;
-            font-size: 0.8em;
-            color: #00ffff;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-            min-height: 1.5em;
-        }
-
-        .winner-cards .card-face {
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        @media(max-width:480px){
+            .poker-table{height:330px;}
+            .card{width:32px;height:46px;}
+            .card.face-up .crank{font-size:11px;}
+            .card.face-up .csuit{font-size:12px;}
+            .carea{gap:3px;}
         }
     </style>
 </head>
 <body>
-    <div class="cyber-grid"></div>
-    <div class="crt-overlay"></div>
-
-    <div class="game-container">
-        <div class="game-header">
-            <h1>梭哈 SHOW HAND</h1>
-            <div class="subtitle">FIVE-CARD STUD POKER</div>
-        </div>
-
-        <div class="poker-table">
-            <div class="pot-display">
-                <div class="label">POT</div>
-                <div class="amount" id="potAmount">0</div>
-            </div>
-
-            <div class="game-status" id="gameStatus">点击"开始游戏"开始梭哈！</div>
-
-            <div class="players-row" id="playersRow">
-                <!-- Players rendered by JS -->
-            </div>
-        </div>
-
-        <div class="action-panel" id="actionPanel">
-            <button class="btn btn-deal" id="btnDeal" onclick="startNewGame()">开始游戏</button>
-        </div>
-
-        <div class="message-log" id="messageLog">
-            <div class="msg">欢迎来到梭哈游戏！</div>
-        </div>
+<div class="casino-bg"></div>
+<div class="top-bar">
+    <div class="title">🃏 梭哈 Show Hand</div>
+    <div class="info">
+        <span>💰 底注: <b id="aDisp">100</b></span>
+        <span>🎯 第 <b id="rDisp">1</b> 局</span>
     </div>
-
-    <div class="result-overlay" id="resultOverlay">
-        <div class="result-box" id="resultBox">
-            <h2 id="resultTitle"></h2>
-            <div class="result-details" id="resultDetails"></div>
-            <button class="btn btn-deal" onclick="closeResult(); startNewGame();">再来一局</button>
-            <button class="btn btn-fold" onclick="closeResult()">返回</button>
+</div>
+<div class="table-wrap">
+    <div class="poker-table">
+        <div class="pot-area">
+            <div class="pot-label">底池 Pot</div>
+            <div class="pot-amount" id="pAmt">0</div>
+            <div class="gmsg" id="gMsg">欢迎来到梭哈！</div>
         </div>
+        <div class="seat s-top"    id="seat-1"><div class="pinfo"><div class="pname">🤖 电脑A</div><div class="pchips">💰 <span class="ci">10000</span></div><div class="pbet">本轮: <span class="bi">0</span></div><div class="pstatus"></div></div><div class="carea" id="c-1"></div></div>
+        <div class="seat s-left"   id="seat-2"><div class="pinfo"><div class="pname">🤖 电脑B</div><div class="pchips">💰 <span class="ci">10000</span></div><div class="pbet">本轮: <span class="bi">0</span></div><div class="pstatus"></div></div><div class="carea" id="c-2"></div></div>
+        <div class="seat s-right"  id="seat-3"><div class="pinfo"><div class="pname">🤖 电脑C</div><div class="pchips">💰 <span class="ci">10000</span></div><div class="pbet">本轮: <span class="bi">0</span></div><div class="pstatus"></div></div><div class="carea" id="c-3"></div></div>
+        <div class="seat s-bottom" id="seat-0"><div class="carea" id="c-0"></div><div class="pinfo"><div class="pname">😎 你</div><div class="pchips">💰 <span class="ci">10000</span></div><div class="pbet">本轮: <span class="bi">0</span></div><div class="pstatus"></div></div></div>
     </div>
+</div>
+<div class="actbar disabled" id="aBar">
+    <button class="btn btn-fold"  id="bFold"  onclick="pAct('fold')">弃牌</button>
+    <button class="btn btn-check" id="bCheck" onclick="pAct('check')">过牌</button>
+    <button class="btn btn-call"  id="bCall"  onclick="pAct('call')">跟注</button>
+    <div class="rctrl">
+        <input type="range" id="rSlider" min="0" max="10000" step="100" value="0" oninput="updR()">
+        <span class="rv" id="rVal">0</span>
+    </div>
+    <button class="btn btn-raise" id="bRaise" onclick="pAct('raise')">加注</button>
+    <button class="btn btn-allin" id="bAllin" onclick="pAct('allin')">全押</button>
+</div>
+<div class="ovl" id="sOvl">
+    <div class="ovl-box">
+        <h2>🃏 梭哈 Show Hand</h2>
+        <p>经典扑克 — 2 张暗牌 + 3 张明牌，与 3 位 AI 对决</p>
+        <div style="margin:16px 0;text-align:left;background:rgba(255,255,255,0.05);padding:12px;border-radius:10px;font-size:0.8em;color:#aaa;line-height:1.9;">
+            <b style="color:#f5d76e;">规则：</b><br>
+            • 每人先下底注 → 发 2 张暗牌 → 第一轮下注<br>
+            • 发 1 张明牌 → 下注 → 再发 1 张明牌 → 下注 → 再发 1 张明牌 → 最后一轮下注<br>
+            • 比大小，胜者赢得底池<br><br>
+            <b style="color:#f5d76e;">牌型（大→小）：</b><br>
+            同花顺 &gt; 四条 &gt; 葫芦 &gt; 同花 &gt; 顺子 &gt; 三条 &gt; 两对 &gt; 一对 &gt; 高牌
+        </div>
+        <button class="btn btn-start" onclick="startGame()">🎰 开始游戏</button>
+    </div>
+</div>
+<div class="ovl hidden" id="eOvl">
+    <div class="ovl-box">
+        <h2 id="eTitle">🏆 结算</h2>
+        <div class="rdet" id="eDet"></div>
+        <button class="btn btn-newgame" onclick="nextRound()">下一局</button>
+    </div>
+</div>
+<script>
+/* ============================================================
+   梭哈 Show Hand — 单文件完整实现
+   ============================================================ */
 
-    <script>
-    // ===================== Game State =====================
-    const SUITS = ['♠', '♥', '♣', '♦'];
-    const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-    const RANK_VALUES = {};
-    RANKS.forEach((r, i) => RANK_VALUES[r] = i + 2);
+const SUITS=['♠','♥','♦','♣'], RANKS=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const V={'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14};
+const HN=['','高牌','一对','两对','三条','顺子','同花','葫芦','四条','同花顺'];
+const ANTE=100, NP=4;
+const POS=['s-bottom','s-top','s-left','s-right'];
+const NAMES=['😎 你','🤖 电脑A','🤖 电脑B','🤖 电脑C'];
 
-    const HAND_RANKS = {
-        HIGH_CARD: 0,
-        ONE_PAIR: 1,
-        TWO_PAIR: 2,
-        THREE_OF_A_KIND: 3,
-        STRAIGHT: 4,
-        FLUSH: 5,
-        FULL_HOUSE: 6,
-        FOUR_OF_A_KIND: 7,
-        STRAIGHT_FLUSH: 8,
-        ROYAL_FLUSH: 9
-    };
+let D, P, pot, rnd, phase, ci, mb;
+// phase = 'idle' | 'deal' | 'bet' | 'result'
+// ci = current player index
+// mb = max bet in current round
 
-    const HAND_NAMES = {
-        0: '高牌',
-        1: '一对',
-        2: '两对',
-        3: '三条',
-        4: '顺子',
-        5: '同花',
-        6: '葫芦',
-        7: '四条',
-        8: '同花顺',
-        9: '皇家同花顺'
-    };
+/* ---------- 牌组 ---------- */
+function mkD(){ let d=[]; for(let s of SUITS) for(let r of RANKS) d.push({s,r,v:V[r]}); return d; }
+function sh(a){ for(let i=a.length-1;i>0;i--){let j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];} return a; }
 
-    const INITIAL_CHIPS = 1000;
-    const ANTE = 10;
-    const HUMAN_PLAYER = 0;
+/* ---------- 手牌评估 (5张牌) ---------- */
+function ev(cards){
+    if(cards.length<5) return {rk:1,k:[]};
+    const vs=cards.map(c=>c.v).sort((a,b)=>a-b);
+    const ss=cards.map(c=>c.s);
+    const fl=ss.every(s=>s===ss[0]);
+    const uq=[...new Set(vs)].sort((a,b)=>a-b);
+    let st=false, shi=0;
+    if(uq.length===5){
+        if(uq[4]-uq[0]===4){st=true;shi=uq[4];}
+        if(uq[0]===2&&uq[1]===3&&uq[2]===4&&uq[3]===5&&uq[4]===14){st=true;shi=5;}
+    }
+    const ct={}; for(let v of vs) ct[v]=(ct[v]||0)+1;
+    const gr=Object.entries(ct).map(([v,c])=>({v:+v,c})).sort((a,b)=>b.c-a.c||b.v-a.v);
+    if(fl&&st)  return {rk:9,k:[shi]};
+    if(gr[0].c===4) return {rk:8,k:[gr[0].v,gr[1].v]};
+    if(gr[0].c===3&&gr[1]&&gr[1].c===2) return {rk:7,k:[gr[0].v,gr[1].v]};
+    if(fl) return {rk:6,k:vs.slice().reverse()};
+    if(st) return {rk:5,k:[shi]};
+    if(gr[0].c===3){ const k=gr.filter(g=>g.c===1).map(g=>g.v).sort((a,b)=>b-a); return {rk:4,k:[gr[0].v,...k]}; }
+    const pairs=gr.filter(g=>g.c===2);
+    if(pairs.length===2){ const pv=pairs.map(g=>g.v).sort((a,b)=>b-a); const k=gr.find(g=>g.c===1).v; return {rk:3,k:[...pv,k]}; }
+    if(gr[0].c===2){ const k=gr.filter(g=>g.c===1).map(g=>g.v).sort((a,b)=>b-a); return {rk:2,k:[gr[0].v,...k]}; }
+    return {rk:1,k:vs.slice().reverse()};
+}
+function cmpH(a,b){ if(a.rk!==b.rk) return a.rk-b.rk; for(let i=0;i<Math.min(a.k.length,b.k.length);i++) if(a.k[i]!==b.k[i]) return a.k[i]-b.k[i]; return 0; }
 
-    let deck = [];
-    let players = [];
-    let pot = 0;
-    let currentRound = 0; // 0: hole card, 1: 2nd card, 2: 3rd card, 3: 4th card, 4: 5th card
-    let currentPlayer = 0;
-    let currentMaxBet = 0;
-    let roundBets = [];
-    let gameInProgress = false;
-    let dealerPosition = 0;
-    let messages = [];
-    let bettingStartPlayer = -1; // Track where betting round started
-    let bettingEndPlayer = -1; // Last raiser; round ends when action returns here
-    let actedThisRound = 0; // Count of actions this round
+/* ---------- 工具 ---------- */
+const $=id=>document.getElementById(id);
+function msg(t){ $('gMsg').textContent=t; }
+function updUI(){
+    $('pAmt').textContent=pot; $('rDisp').textContent=rnd;
+    for(let i=0;i<NP;i++){
+        const p=P[i], se=$('seat-'+i);
+        se.className='seat '+POS[i];
+        if(p.fd) se.classList.add('folded');
+        if(phase==='bet'&&i===ci) se.classList.add('cur-turn');
+        se.querySelector('.ci').textContent=p.cp;
+        se.querySelector('.bi').textContent=p.br; // round bet
+        const st=se.querySelector('.pstatus');
+        st.textContent=p.fd?'已弃牌':p.ai?'全押':'';
+        rCards(i);
+    }
+}
+function rCards(i){
+    const c=$('c-'+i), p=P[i]; c.innerHTML='';
+    for(let j=0;j<p.cd.length;j++){
+        const cd=p.cd[j], el=document.createElement('div');
+        el.className='card deal-anim';
+        const show=(i===0)||j>=2; // 人类全可见，AI仅明牌可见
+        if(show&&!p.fd){
+            el.classList.add('face-up');
+            const rd=cd.s==='♥'||cd.s==='♦';
+            el.classList.add(rd?'red':'black');
+            el.innerHTML=`<span class="ctl">${cd.s}<br>${cd.r}</span><span class="crank">${cd.r}</span><span class="csuit">${cd.s}</span><span class="cbr">${cd.s}<br>${cd.r}</span>`;
+        } else { el.classList.add('face-down'); }
+        c.appendChild(el);
+    }
+}
+function setAB(on){ $('aBar').classList.toggle('disabled',!on); }
+function updBtns(){
+    const p=P[0], tc=mb-p.br;
+    $('bCheck').style.display=tc<=0?'inline-block':'none';
+    $('bCall').style.display=tc>0?'inline-block':'none';
+    $('bCall').textContent=`跟注 ${Math.min(tc,p.cp)}`;
+    const sl=$('rSlider');
+    const minR=mb+ANTE, maxR=p.br+p.cp;
+    sl.min=Math.min(minR,maxR); sl.max=Math.max(maxR,minR); sl.value=Math.min(minR,maxR);
+    updR();
+    $('bRaise').disabled=p.cp<=tc;
+    $('bAllin').disabled=p.cp<=0;
+}
+function updR(){ $('rVal').textContent=$('rSlider').value; }
 
-    // ===================== Deck =====================
-    function createDeck() {
-        let d = [];
-        for (let s of SUITS) {
-            for (let r of RANKS) {
-                d.push({ rank: r, suit: s });
+/* ---------- 初始化 ---------- */
+function initP(){
+    P=[0,1,2,3].map(i=>({id:i,nm:NAMES[i],cp:10000,cd:[],br:0,fd:false,ai:false,dn:false}));
+    // dn = done acting this round
+}
+
+/* ---------- 玩家操作 ---------- */
+function pAct(act){
+    if(phase!=='bet'||ci!==0) return;
+    execAct(P[0],act);
+    setAB(false); updUI();
+    setTimeout(()=>nextTurn(),500);
+}
+
+function execAct(p,act){
+    const tc=mb-p.br;
+    switch(act){
+        case 'fold': p.fd=true; p.dn=true; msg(`${p.nm} 弃牌`); break;
+        case 'check': p.dn=true; msg(`${p.nm} 过牌`); break;
+        case 'call':{
+            const a=Math.min(tc,p.cp);
+            p.cp-=a; p.br+=a; pot+=a;
+            if(p.cp===0) p.ai=true;
+            p.dn=true; msg(`${p.nm} 跟注 ${a}`);
+            break;
+        }
+        case 'raise':{
+            let total=parseInt($('rSlider').value);
+            total=Math.max(mb+ANTE, Math.min(total, p.br+p.cp));
+            const add=Math.max(0,total-p.br);
+            if(add<=tc){ execAct(p,'call'); return; } // not actually a raise
+            p.cp-=add; p.br=total; pot+=add; mb=total;
+            if(p.cp===0) p.ai=true;
+            // Reset others who already acted — they need to respond
+            for(let q of P) if(q.id!==p.id&&!q.fd&&!q.ai) q.dn=false;
+            p.dn=true; msg(`${p.nm} 加注到 ${p.br}`);
+            break;
+        }
+        case 'allin':{
+            const a=p.cp;
+            pot+=a; p.br+=a; p.cp=0; p.ai=true; p.dn=true;
+            if(p.br>mb){
+                mb=p.br;
+                for(let q of P) if(q.id!==p.id&&!q.fd&&!q.ai) q.dn=false;
             }
+            msg(`${p.nm} 全押! +${a}`);
+            break;
         }
-        return d;
+    }
+}
+
+/* ---------- 下注轮次 ---------- */
+function nextTurn(){
+    // Find next active player who hasn't acted
+    const actives=P.filter(p=>!p.fd);
+    if(actives.length<=1){ resolve(); return; }
+
+    // Check if all non-folded, non-allin players have acted and bets are equal
+    const needAct=actives.filter(p=>!p.ai&&!p.dn);
+    if(needAct.length===0){
+        const nonAI=actives.filter(p=>!p.ai);
+        if(nonAI.length<=1||actives.every(p=>p.br===mb||p.ai)){
+            resolve(); return;
+        }
     }
 
-    function shuffleDeck(d) {
-        for (let i = d.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [d[i], d[j]] = [d[j], d[i]];
-        }
-        return d;
+    // Find next player
+    let found=false;
+    for(let i=1;i<=NP;i++){
+        const idx=(ci+i)%NP;
+        const p=P[idx];
+        if(!p.fd&&!p.ai&&!p.dn){ ci=idx; found=true; break; }
     }
+    if(!found){ resolve(); return; }
 
-    function dealCard() {
-        return deck.pop();
-    }
+    updUI();
+    if(P[ci].ai){ setTimeout(()=>aiTurn(),600); }
+    else { msg('轮到你了！请下注'); setAB(true); updBtns(); }
+}
 
-    // ===================== Hand Evaluation =====================
-    function cardValue(card) {
-        return RANK_VALUES[card.rank];
-    }
+/* ---------- AI 决策 ---------- */
+function aiTurn(){
+    const p=P[ci];
+    if(p.fd||p.ai){ nextTurn(); return; }
 
-    function isRedSuit(suit) {
-        return suit === '♥' || suit === '♦';
-    }
+    const tc=mb-p.br;
+    const h=p.cd.length>=5?ev(p.cd):estH(p.cd);
+    const str=h.rk/9;
 
-    function evaluateHand(cards) {
-        if (cards.length === 0) return null;
+    // Check for pairs in hand
+    const rc={}; for(let c of p.cd) rc[c.r]=(rc[c.r]||0)+1;
+    const hasPair=Object.values(rc).some(v=>v>=2);
+    const hi=p.cd.length?Math.max(...p.cd.map(c=>c.v)):0;
 
-        const values = cards.map(c => cardValue(c)).sort((a, b) => a - b);
-        const suits = cards.map(c => c.suit);
+    let act;
+    const rand=Math.random();
 
-        const isFlush = suits.every(s => s === suits[0]);
-
-        // Check straight
-        let isStraight = false;
-        let straightHigh = values[values.length - 1];
-
-        // Normal straight check
-        let consecutive = true;
-        for (let i = 1; i < values.length; i++) {
-            if (values[i] !== values[i - 1] + 1) {
-                consecutive = false;
-                break;
-            }
-        }
-        if (consecutive) {
-            isStraight = true;
-            straightHigh = values[values.length - 1];
-        }
-
-        // Ace-low straight (A-2-3-4-5)
-        if (!isStraight && values.length === 5) {
-            const uniqueVals = [...new Set(values)];
-            if (uniqueVals.length === 5 && values[4] === 14 && values[0] === 2 && values[3] === 5) {
-                isStraight = true;
-                straightHigh = 5; // Ace counts as 1
-            }
-        }
-
-        // Count rank frequencies
-        const counts = {};
-        values.forEach(v => counts[v] = (counts[v] || 0) + 1);
-        const countGroups = Object.entries(counts)
-            .map(([val, count]) => ({ val: parseInt(val), count }))
-            .sort((a, b) => b.count - a.count || b.val - a.val);
-
-        const maxCount = countGroups[0].count;
-        const groupCount = countGroups.length;
-
-        let handRank, kickers;
-
-        if (isFlush && isStraight) {
-            if (straightHigh === 14) {
-                handRank = HAND_RANKS.ROYAL_FLUSH;
-            } else {
-                handRank = HAND_RANKS.STRAIGHT_FLUSH;
-            }
-            kickers = [straightHigh];
-        } else if (maxCount === 4) {
-            handRank = HAND_RANKS.FOUR_OF_A_KIND;
-            kickers = countGroups.map(g => g.val);
-        } else if (maxCount === 3 && groupCount === 2) {
-            handRank = HAND_RANKS.FULL_HOUSE;
-            kickers = countGroups.map(g => g.val);
-        } else if (isFlush) {
-            handRank = HAND_RANKS.FLUSH;
-            kickers = [...values].reverse();
-        } else if (isStraight) {
-            handRank = HAND_RANKS.STRAIGHT;
-            kickers = [straightHigh];
-        } else if (maxCount === 3) {
-            handRank = HAND_RANKS.THREE_OF_A_KIND;
-            kickers = countGroups.map(g => g.val);
-        } else if (maxCount === 2 && groupCount === 3) {
-            handRank = HAND_RANKS.TWO_PAIR;
-            kickers = countGroups.map(g => g.val);
-        } else if (maxCount === 2) {
-            handRank = HAND_RANKS.ONE_PAIR;
-            kickers = countGroups.map(g => g.val);
+    if(tc<=0){
+        // Can check or bet
+        if(str>0.5||(hasPair&&rand>0.25)){
+            const betAmt=ANTE*Math.floor(1+str*3.5);
+            const nb=Math.min(mb+betAmt, p.br+p.cp);
+            if(nb>mb && p.cp>ANTE){
+                // raise
+                const add=Math.max(ANTE,nb-p.br);
+                const actual=Math.min(add,p.cp);
+                p.cp-=actual; p.br+=actual; pot+=actual;
+                mb=p.br;
+                if(p.cp===0) p.ai=true;
+                for(let q of P) if(q.id!==p.id&&!q.fd&&!q.ai) q.dn=false;
+                p.dn=true; msg(`${p.nm} 加注到 ${p.br}`);
+            } else { p.dn=true; msg(`${p.nm} 过牌`); }
+        } else { p.dn=true; msg(`${p.nm} 过牌`); }
+    } else {
+        const pOdds=tc/(pot+tc+1);
+        if(str>0.6){
+            // Strong hand - raise or call
+            const raiseAmt=ANTE*Math.floor(1+str*5);
+            const nb=Math.min(mb+raiseAmt, p.br+p.cp);
+            if(nb>mb&&p.cp>tc){
+                const add=Math.max(tc+ANTE, nb-p.br);
+                const actual=Math.min(add,p.cp);
+                if(actual>tc){
+                    p.cp-=actual; p.br+=actual; pot+=actual;
+                    mb=p.br;
+                    if(p.cp===0) p.ai=true;
+                    for(let q of P) if(q.id!==p.id&&!q.fd&&!q.ai) q.dn=false;
+                    p.dn=true; msg(`${p.nm} 加注到 ${p.br}`);
+                } else { doAICall(p,tc); }
+            } else { doAICall(p,tc); }
+        } else if(str>0.25||hasPair||pOdds<0.4||rand>0.7){
+            doAICall(p,tc);
         } else {
-            handRank = HAND_RANKS.HIGH_CARD;
-            kickers = [...values].reverse();
+            p.fd=true; p.dn=true; msg(`${p.nm} 弃牌`);
         }
+    }
+    updUI();
+    setTimeout(()=>nextTurn(),500);
+}
 
-        return {
-            rank: handRank,
-            name: HAND_NAMES[handRank],
-            kickers: kickers
-        };
+function doAICall(p,tc){
+    const a=Math.min(tc,p.cp);
+    p.cp-=a; p.br+=a; pot+=a;
+    if(p.cp===0) p.ai=true;
+    p.dn=true;
+    msg(`${p.nm} 跟注 ${a}`);
+}
+
+function estH(cards){
+    if(!cards||!cards.length) return {rk:1,k:[]};
+    const rc={}; for(let c of cards) rc[c.r]=(rc[c.r]||0)+1;
+    const mx=Math.max(...Object.values(rc));
+    if(mx>=4) return {rk:8,k:[]};
+    if(mx===3){
+        const n2=Object.values(rc).filter(v=>v===2).length;
+        return {rk:n2?7:4,k:[]};
+    }
+    const np=Object.values(rc).filter(v=>v===2).length;
+    if(np>=2) return {rk:3,k:[]};
+    if(np===1) return {rk:2,k:[]};
+    const hi=Math.max(...cards.map(c=>c.v));
+    return {rk: hi>=12?2:1, k:hi>=12?[hi]:[] };
+}
+
+/* ---------- 阶段推进 ---------- */
+function resolve(){
+    // Round bets reset
+    for(let p of P){ p.br=0; p.dn=false; }
+    mb=0;
+
+    const act=P.filter(p=>!p.fd);
+    if(act.length<=1){ endRound(); return; }
+
+    const notAI=act.filter(p=>!p.ai);
+    if(notAI.length<=1){ dealRest(); return; }
+
+    // Deal next card
+    dealNext();
+}
+
+function dealNext(){
+    for(let p of P) if(!p.fd&&p.cd.length<5) p.cd.push(D.pop());
+    updUI();
+
+    // Determine betting phase name
+    const cl=P[0].cd.length;
+    if(cl===3) phase='bet'; else if(cl===4) phase='bet'; else if(cl===5) phase='bet';
+    else { endRound(); return; }
+
+    setTimeout(()=>startBetRound(),500);
+}
+
+function dealRest(){
+    while(P.some(p=>!p.fd&&p.cd.length<5))
+        for(let p of P) if(!p.fd&&p.cd.length<5) p.cd.push(D.pop());
+    updUI(); setTimeout(()=>endRound(),700);
+}
+
+function startBetRound(){
+    // Determine first bettor — best visible hand
+    ci=findFirst();
+    updUI();
+    if(P[ci].ai){ setTimeout(()=>aiTurn(),600); }
+    else { msg('轮到你了！请下注'); setAB(true); updBtns(); }
+}
+
+function findFirst(){
+    let best=-1, bs=-1;
+    for(let i=0;i<NP;i++){
+        if(P[i].fd) continue;
+        const vis=P[i].cd.filter((_,j)=>j>=2);
+        if(!vis.length){ if(best<0) best=i; continue; }
+        const hi=Math.max(...vis.map(c=>c.v));
+        // Check pairs among visible
+        const vc={}; for(let c of vis) vc[c.r]=(vc[c.r]||0)+1;
+        const mxv=Object.values(vc).length?Math.max(...Object.values(vc)):0;
+        const sc=mxv*10000+hi;
+        if(sc>bs){ bs=sc; best=i; }
+    }
+    return best>=0?best:0;
+}
+
+/* ---------- 结算 ---------- */
+function endRound(){
+    phase='result'; setAB(false);
+
+    const act=P.filter(p=>!p.fd);
+    if(act.length===1){
+        act[0].cp+=pot; updUI();
+        setTimeout(()=>showRes('🎉 无人应战',`${act[0].nm} 赢得底池 ${pot} 筹码`,[]),800);
+        return;
     }
 
-    function compareHands(handA, handB) {
-        if (!handA) return -1;
-        if (!handB) return 1;
+    let results=act.map(p=>({p,h:ev(p.cd)}));
+    results.sort((a,b)=>cmpH(b.h,a.h));
+    const bestH=results[0].h;
+    const winners=results.filter(r=>cmpH(r.h,bestH)===0).map(r=>r.p);
+    const share=Math.floor(pot/winners.length);
+    for(let w of winners) w.cp+=share;
 
-        if (handA.rank !== handB.rank) {
-            return handA.rank - handB.rank;
-        }
+    const wn=winners.map(w=>w.nm).join(' 和 ');
+    msg(`${wn} 获胜！+${pot}`);
+    updUI();
 
-        for (let i = 0; i < Math.min(handA.kickers.length, handB.kickers.length); i++) {
-            if (handA.kickers[i] !== handB.kickers[i]) {
-                return handA.kickers[i] - handB.kickers[i];
-            }
-        }
-        return 0;
-    }
-
-    // ===================== Player Management =====================
-    function initPlayers() {
-        const names = ['你 (Player)', '电脑 A', '电脑 B', '电脑 C'];
-        players = names.map((name, i) => ({
-            name: name,
-            chips: INITIAL_CHIPS,
-            cards: [],
-            folded: false,
-            isHuman: i === HUMAN_PLAYER,
-            currentBet: 0,
-            totalBet: 0
-        }));
-    }
-
-    function activePlayers() {
-        return players.filter(p => !p.folded);
-    }
-
-    function activePlayerIndices() {
-        return players.map((p, i) => ({ player: p, index: i })).filter(({ player }) => !player.folded);
-    }
-
-    // ===================== Rendering =====================
-    function renderCardHTML(card, faceUp = true, isNew = false) {
-        const isRed = isRedSuit(card.suit);
-        const colorClass = isRed ? 'red' : 'black';
-        const newClass = isNew ? 'new-card' : '';
-
-        if (!faceUp) {
-            return `<div class="card ${newClass}"><div class="card-back"></div></div>`;
-        }
-
-        return `<div class="card ${newClass}">
-            <div class="card-face ${colorClass}">
-                <div class="card-corner top">${card.rank}<br>${card.suit}</div>
-                <div class="card-rank">${card.rank}</div>
-                <div class="card-suit">${card.suit}</div>
-                <div class="card-corner bottom">${card.rank}<br>${card.suit}</div>
-            </div>
-        </div>`;
-    }
-
-    function renderPlayers() {
-        const container = document.getElementById('playersRow');
-        let html = '';
-
-        players.forEach((p, i) => {
-            const isActive = (i === currentPlayer && gameInProgress);
-            const foldedClass = p.folded ? 'folded' : '';
-            const activeClass = isActive ? 'active' : '';
-            const humanClass = p.isHuman ? 'human' : '';
-
-            let cardsHTML = '';
-            p.cards.forEach((card, ci) => {
-                // Hole card (first card) is face down for non-human players
-                const isHoleCard = ci === 0;
-                const faceUp = p.isHuman || !isHoleCard;
-                cardsHTML += renderCardHTML(card, faceUp);
-            });
-
-            // Show hand type if round is complete and player hasn't folded
-            let handTypeHTML = '';
-            if (p.cards.length > 0 && !p.folded) {
-                const hand = evaluateHand(p.cards);
-                if (hand && (currentRound >= 4 || !gameInProgress)) {
-                    handTypeHTML = `<div class="player-hand-type">${hand.name}</div>`;
-                }
-            }
-
-            html += `<div class="player-area ${foldedClass} ${activeClass} ${humanClass}" id="player-${i}">
-                <div class="player-info">
-                    <span class="player-name">${p.name}</span>
-                    <span class="player-chips">💰 ${p.chips}</span>
-                </div>
-                <div class="cards-container">${cardsHTML}</div>
-                <div class="player-bet">${p.currentBet > 0 ? '下注: ' + p.currentBet : ''}</div>
-                ${handTypeHTML}
+    setTimeout(()=>{
+        const det=results.map((r,i)=>{
+            const isW=winners.includes(r.p);
+            return `<div class="${isW?'wl':''}" style="margin:4px 0;">
+                ${r.p.nm}: [${r.p.cd.map(c=>c.s+c.r).join(' ')}]
+                <span class="ht">→ ${HN[r.h.rk]}</span>
             </div>`;
-        });
+        }).join('');
+        showRes('🏆 本局结算',
+            `${wn} 获胜！<br><b style="color:#2ecc71;">${HN[bestH.rk]}</b> 赢得 ${pot} 筹码`, det);
+    },1200);
+}
 
-        container.innerHTML = html;
+function showRes(title,body,det){
+    $('eTitle').textContent=title;
+    $('eDet').innerHTML=`<p>${body}</p>${det?'<hr style="border-color:rgba(255,255,255,0.1);margin:8px 0;">'+det:''}`;
+    $('eOvl').classList.remove('hidden');
+    phase='ended';
+}
+
+function nextRound(){
+    $('eOvl').classList.add('hidden');
+    rnd++;
+    startNew();
+}
+
+/* ---------- 主流程 ---------- */
+function startGame(){
+    $('sOvl').classList.add('hidden');
+    initP(); rnd=1; startNew();
+}
+
+function startNew(){
+    if(P[0].cp<=0){
+        showRes('💸 游戏结束','你的筹码已用完！','');
+        return;
     }
 
-    function updatePot() {
-        document.getElementById('potAmount').textContent = pot;
+    D=sh(mkD()); pot=0; mb=0; phase='deal';
+    for(let p of P){ p.cd=[]; p.br=0; p.fd=false; p.ai=false; p.dn=false; }
+
+    // Ante
+    for(let p of P){
+        if(p.cp>0){ const a=Math.min(ANTE,p.cp); p.cp-=a; pot+=a; }
+        else p.fd=true;
     }
 
-    function setStatus(msg) {
-        document.getElementById('gameStatus').textContent = msg;
-    }
-
-    function addMessage(msg, type = '') {
-        messages.push({ text: msg, type });
-        const log = document.getElementById('messageLog');
-        log.innerHTML += `<div class="msg ${type}">${msg}</div>`;
-        log.scrollTop = log.scrollHeight;
-    }
-
-    // ===================== Game Flow =====================
-    function startNewGame() {
-        // Check if anyone is out of chips
-        const humanPlayer = players[HUMAN_PLAYER];
-        if (!humanPlayer || humanPlayer.chips <= 0) {
-            initPlayers();
-        }
-
-        // Remove broke players
-        players = players.filter(p => p.chips > 0);
-        if (players.length < 2) {
-            initPlayers();
-        }
-
-        // Reset
-        deck = shuffleDeck(createDeck());
-        pot = 0;
-        currentRound = 0;
-        currentMaxBet = 0;
-        messages = [];
-        document.getElementById('messageLog').innerHTML = '';
-
-        players.forEach(p => {
-            p.cards = [];
-            p.folded = false;
-            p.currentBet = 0;
-            p.totalBet = 0;
-        });
-
-        // Ante
-        const activeIndices = players.map((p, i) => i);
-        activeIndices.forEach(i => {
-            const ante = Math.min(ANTE, players[i].chips);
-            players[i].chips -= ante;
-            players[i].totalBet += ante;
-            pot += ante;
-        });
-
-        addMessage(`===== 新一局开始！每家底注 ${ANTE} =====`, 'highlight');
-
-        // Deal hole cards (1 face down each)
-        activeIndices.forEach(i => {
-            players[i].cards.push(dealCard());
-        });
-
-        // Deal 2nd card (face up)
-        activeIndices.forEach(i => {
-            players[i].cards.push(dealCard());
-        });
-
-        currentRound = 1;
-        gameInProgress = true;
-
-        // Determine first player for this round (player with best showing)
-        currentPlayer = findFirstPlayer();
-
-        addMessage('发牌完毕，开始下注！');
-        setStatus('你的回合 - 请选择操作');
-        renderPlayers();
-        updatePot();
-
-        startBettingRound();
-    }
-
-    function findFirstPlayer() {
-        const active = activePlayerIndices();
-        if (active.length <= 1) return active[0]?.index ?? 0;
-
-        // Find player with best visible cards (all face-up cards)
-        let bestIdx = active[0].index;
-        let bestHand = null;
-
-        active.forEach(({ player, index }) => {
-            const faceUpCards = player.cards.slice(1); // Skip hole card
-            if (faceUpCards.length > 0) {
-                const hand = evaluateHand(faceUpCards);
-                if (!bestHand || compareHands(hand, bestHand) > 0) {
-                    bestHand = hand;
-                    bestIdx = index;
-                }
-            }
-        });
-
-        return bestIdx;
-    }
-
-    function startBettingRound() {
-        const active = activePlayerIndices();
-
-        if (active.length <= 1) {
-            awardPot();
-            return;
-        }
-
-        currentMaxBet = 0;
-        players.forEach(p => p.currentBet = 0);
-        currentPlayer = findFirstPlayer();
-        bettingStartPlayer = currentPlayer;
-        bettingEndPlayer = currentPlayer;
-        actedThisRound = 0;
-
-        const remaining = active.filter(({ player }) => !player.folded);
-        if (remaining.length === 1) {
-            awardPot();
-            return;
-        }
-
-        if (!players[currentPlayer].isHuman) {
-            aiTurn();
-        } else {
-            showHumanActions();
-        }
-    }
-
-    function showHumanActions() {
-        const player = players[HUMAN_PLAYER];
-        if (player.folded || !gameInProgress) return;
-
-        const panel = document.getElementById('actionPanel');
-        const toCall = currentMaxBet - player.currentBet;
-
-        let html = '';
-
-        // Fold
-        html += `<button class="btn btn-fold" onclick="humanAction('fold')">弃牌</button>`;
-
-        // Check or Call
-        if (toCall === 0) {
-            html += `<button class="btn btn-check" onclick="humanAction('check')">过牌</button>`;
-        } else {
-            const callAmount = Math.min(toCall, player.chips);
-            html += `<button class="btn btn-call" onclick="humanAction('call')">跟注 ${callAmount}</button>`;
-        }
-
-        // Raise
-        if (player.chips > toCall) {
-            const minRaise = Math.max(ANTE, toCall);
-            const maxRaise = player.chips;
-            html += `<div class="bet-controls">
-                <input type="range" class="bet-slider" id="betSlider" min="${minRaise}" max="${maxRaise}" value="${minRaise}" oninput="updateBetDisplay()">
-                <span class="bet-amount" id="betAmount">${minRaise}</span>
-                <button class="btn btn-raise" onclick="humanAction('raise')">加注</button>
-            </div>`;
-        }
-
-        // All-in
-        if (player.chips > 0) {
-            html += `<button class="btn btn-allin" onclick="humanAction('allin')">全下 ${player.chips}</button>`;
-        }
-
-        panel.innerHTML = html;
-        setStatus('你的回合 - 请选择操作');
-    }
-
-    function updateBetDisplay() {
-        const slider = document.getElementById('betSlider');
-        const display = document.getElementById('betAmount');
-        if (slider && display) {
-            display.textContent = slider.value;
-        }
-    }
-
-    function humanAction(action) {
-        const player = players[HUMAN_PLAYER];
-        if (player.folded) return;
-
-        const toCall = currentMaxBet - player.currentBet;
-
-        switch (action) {
-            case 'fold':
-                player.folded = true;
-                actedThisRound++;
-                addMessage(`${player.name} 弃牌`);
-                break;
-
-            case 'check':
-                actedThisRound++;
-                addMessage(`${player.name} 过牌`);
-                break;
-
-            case 'call':
-                const callAmount = Math.min(toCall, player.chips);
-                player.chips -= callAmount;
-                player.currentBet += callAmount;
-                player.totalBet += callAmount;
-                pot += callAmount;
-                currentMaxBet = Math.max(currentMaxBet, player.currentBet);
-                actedThisRound++;
-                addMessage(`${player.name} 跟注 ${callAmount}`);
-                break;
-
-            case 'raise':
-                const slider = document.getElementById('betSlider');
-                const raiseAmount = parseInt(slider.value);
-                const totalRaise = Math.min(raiseAmount, player.chips);
-                player.chips -= totalRaise;
-                player.currentBet += totalRaise;
-                player.totalBet += totalRaise;
-                pot += totalRaise;
-                currentMaxBet = Math.max(currentMaxBet, player.currentBet);
-                bettingEndPlayer = HUMAN_PLAYER;
-                actedThisRound++;
-                addMessage(`${player.name} 加注到 ${player.currentBet}`);
-                break;
-
-            case 'allin':
-                const allInAmount = player.chips;
-                pot += allInAmount;
-                player.currentBet += allInAmount;
-                player.totalBet += allInAmount;
-                player.chips = 0;
-                currentMaxBet = Math.max(currentMaxBet, player.currentBet);
-                if (toCall > 0) bettingEndPlayer = HUMAN_PLAYER;
-                actedThisRound++;
-                addMessage(`${player.name} 全下 ${allInAmount}！`, 'highlight');
-                break;
-        }
-
-        renderPlayers();
-        updatePot();
-
-        // Move to next active player
-        nextPlayer();
-    }
-
-    function aiTurn() {
-        const player = players[currentPlayer];
-        if (player.folded || !gameInProgress) {
-            nextPlayer();
-            return;
-        }
-
-        const toCall = currentMaxBet - player.currentBet;
-        const hand = evaluateHand(player.cards);
-        const handStrength = hand ? hand.rank : 0;
-
-        // Simple AI logic
-        const rand = Math.random();
-        let action;
-
-        if (handStrength >= HAND_RANKS.THREE_OF_A_KIND) {
-            // Strong hand: raise or all-in
-            action = rand < 0.3 ? 'allin' : 'raise';
-        } else if (handStrength >= HAND_RANKS.ONE_PAIR) {
-            // Medium hand: call or small raise
-            action = rand < 0.2 ? 'raise' : (rand < 0.7 ? 'call' : 'check');
-        } else {
-            // Weak hand: fold or check
-            if (toCall > ANTE * 3) {
-                action = rand < 0.4 ? 'fold' : 'call';
-            } else {
-                action = rand < 0.15 ? 'raise' : (toCall === 0 ? 'check' : 'call');
-            }
-        }
-
-        // Force call if all-in or can't fold
-        if (player.chips === 0) action = 'call';
-
-        // Execute AI action
-        setTimeout(() => {
-            const aiIdx = currentPlayer;
-            switch (action) {
-                case 'fold':
-                    if (toCall === 0) { action = 'check'; break; }
-                    player.folded = true;
-                    actedThisRound++;
-                    addMessage(`${player.name} 弃牌`);
-                    break;
-
-                case 'check':
-                    actedThisRound++;
-                    addMessage(`${player.name} 过牌`);
-                    break;
-
-                case 'call':
-                    if (toCall === 0) {
-                        actedThisRound++;
-                        addMessage(`${player.name} 过牌`);
-                    } else {
-                        const callAmount = Math.min(toCall, player.chips);
-                        player.chips -= callAmount;
-                        player.currentBet += callAmount;
-                        player.totalBet += callAmount;
-                        pot += callAmount;
-                        currentMaxBet = Math.max(currentMaxBet, player.currentBet);
-                        actedThisRound++;
-                        addMessage(`${player.name} 跟注 ${callAmount}`);
-                    }
-                    break;
-
-                case 'raise':
-                    const raiseAmount = Math.min(Math.max(ANTE * 2, toCall + ANTE), player.chips);
-                    player.chips -= raiseAmount;
-                    player.currentBet += raiseAmount;
-                    player.totalBet += raiseAmount;
-                    pot += raiseAmount;
-                    currentMaxBet = Math.max(currentMaxBet, player.currentBet);
-                    bettingEndPlayer = aiIdx;
-                    actedThisRound++;
-                    addMessage(`${player.name} 加注到 ${player.currentBet}`);
-                    break;
-
-                case 'allin':
-                    const allInAmount = player.chips;
-                    pot += allInAmount;
-                    player.currentBet += allInAmount;
-                    player.totalBet += allInAmount;
-                    player.chips = 0;
-                    currentMaxBet = Math.max(currentMaxBet, player.currentBet);
-                    if (toCall > 0) bettingEndPlayer = aiIdx;
-                    actedThisRound++;
-                    addMessage(`${player.name} 全下 ${allInAmount}！`, 'highlight');
-                    break;
-            }
-
-            renderPlayers();
-            updatePot();
-            nextPlayer();
-        }, 600);
-    }
-
-    function nextPlayer() {
-        const active = activePlayerIndices();
-
-        // Check if only one player remains
-        if (active.length === 1) {
-            awardPot();
-            return;
-        }
-
-        // Check if betting round is complete:
-        // Action has returned to the last raiser (or starting player) AND
-        // all active players have either matched the bet, gone all-in, or folded
-        if (currentPlayer === bettingEndPlayer && actedThisRound >= active.length - 1) {
-            const allMatched = active.every(({ player }) =>
-                player.folded || player.currentBet === currentMaxBet || player.chips === 0
-            );
-            if (allMatched) {
-                endRound();
-                return;
-            }
-        }
-
-        // Move to next active player
-        let nextIdx = (currentPlayer + 1) % players.length;
-        let loops = 0;
-        while (players[nextIdx].folded && loops < players.length) {
-            nextIdx = (nextIdx + 1) % players.length;
-            loops++;
-        }
-
-        if (loops >= players.length) {
-            awardPot();
-            return;
-        }
-
-        currentPlayer = nextIdx;
-        renderPlayers();
-
-        if (players[currentPlayer].isHuman) {
-            showHumanActions();
-        } else {
-            document.getElementById('actionPanel').innerHTML = '<div class="btn" style="color:#aaa">电脑思考中...</div>';
-            setStatus(`${players[currentPlayer].name} 的回合`);
-            aiTurn();
-        }
-    }
-
-    function endRound() {
-        currentRound++;
-
-        if (currentRound >= 5) {
-            showdown();
-            return;
-        }
-
-        // Deal next card to all active players
-        activePlayerIndices().forEach(({ index }) => {
-            players[index].cards.push(dealCard());
-        });
-
-        addMessage(`发第 ${currentRound + 1} 张牌`);
-
-        // Reset bets for new round
-        players.forEach(p => p.currentBet = 0);
-        currentMaxBet = 0;
-
-        // Find first player for new round
-        currentPlayer = findFirstPlayer();
-
-        renderPlayers();
-        setStatus('新一轮下注开始');
-
-        startBettingRound();
-    }
-
-    function showdown() {
-        gameInProgress = false;
-
-        // Reveal all cards
-        renderPlayers();
-
-        // Find best hand
-        const active = activePlayerIndices();
-        let winner = active[0];
-        let bestHand = evaluateHand(winner.player.cards);
-
-        for (let i = 1; i < active.length; i++) {
-            const hand = evaluateHand(active[i].player.cards);
-            if (compareHands(hand, bestHand) > 0) {
-                bestHand = hand;
-                winner = active[i];
-            }
-        }
-
-        const winAmount = pot;
-        players[winner.index].chips += winAmount;
-
-        addMessage(`🏆 ${winner.player.name} 获胜！牌型: ${bestHand.name}`, 'win');
-        setStatus(`${winner.player.name} 以 ${bestHand.name} 赢得 ${winAmount} 筹码！`);
-
-        // Show result
-        setTimeout(() => {
-            showResult(winner, bestHand, winAmount);
-        }, 800);
-
-        renderPlayers();
-        updatePot();
-        document.getElementById('actionPanel').innerHTML = '';
-    }
-
-    function awardPot() {
-        gameInProgress = false;
-        const winner = activePlayerIndices()[0];
-        if (!winner) return;
-
-        const winAmount = pot;
-        players[winner.index].chips += winAmount;
-
-        addMessage(`🏆 ${winner.player.name} 赢得底池 ${winAmount}（其他玩家弃牌）`, 'win');
-        setStatus(`${winner.player.name} 赢得 ${winAmount} 筹码！`);
-
-        setTimeout(() => {
-            showResult(winner, null, winAmount);
-        }, 800);
-
-        renderPlayers();
-        updatePot();
-        document.getElementById('actionPanel').innerHTML = '';
-    }
-
-    function showResult(winner, hand, amount) {
-        const overlay = document.getElementById('resultOverlay');
-        const box = document.getElementById('resultBox');
-        const title = document.getElementById('resultTitle');
-        const details = document.getElementById('resultDetails');
-
-        const isHumanWin = winner.index === HUMAN_PLAYER;
-
-        box.className = `result-box ${isHumanWin ? 'win' : 'lose'}`;
-        title.textContent = isHumanWin ? '🎉 你赢了！' : '😢 你输了...';
-
-        let detailHTML = `<p>${winner.player.name} 赢得 <strong style="color:#ffd700">${amount}</strong> 筹码</p>`;
-        if (hand) {
-            detailHTML += `<p>牌型: <strong>${hand.name}</strong></p>`;
-        }
-        detailHTML += `<p>你的筹码: <strong style="color:#ffd700">${players[HUMAN_PLAYER].chips}</strong></p>`;
-
-        details.innerHTML = detailHTML;
-        overlay.classList.add('show');
-    }
-
-    function closeResult() {
-        document.getElementById('resultOverlay').classList.remove('show');
-        document.getElementById('actionPanel').innerHTML =
-            '<button class="btn btn-deal" onclick="startNewGame()">再来一局</button>';
-        setStatus('点击"再来一局"开始新游戏');
-    }
-
-    // ===================== Init =====================
-    function init() {
-        initPlayers();
-        renderPlayers();
-        updatePot();
-    }
-
-    init();
-    </script>
+    msg(`第 ${rnd} 局开始！底注 ${ANTE}`); updUI();
+
+    // Deal 2 hidden cards
+    setTimeout(()=>{
+        for(let i=0;i<2;i++) for(let p of P) if(!p.fd) p.cd.push(D.pop());
+        updUI();
+        setTimeout(()=>startBetRound(),500);
+    },400);
+}
+
+updUI();
+</script>
 </body>
 </html>
