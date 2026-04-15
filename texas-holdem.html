@@ -701,6 +701,34 @@
         return { action: 'fold' };
     }
 
+    /**
+     * 计算 raise 后的下注状态（纯函数，便于单测 — 修复 #34 致命 bug 的核心）。
+     *
+     * 历史 bug：原 applyAction 直接 `game.currentBet = p.bet`，当玩家 stack
+     * 不足跟到 raise target 时，p.bet 可能 < 原 currentBet，导致 currentBet
+     * 倒退 → 其他玩家 toCall 变负数 → isBettingRoundDone 永远 false → 死循环。
+     *
+     * 本函数引入 short all-in 概念：raise 后 newPlayerBet 必须严格大于
+     * currentBet 才更新 currentBet；否则视为 short all-in，currentBet 不变。
+     *
+     * @param {number} playerBet      玩家本轮已下注（在加注前）
+     * @param {number} playerStack    玩家剩余筹码
+     * @param {number} currentBet     当前轮最高下注额
+     * @param {number} decisionAmount 玩家/AI 决策的 raise 目标金额
+     * @param {number} bb             大盲金额（用于最低 raise 校验）
+     * @returns {{ additional: number, newPlayerBet: number, newCurrentBet: number, isShortAllIn: boolean }}
+     */
+    function computeRaiseOutcome(playerBet, playerStack, currentBet, decisionAmount, bb) {
+        const target = Math.max(decisionAmount, currentBet + bb);
+        const additional = Math.min(target - playerBet, playerStack);
+        const newPlayerBet = playerBet + additional;
+        if (newPlayerBet > currentBet) {
+            return { additional, newPlayerBet, newCurrentBet: newPlayerBet, isShortAllIn: false };
+        }
+        // short all-in：未达到 raise 标准（newPlayerBet ≤ currentBet），currentBet 不变
+        return { additional, newPlayerBet, newCurrentBet: currentBet, isShortAllIn: true };
+    }
+
     /** 6 张或 7 张时评估（5 张直接调 evaluate5，6 张选 5，7 张选 5）。 */
     function evaluateHand7Or6(cards) {
         if (cards.length === 5) return evaluate5(cards);
@@ -775,8 +803,9 @@
 
         // dealer 位移
         if (game.handNum > 1) game.dealerPos = (game.dealerPos + 1) % game.players.length;
-        // 跳过破产玩家
-        while (game.players[game.dealerPos].stack === 0) {
+        // 跳过破产玩家（与 nextActivePos / nextActivePosFromSnapshot 一致，加 safety 防御）
+        let safety = 0;
+        while (game.players[game.dealerPos].stack === 0 && safety++ < game.players.length) {
             game.dealerPos = (game.dealerPos + 1) % game.players.length;
         }
 
@@ -906,16 +935,20 @@
             const actual = postBet(pos, toCall);
             p.lastAction = actual === toCall ? `CALL ${actual}` : `ALL-IN ${actual}`;
         } else if (decision.action === 'raise') {
-            // raise.amount = 本轮**总下注**的目标，至少 currentBet + BB
-            const target = Math.max(decision.amount, game.currentBet + BB_AMOUNT);
-            const additional = target - p.bet;
-            const actual = postBet(pos, additional);
-            game.currentBet = p.bet;
-            p.lastAction = p.allIn ? `ALL-IN ${actual}` : `RAISE → ${p.bet}`;
-            // 一旦有 raise，其他玩家需要重新行动
-            game.players.forEach((other, i) => {
-                if (i !== pos && !other.folded && !other.allIn) other.lastAction = '';
-            });
+            // 委托纯函数计算（修复 short all-in 时 currentBet 倒退死循环）
+            const outcome = computeRaiseOutcome(p.bet, p.stack, game.currentBet, decision.amount, BB_AMOUNT);
+            const actual = postBet(pos, outcome.additional);
+            game.currentBet = outcome.newCurrentBet;
+            if (outcome.isShortAllIn) {
+                // short all-in：未达 raise 标准，currentBet 不变，**不**清空其他玩家 lastAction
+                p.lastAction = `ALL-IN ${actual}`;
+            } else {
+                // 真正的 raise：更新 currentBet，要求其他活跃玩家重新行动
+                p.lastAction = p.allIn ? `ALL-IN ${actual}` : `RAISE → ${p.bet}`;
+                game.players.forEach((other, i) => {
+                    if (i !== pos && !other.folded && !other.allIn) other.lastAction = '';
+                });
+            }
         }
 
         renderAll();
@@ -1161,6 +1194,13 @@
     // ============ 事件绑定 ============
     document.getElementById('new-hand-btn').addEventListener('click', () => {
         document.getElementById('showdown-modal').classList.remove('show');
+        // 第一手开始时显示 MVP 单池警告（一次性，避免每手刷屏）
+        if (game.handNum === 0) {
+            const bar = document.getElementById('status-bar');
+            bar.innerHTML = '<span style="color:#ffaa00">⚠️ 简化版：本游戏不实现 side pot — 多人不等额 all-in 时由最大手牌赢全池（违反标准德州规则，仅作 MVP 演示）</span>';
+            setTimeout(() => startNewHand(), 2500);
+            return;
+        }
         startNewHand();
     });
     document.getElementById('reset-btn').addEventListener('click', () => {
@@ -1359,6 +1399,50 @@
                 stage: 'river'
             });
             assertEq(d.action, 'fold');
+        });
+
+        // ===== computeRaiseOutcome: 修复 reviewer 发现的致命 bug =====
+        // 历史：原 applyAction 在 short all-in 时 game.currentBet = p.bet 无条件赋值
+        // 导致 currentBet 倒退 → 其他玩家 toCall 负数 → isBettingRoundDone 死循环
+        test('computeRaiseOutcome: 正常 raise 更新 currentBet', () => {
+            const o = computeRaiseOutcome(0, 1000, 100, 200, 20);
+            assertEq(o.additional, 200);
+            assertEq(o.newPlayerBet, 200);
+            assertEq(o.newCurrentBet, 200);
+            assertEq(o.isShortAllIn, false);
+        });
+        test('computeRaiseOutcome: decisionAmount 低于 currentBet+BB 被拉到最低', () => {
+            const o = computeRaiseOutcome(0, 1000, 100, 50, 20);
+            // target = max(50, 100+20) = 120
+            assertEq(o.newPlayerBet, 120);
+            assertEq(o.newCurrentBet, 120);
+            assertEq(o.isShortAllIn, false);
+        });
+        test('computeRaiseOutcome: short all-in 时 currentBet 不变（修复死循环 bug）', () => {
+            // 玩家剩 10 stack，已下 20 BB，currentBet=100。AI 决策 raise.amount=10
+            // target = max(10, 120) = 120, additional = min(120-20, 10) = 10
+            // newPlayerBet = 30 ≤ currentBet=100 → short all-in
+            const o = computeRaiseOutcome(20, 10, 100, 10, 20);
+            assertEq(o.additional, 10);
+            assertEq(o.newPlayerBet, 30);
+            assertEq(o.newCurrentBet, 100);  // ← 关键断言：currentBet 不倒退
+            assertEq(o.isShortAllIn, true);
+        });
+        test('computeRaiseOutcome: full all-in 超过 currentBet 仍算 raise', () => {
+            const o = computeRaiseOutcome(0, 500, 100, 1000, 20);
+            // target = max(1000, 120) = 1000, additional = min(1000, 500) = 500
+            assertEq(o.newPlayerBet, 500);
+            assertEq(o.newCurrentBet, 500);  // ← 真 raise
+            assertEq(o.isShortAllIn, false);
+        });
+        test('computeRaiseOutcome: short all-in 边界 — newPlayerBet 恰等于 currentBet', () => {
+            // 玩家剩 80, 已下 20, currentBet=100。decisionAmount 任意
+            // additional = min(target - 20, 80) = 80 (无论 target 多大)
+            // newPlayerBet = 100，等于 currentBet → 仍算 short all-in（>currentBet 才是真 raise）
+            const o = computeRaiseOutcome(20, 80, 100, 200, 20);
+            assertEq(o.newPlayerBet, 100);
+            assertEq(o.newCurrentBet, 100);
+            assertEq(o.isShortAllIn, true);  // 等于 currentBet 不算真 raise
         });
 
         return results;
