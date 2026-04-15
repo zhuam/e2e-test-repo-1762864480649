@@ -32,4 +32,4 @@
   - 2 hidden + 3 visible cards (matching games.html description)
   - Standard poker hand rankings
   - AI with basic strategy based on hand strength estimation
-- **Issues Found**: None
+- **Issues Found**: Merge conflicts with concurrent changes from another chat that also implemented showhand. Resolved by merging and keeping the best of both implementations.
