@@ -414,7 +414,7 @@
 
     <div id="game-container">
         <div id="top-bar">
-            <select id="mode-select">
+            <select id="mode-select" onchange="onModeChange()">
                 <option value="doudizhu">🃏 斗地主</option>
                 <option value="paodekuai">🏃 跑得快</option>
             </select>
@@ -643,6 +643,16 @@ function updateButtons(){
     document.getElementById('btn-hint').disabled=!isPlayerTurn;
 }
 
+// ===== 模式切换 =====
+function onModeChange(){
+    gameMode=document.getElementById('mode-select').value;
+    if(gameMode==='doudizhu'){
+        setStatus('斗地主模式 - 叫地主、抢地主');
+    } else {
+        setStatus('跑得快模式 - 红桃3先出，有关牌规则');
+    }
+}
+
 // ===== 游戏开始 =====
 function startGame(){
     gameMode=document.getElementById('mode-select').value;
@@ -713,6 +723,7 @@ function finishBidding(bidder,score){
     if(bidder<0){ setStatus('没人叫地主，重新发牌...'); render(); setTimeout(startGame,1500); return; }
     landlord=bidder; multiplier*=score;
     if(landlord===0){ hands[0].push(...bottomCards); sortHand(hands[0]); }
+    else { hands[landlord].push(...bottomCards); sortHand(hands[landlord]); }
     const name=landlord===0?'你':'玩家'+(landlord+1);
     setStatus(name+'成为地主！倍数 x'+multiplier); render();
     setTimeout(startDoublePhase,800);
@@ -785,13 +796,13 @@ function doPlay(){
         if(!sc.some(c=>c.suit==='♥'&&c.rank==='3')){setStatus('首出必须包含红桃3！');return;}
     }
 
-    if(lastPlayed!==null&&lastPlayed.playerId!==0&&!canBeat(pat,lastPlayed.pattern)){setStatus('管不上！');return;}
+    if(lastPlayed!==null&&lastPlayed.playerId!==0&&!canBeat(pat,lastPlayed.pat)){setStatus('管不上！');return;}
     playCards(0,sc,pat);
 }
 
 function doPass(){
     if(!isPlayerTurn) return; if(lastPlayed===null||lastPlayed.playerId===0) return;
-    if(gameMode==='paodekuai'&&findAnyBeat(hands[0],lastPlayed.pattern)){setStatus('你有能管上的牌，必须出牌！');return;}
+    if(gameMode==='paodekuai'&&findAnyBeat(hands[0],lastPlayed.pat)!==null){setStatus('你有能管上的牌，必须出牌！');return;}
     passCount++; showPassText(0); setStatus('你选择了不出');
     if(passCount>=2){lastPlayed=null;passCount=0;firstMove=false;}
     nextTurn();
@@ -800,10 +811,14 @@ function doPass(){
 function doHint(){
     if(!isPlayerTurn) return; selected.clear();
     if(lastPlayed!==null&&lastPlayed.playerId!==0){
-        const h=findHintBeat(hands[0],lastPlayed.pattern);
+        // 优先找最小能管上的同类型牌
+        const h=findSameTypeMin(hands[0],lastPlayed.pat)||findBombMin(hands[0],-1)||findRocket(hands[0]);
         if(h) h.forEach(c=>selected.add(cardKey(c)));
     } else {
-        const h=aiPlayFree(hands[0]); if(h) h.forEach(c=>selected.add(cardKey(c)));
+        // 自由出牌，找最佳组合
+        const freeHand=[...hands[0]].sort((a,b)=>b.value-a.value||a.suit.localeCompare(b.suit));
+        const h=aiFindBestCombo(freeHand);
+        if(h) h.forEach(c=>selected.add(cardKey(c)));
     }
     render(); updateButtons();
 }
@@ -831,9 +846,28 @@ function nextTurn(){
 }
 
 // ===== AI =====
+// 跑得快 关牌规则：检查对手是否报单，若是则必须出最大单牌
+function paodekuaiMustPlay(hand, target){
+    if(gameMode!=='paodekuai') return null;
+    const otherPlayers=[0,1,2].filter(p=>p!==currentPlayer);
+    const reportSingle = otherPlayers.some(p=>hands[p].length===1);
+    if(reportSingle && target && target.type==='single'){
+        // 必须出最大单牌
+        return [hand[0]];
+    }
+    return null;
+}
+
 function aiTurn(){
     if(!gameActive||aiThinking) return;
     const aid=currentPlayer, hand=hands[aid];
+
+    // 跑得快关牌规则检查
+    const forced=paodekuaiMustPlay(hand, lastPlayed?lastPlayed.pat:null);
+    if(forced){
+        playCards(aid,forced,getPattern(forced));
+        return;
+    }
 
     if(lastPlayed===null||lastPlayed.playerId===aid){
         const cards=aiPlayFree(hand); if(!cards){passCount++;nextTurn();return;}
@@ -847,23 +881,271 @@ function aiTurn(){
 }
 
 function aiPlayFree(hand){
+    if(hand.length===0) return null;
     if(hand.length<=5){const p=getPattern(hand);if(p)return[...hand];}
-    // 跑得快报单规则：上家有玩家报单时，出最大单牌
+
+    // 跑得快报单规则：上家有玩家只剩1张时，出最大单牌
     if(gameMode==='paodekuai'){
-        const otherAIs=[1,2].filter(p=>p!==currentPlayer);
-        if(otherAIs.some(p=>hands[p].length===1)) return [hand[hand.length-1]];
+        const otherPlayers=[0,1,2].filter(p=>p!==currentPlayer);
+        if(otherPlayers.some(p=>hands[p].length===1)) return [hand[0]]; // 最大牌（hand已排序，[0]最大）
     }
+
+    // Doudizhu 地主 AI 策略
+    if(gameMode==='doudizhu'&&landlord===currentPlayer){
+        // 如果能一手出完就出
+        const p=getPattern(hand); if(p) return [...hand];
+        // 优先出多张组合：飞机 > 顺子 > 连对 > 三带 > 对子 > 单张
+        const strategy=aiFindBestCombo(hand);
+        if(strategy) return strategy;
+        return [hand[hand.length-1]]; // 最小单牌
+    }
+
+    // 农民 AI 策略（合作出牌）
+    if(gameMode==='doudizhu'){
+        const strategy=aiFindBestCombo(hand);
+        if(strategy) return strategy;
+        return [hand[hand.length-1]];
+    }
+
+    // 跑得快 AI 策略
+    if(gameMode==='paodekuai'){
+        const p=getPattern(hand); if(p) return [...hand];
+        const strategy=aiFindBestCombo(hand);
+        if(strategy) return strategy;
+        return [hand[hand.length-1]];
+    }
+
+    return [hand[hand.length-1]];
+}
+
+// AI 智能选牌：优先出多张组合，减少手牌
+function aiFindBestCombo(hand){
+    const sorted=[...hand].sort((a,b)=>b.value-a.value||a.suit.localeCompare(b.suit));
+    const vals=sorted.map(c=>c.value);
+    const g=groupByValue(vals);
+    const n=hand.length;
+
+    // 1. 尝试飞机（连续三张 + 翅膀）
+    const triples=g.filter(x=>x.count>=3&&x.value<15).map(x=>x.value).sort((a,b)=>a-b);
+    for(let len=triples.length;len>=2;len--){
+        for(let s=0;s<=triples.length-len;s++){
+            let ok=true;
+            for(let j=1;j<len;j++) if(triples[s+j]!==triples[s]+j){ok=false;break;}
+            if(!ok) continue;
+            const cards=[];
+            for(let j=0;j<len;j++){
+                const cs=hand.filter(c=>c.value===triples[s+j]).slice(0,3);
+                cards.push(...cs);
+            }
+            const remaining=hand.filter(c=>!cards.some(d=>cardKey(d)===cardKey(c)));
+            // 飞机带单
+            if(remaining.length>=len){
+                const wings=remaining.slice(-len);
+                return [...cards,...wings];
+            }
+            // 飞机带对
+            if(remaining.length>=len*2){
+                const rg=groupByValue(remaining.map(c=>c.value));
+                const pairs=rg.filter(x=>x.count>=2);
+                if(pairs.length>=len){
+                    const wings=[];
+                    for(let j=0;j<len;j++){
+                        const ps=remaining.filter(c=>c.value===pairs[j].value).slice(0,2);
+                        wings.push(...ps);
+                    }
+                    return [...cards,...wings];
+                }
+            }
+            // 纯飞机
+            if(cards.length===n) return cards;
+        }
+    }
+
+    // 2. 尝试长顺子（5张以上）
+    const straightVals=[...new Set(vals.filter(v=>v<15))].sort((a,b)=>a-b);
+    for(let count=Math.min(12,straightVals.length);count>=5;count--){
+        for(let i=0;i<=straightVals.length-count;i++){
+            let ok=true;
+            for(let j=1;j<count;j++) if(straightVals[i+j]!==straightVals[i]+j){ok=false;break;}
+            if(!ok) continue;
+            const cards=[];
+            for(let j=0;j<count;j++){const c=hand.find(x=>x.value===straightVals[i+j]);if(c)cards.push(c);}
+            if(cards.length===count){
+                // 如果顺子能清完手牌就出
+                if(count===n) return cards;
+                // 否则优先出较长的顺子
+                if(count>=7) return cards;
+            }
+        }
+    }
+
+    // 3. 尝试连对
+    const pairVals=g.filter(x=>x.count>=2&&x.value<15).map(x=>x.value).sort((a,b)=>a-b);
+    for(let count=Math.min(10,pairVals.length);count>=3;count--){
+        for(let i=0;i<=pairVals.length-count;i++){
+            let ok=true;
+            for(let j=1;j<count;j++) if(pairVals[i+j]!==pairVals[i]+j){ok=false;break;}
+            if(!ok) continue;
+            const cards=[];
+            for(let j=0;j<count;j++){const cs=hand.filter(c=>c.value===pairVals[i+j]).slice(0,2);cards.push(...cs);}
+            if(cards.length===count*2&&cards.length===n) return cards;
+            if(cards.length>=6) return cards;
+        }
+    }
+
+    // 4. 三带二（优先）或三带一
+    const tripleCards=g.filter(x=>x.count>=3&&x.value<15).sort((a,b)=>b.value-a.value);
+    for(const t of tripleCards){
+        const tc=hand.filter(c=>c.value===t.value).slice(0,3);
+        const rest=hand.filter(c=>c.value!==t.value);
+        // 三带二
+        const rg=groupByValue(rest.map(c=>c.value));
+        const pair=rg.find(x=>x.count>=2);
+        if(pair){
+            const pc=rest.filter(c=>c.value===pair.value).slice(0,2);
+            return [...tc,...pc];
+        }
+        // 三带一
+        if(rest.length>0) return [...tc,rest[rest.length-1]];
+        // 纯三条
+        if(tc.length===n) return tc;
+    }
+
+    // 5. 出对子（小的优先）
+    const pairs=g.filter(x=>x.count>=2).sort((a,b)=>a.value-b.value);
+    if(pairs.length>0){
+        const p=pairs[0];
+        return hand.filter(c=>c.value===p.value).slice(0,2);
+    }
+
+    // 6. 出单张（最小的）
     return [hand[hand.length-1]];
 }
 
 function aiPlayBeat(hand,target){
     if(!target) return null;
-    const st=findSameType(hand,target); if(st) return st;
+    // 优先找同类型中最小能管上的
+    const st=findSameTypeMin(hand,target);
+    if(st) return st;
+    // 非炸弹/火箭，考虑用炸弹
     if(target.type!=='rocket'&&target.type!=='bomb'){
-        const b=findBomb(hand,-1); if(b) return b;
+        // 炸弹代价高，只在必要时用
+        if(hand.length<=6) return findBomb(hand,-1); // 手牌少时用炸弹
     }
+    // 用火箭（最后手段）
     if(target.type!=='rocket'){const r=findRocket(hand);if(r) return r;}
     return null;
+}
+
+// 找同类型中最小能管上的牌
+function findSameTypeMin(hand,target){
+    switch(target.type){
+        case 'single': return findSingleMin(hand,target.value);
+        case 'pair': return findPairMin(hand,target.value);
+        case 'triple': return findTripleMin(hand,target.value);
+        case 'triple1': return findTriple1Min(hand,target.value);
+        case 'triple2': return findTriple2Min(hand,target.value);
+        case 'straight': return findStraightMin(hand,target.value,target.count);
+        case 'consecutivePairs': return findConsecutivePairsMin(hand,target.value,target.count/2);
+        case 'airplane': case 'airplaneWings': return findAirplaneMin(hand,target);
+        case 'bomb': return findBombMin(hand,target.value);
+        case 'four2': case 'four2pair': return findFour2Min(hand,target.value);
+    }
+    return null;
+}
+
+function findSingleMin(hand,min){
+    // 找刚好比min大的最小单牌
+    for(let i=hand.length-1;i>=0;i--) if(hand[i].value>min) return [hand[i]];
+    return null;
+}
+function findPairMin(hand,min){
+    const g=groupByValue(hand.map(c=>c.value));
+    const pairs=g.filter(x=>x.count>=2&&x.value>min).sort((a,b)=>a.value-b.value);
+    if(pairs.length===0) return null;
+    return hand.filter(c=>c.value===pairs[0].value).slice(0,2);
+}
+function findTripleMin(hand,min){
+    const g=groupByValue(hand.map(c=>c.value));
+    const tris=g.filter(x=>x.count>=3&&x.value>min).sort((a,b)=>a.value-b.value);
+    if(tris.length===0) return null;
+    return hand.filter(c=>c.value===tris[0].value).slice(0,3);
+}
+function findTriple1Min(hand,min){
+    const g=groupByValue(hand.map(c=>c.value));
+    const t=g.filter(x=>x.count>=3&&x.value>min).sort((a,b)=>a.value-b.value).find(()=>true);
+    if(!t) return null;
+    const others=hand.filter(c=>c.value!==t.value);
+    if(others.length<1) return null;
+    return [...hand.filter(c=>c.value===t.value).slice(0,3),others[others.length-1]];
+}
+function findTriple2Min(hand,min){
+    const g=groupByValue(hand.map(c=>c.value));
+    const t=g.filter(x=>x.count>=3&&x.value>min).sort((a,b)=>a.value-b.value).find(()=>true);
+    if(!t) return null;
+    const others=hand.filter(c=>c.value!==t.value);
+    const og=groupByValue(others.map(c=>c.value));
+    const p=og.filter(x=>x.count>=2).sort((a,b)=>a.value-b.value)[0];
+    if(!p) return null;
+    return [...hand.filter(c=>c.value===t.value).slice(0,3),...others.filter(c=>c.value===p.value).slice(0,2)];
+}
+function findStraightMin(hand,min,count){
+    const vals=[...new Set(hand.map(c=>c.value).filter(v=>v<15))].sort((a,b)=>a-b);
+    for(let i=0;i<=vals.length-count;i++){
+        if(vals[i]<=min) continue;
+        let ok=true; for(let j=1;j<count;j++) if(vals[i+j]!==vals[i]+j){ok=false;break;}
+        if(!ok) continue;
+        const result=[];
+        for(let j=0;j<count;j++){const c=hand.find(x=>x.value===vals[i+j]);if(c)result.push(c);}
+        if(result.length===count) return result;
+    }
+    return null;
+}
+function findConsecutivePairsMin(hand,min,pairCount){
+    const g=groupByValue(hand.map(c=>c.value).filter(v=>v<15));
+    const pairs=g.filter(x=>x.count>=2).map(x=>x.value).sort((a,b)=>a-b);
+    for(let i=0;i<=pairs.length-pairCount;i++){
+        if(pairs[i]<=min) continue;
+        let ok=true; for(let j=1;j<pairCount;j++) if(pairs[i+j]!==pairs[i]+j){ok=false;break;}
+        if(!ok) continue;
+        const result=[];
+        for(let j=0;j<pairCount;j++){const cs=hand.filter(c=>c.value===pairs[i+j]).slice(0,2);result.push(...cs);}
+        return result;
+    }
+    return null;
+}
+function findAirplaneMin(hand,target){
+    const g=groupByValue(hand.map(c=>c.value).filter(v=>v<15));
+    const triples=g.filter(x=>x.count>=3).map(x=>x.value).sort((a,b)=>a-b);
+    const need=target.type==='airplaneWings'?(target.tripleLen||Math.ceil(target.count/5)):(target.count/3);
+    for(let i=0;i<=triples.length-need;i++){
+        if(triples[i]<=target.value) continue;
+        let ok=true; for(let j=1;j<need;j++) if(triples[i+j]!==triples[i]+j){ok=false;break;}
+        if(!ok) continue;
+        const result=[];
+        for(let j=0;j<need;j++){const cs=hand.filter(c=>c.value===triples[i+j]).slice(0,3);result.push(...cs);}
+        return result;
+    }
+    return null;
+}
+function findBombMin(hand,min){
+    const g=groupByValue(hand.map(c=>c.value));
+    const bombs=g.filter(x=>x.count>=4&&x.value>min).sort((a,b)=>a.value-b.value);
+    if(bombs.length===0) return null;
+    return hand.filter(c=>c.value===bombs[0].value).slice(0,4);
+}
+function findRocketMin(hand){
+    if(hand.some(c=>c.value===16)&&hand.some(c=>c.value===17))
+        return hand.filter(c=>c.value===16||c.value===17);
+    return null;
+}
+function findFour2Min(hand,min){
+    const g=groupByValue(hand.map(c=>c.value));
+    const q=g.filter(x=>x.count>=4&&x.value>min).sort((a,b)=>a.value-b.value)[0];
+    if(!q) return null;
+    const others=hand.filter(c=>c.value!==q.value);
+    if(others.length<2) return null;
+    return [...hand.filter(c=>c.value===q.value).slice(0,4),others[others.length-2],others[others.length-1]];
 }
 
 function findSameType(hand,target){
@@ -1011,7 +1293,9 @@ function closeModal(){
     document.getElementById('ai1-box').classList.remove('winner');
     document.getElementById('ai2-box').classList.remove('winner');
     for(let i=0;i<3;i++){const el=document.getElementById('played'+i);const label=el.querySelector('.played-label')?.outerHTML||'';el.innerHTML=label;}
-    startGame();
+    setStatus(gameMode==='doudizhu'?'斗地主 - 点击开始游戏':'跑得快 - 点击开始游戏');
+    gameActive=false; isPlayerTurn=false;
+    render();
 }
 
 render();
