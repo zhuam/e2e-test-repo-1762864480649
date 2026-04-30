@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛍️ 品质商城 - 发现好物</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f6fa;
+            color: #2d3436;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f2f6; }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #a29bfe, #6c5ce7);
+            border-radius: 4px;
+        }
+
+        /* ===== Announcement Bar ===== */
+        .announcement {
+            background: linear-gradient(90deg, #6c5ce7, #a29bfe, #6c5ce7);
+            background-size: 200% 100%;
+            animation: shimmer 4s ease-in-out infinite;
+            color: #fff;
+            text-align: center;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 100;
+        }
+
+        .announcement span {
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* ===== Header / Nav ===== */
+        .header {
+            background: #fff;
+            box-shadow: 0 2px 20px rgba(108, 92, 231, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 99;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .header.scrolled {
+            box-shadow: 0 4px 30px rgba(108, 92, 231, 0.15);
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #2d3436;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: #fff;
+            animation: logoSpin 10s linear infinite;
+        }
+
+        @keyframes logoSpin {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg); }
+            75% { transform: rotate(-10deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .logo-text {
+            font-size: 1.4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #636e72;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #6c5ce7, #fd79a8);
+            transition: width 0.3s ease;
+            border-radius: 1px;
+        }
+
+        .nav-links a:hover { color: #6c5ce7; }
+        .nav-links a:hover::after { width: 100%; }
+        .nav-links a.active { color: #6c5ce7; }
+        .nav-links a.active::after { width: 100%; }
+
+        .cart-btn {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            border: none;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+        }
+
+        .cart-badge {
+            background: #fd79a8;
+            color: #fff;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== Hero Section ===== */
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 70%, #e94560 100%);
+            padding: 80px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 450px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(108, 92, 231, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(253, 121, 168, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 50% 20%, rgba(162, 155, 254, 0.15) 0%, transparent 50%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(45deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: heroGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes heroGlow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-btn {
+            padding: 14px 40px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hero-btn.primary {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #1a1a2e;
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+        }
+
+        .hero-btn.primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.5);
+        }
+
+        .hero-btn.secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-btn.secondary:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-3px);
+        }
+
+        /* Floating elements in hero */
+        .hero-float {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.15;
+            animation: floatAround 12s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .hero-float:nth-child(1) { top: 15%; left: 10%; animation-delay: 0s; }
+        .hero-float:nth-child(2) { top: 20%; right: 12%; animation-delay: -3s; font-size: 3rem; }
+        .hero-float:nth-child(3) { bottom: 25%; left: 15%; animation-delay: -6s; }
+        .hero-float:nth-child(4) { bottom: 30%; right: 10%; animation-delay: -9s; font-size: 2.5rem; }
+
+        @keyframes floatAround {
+            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+            25% { transform: translateY(-20px) rotate(5deg) scale(1.1); }
+            50% { transform: translateY(-10px) rotate(-3deg) scale(0.9); }
+            75% { transform: translateY(-30px) rotate(8deg) scale(1.05); }
+        }
+
+        /* ===== Categories Bar ===== */
+        .categories {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .category-chip {
+            padding: 10px 24px;
+            border-radius: 25px;
+            background: #fff;
+            border: 2px solid #eee;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #636e72;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .category-chip:hover {
+            border-color: #6c5ce7;
+            color: #6c5ce7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.15);
+        }
+
+        .category-chip.active {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+        }
+
+        /* ===== Main Content ===== */
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title .badge {
+            font-size: 0.7rem;
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .view-all {
+            color: #6c5ce7;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: gap 0.3s ease;
+        }
+
+        .view-all:hover { gap: 10px; }
+
+        /* ===== Product Grid ===== */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        /* ===== Product Card ===== */
+        .product-card {
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(108, 92, 231, 0.15), 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 220px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            position: relative;
+            overflow: hidden;
+            transition: height 0.3s ease;
+        }
+
+        .product-image .emoji {
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .product-card:hover .product-image .emoji {
+            transform: scale(1.15) rotate(-5deg);
+        }
+
+        .product-image .discount-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(253, 121, 168, 0.3);
+        }
+
+        .product-image .new-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(0, 184, 148, 0.3);
+        }
+
+        .product-image .stock-badge {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .product-info {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .product-category {
+            font-size: 0.75rem;
+            color: #6c5ce7;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .product-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2d3436;
+            line-height: 1.4;
+        }
+
+        .product-desc {
+            font-size: 0.85rem;
+            color: #636e72;
+            line-height: 1.6;
+            flex: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid #f1f2f6;
+        }
+
+        .product-price {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .price-current {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #e84393;
+        }
+
+        .price-current .symbol {
+            font-size: 0.9rem;
+        }
+
+        .price-original {
+            font-size: 0.85rem;
+            color: #b2bec3;
+            text-decoration: line-through;
+        }
+
+        .add-to-cart {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-to-cart:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+        }
+
+        .add-to-cart.added {
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            animation: addedBounce 0.5s ease;
+        }
+
+        @keyframes addedBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+
+        .rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: #fdcb6e;
+        }
+
+        .rating .score {
+            color: #636e72;
+            margin-left: 4px;
+        }
+
+        /* ===== Featured Section ===== */
+        .featured-section {
+            margin: 50px 0;
+        }
+
+        .featured-card {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 24px;
+            padding: 50px;
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .featured-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(108, 92, 231, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .featured-card .featured-emoji {
+            font-size: 6rem;
+            flex-shrink: 0;
+            animation: featuredFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes featuredFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+
+        .featured-card .featured-info {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .featured-card .featured-info h2 {
+            font-size: 2rem;
+            color: #ffd700;
+            margin-bottom: 12px;
+        }
+
+        .featured-card .featured-info p {
+            color: rgba(255,255,255,0.7);
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .featured-card .featured-price {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .featured-card .featured-price .current {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffd700;
+        }
+
+        .featured-card .featured-price .original {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.4);
+            text-decoration: line-through;
+        }
+
+        .featured-card .featured-btn {
+            padding: 12px 30px;
+            border-radius: 25px;
+            border: none;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #1a1a2e;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            margin-top: 15px;
+        }
+
+        .featured-card .featured-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+        }
+
+        /* ===== Testimonials ===== */
+        .testimonials {
+            margin: 50px 0;
+        }
+
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .testimonial-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            border: 1px solid #f1f2f6;
+            transition: all 0.3s ease;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(108, 92, 231, 0.1);
+            border-color: #a29bfe;
+        }
+
+        .testimonial-stars {
+            color: #fdcb6e;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .testimonial-text {
+            font-size: 0.9rem;
+            color: #636e72;
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .testimonial-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .testimonial-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #2d3436;
+        }
+
+        .testimonial-product {
+            font-size: 0.8rem;
+            color: #b2bec3;
+        }
+
+        /* ===== Footer ===== */
+        .footer {
+            background: #1a1a2e;
+            color: rgba(255,255,255,0.7);
+            padding: 60px 20px 30px;
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+        }
+
+        .footer-col h3 {
+            color: #fff;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-col h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 30px;
+            height: 2px;
+            background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 10px;
+        }
+
+        .footer-col ul li a {
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .footer-col ul li a:hover {
+            color: #a29bfe;
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 40px auto 0;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .footer-social a {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .footer-social a:hover {
+            background: #6c5ce7;
+            transform: translateY(-3px);
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 200;
+            border-left: 4px solid #00b894;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-text {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #2d3436;
+        }
+
+        .toast-text small {
+            display: block;
+            font-weight: 400;
+            color: #636e72;
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .header-inner {
+                height: 60px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-btn {
+                display: flex !important;
+            }
+
+            .product-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 16px;
+            }
+
+            .product-image {
+                height: 160px;
+                font-size: 3rem;
+            }
+
+            .product-info {
+                padding: 14px;
+            }
+
+            .product-name {
+                font-size: 0.95rem;
+            }
+
+            .price-current {
+                font-size: 1.1rem;
+            }
+
+            .featured-card {
+                flex-direction: column;
+                text-align: center;
+                padding: 30px 20px;
+            }
+
+            .featured-card .featured-emoji {
+                font-size: 4rem;
+            }
+
+            .featured-card .featured-info h2 {
+                font-size: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.4rem;
+            }
+
+            .testimonial-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-inner {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                padding: 50px 20px;
+                min-height: 350px;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+
+            .product-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .product-image {
+                height: 130px;
+                font-size: 2.5rem;
+            }
+
+            .product-info {
+                padding: 10px;
+            }
+
+            .product-name {
+                font-size: 0.85rem;
+            }
+
+            .product-desc {
+                font-size: 0.75rem;
+                -webkit-line-clamp: 1;
+            }
+
+            .price-current {
+                font-size: 1rem;
+            }
+
+            .footer-inner {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Mobile menu */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #2d3436;
+            cursor: pointer;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .mobile-menu.open {
+            display: block;
+        }
+
+        .mobile-menu-content {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 280px;
+            height: 100%;
+            background: #fff;
+            padding: 80px 30px 30px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .mobile-menu.open .mobile-menu-content {
+            transform: translateX(0);
+        }
+
+        .mobile-menu-content a {
+            display: block;
+            padding: 14px 0;
+            border-bottom: 1px solid #f1f2f6;
+            color: #2d3436;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.05rem;
+        }
+
+        .mobile-menu-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #636e72;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== Announcement ===== -->
+    <div class="announcement">
+        <span>🎉 新品上市！全场满 299 包邮 &nbsp;|&nbsp; 新用户立享 88 折优惠</span>
+    </div>
+
+    <!-- ===== Header ===== -->
+    <header class="header" id="header">
+        <div class="header-inner">
+            <a href="#" class="logo">
+                <div class="logo-icon">🛍️</div>
+                <span class="logo-text">品质商城</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#" class="active">首页</a></li>
+                <li><a href="#">新品</a></li>
+                <li><a href="#">热销</a></li>
+                <li><a href="#">分类</a></li>
+                <li><a href="#">限时秒杀</a></li>
+                <li><a href="index.html">🎮 游戏大厅</a></li>
+            </ul>
+            <button class="cart-btn" onclick="showToast('🛒', '购物车', '快去挑选心仪的商品吧')">
+                🛒 购物车
+                <span class="cart-badge">0</span>
+            </button>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+        </div>
+    </header>
+
+    <!-- ===== Mobile Menu ===== -->
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content">
+            <button class="mobile-menu-close" onclick="toggleMobileMenu()">✕</button>
+            <a href="#" onclick="toggleMobileMenu()">🏠 首页</a>
+            <a href="#" onclick="toggleMobileMenu()">🆕 新品</a>
+            <a href="#" onclick="toggleMobileMenu()">🔥 热销</a>
+            <a href="#" onclick="toggleMobileMenu()">📂 分类</a>
+            <a href="#" onclick="toggleMobileMenu()">⏰ 限时秒杀</a>
+            <a href="#" onclick="toggleMobileMenu()">📞 客服</a>
+        </div>
+    </div>
+
+    <!-- ===== Hero ===== -->
+    <section class="hero">
+        <div class="hero-float">📱</div>
+        <div class="hero-float">💻</div>
+        <div class="hero-float">🎧</div>
+        <div class="hero-float">⌚</div>
+        <div class="hero-content">
+            <h1>发现好物 · <span>品质生活</span></h1>
+            <p>精选全球优质好物，为热爱生活的你<br>提供最优质的购物体验</p>
+            <div class="hero-btns">
+                <a href="#products" class="hero-btn primary">🛍️ 立即选购</a>
+                <a href="#featured" class="hero-btn secondary">🔥 查看热销</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Categories ===== -->
+    <div class="categories">
+        <span class="category-chip active">🌟 全部</span>
+        <span class="category-chip">📱 手机数码</span>
+        <span class="category-chip">💻 电脑办公</span>
+        <span class="category-chip">🎧 耳机音响</span>
+        <span class="category-chip">⌚ 智能穿戴</span>
+        <span class="category-chip">📷 摄影摄像</span>
+        <span class="category-chip">🎮 游戏电竞</span>
+        <span class="category-chip">🏠 智能家居</span>
+    </div>
+
+    <!-- ===== Main ===== -->
+    <main class="main">
+
+        <!-- Products Section -->
+        <div class="section-header" id="products">
+            <div class="section-title">
+                🔥 精选好物
+                <span class="badge">HOT</span>
+            </div>
+            <a href="#" class="view-all">查看全部 →</a>
+        </div>
+
+        <div class="product-grid" id="productGrid">
+            <!-- Products rendered by JS -->
+        </div>
+
+        <!-- Featured Section -->
+        <div class="featured-section" id="featured">
+            <div class="featured-card">
+                <div class="featured-emoji">🎧</div>
+                <div class="featured-info">
+                    <h2>🌟 限时特惠 · 旗舰降噪耳机</h2>
+                    <p>全新升级主动降噪技术，40dB 深度降噪，Hi-Res 金标认证音质，长达 60 小时超长续航，舒适佩戴一整天。限量发售，先到先得！</p>
+                    <div class="featured-price">
+                        <span class="current">¥1,299</span>
+                        <span class="original">¥2,599</span>
+                    </div>
+                    <button class="featured-btn" onclick="showToast('🎧', '已加入购物车', '旗舰降噪耳机 · 限时特惠价 ¥1,299')">立即抢购 →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- More Products -->
+        <div style="margin-top: 50px;">
+            <div class="section-header">
+                <div class="section-title">
+                    🆕 新品上市
+                    <span class="badge" style="background: linear-gradient(135deg, #00b894, #00cec9);">NEW</span>
+                </div>
+                <a href="#" class="view-all">查看全部 →</a>
+            </div>
+            <div class="product-grid" id="newProductsGrid"></div>
+        </div>
+
+        <!-- Testimonials -->
+        <div class="testimonials">
+            <div class="section-header">
+                <div class="section-title">💬 真实评价</div>
+            </div>
+            <div class="testimonial-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="testimonial-text">品质非常好，包装也很精美，物流速度也很快，第二天就收到了！已经推荐给身边的朋友了。</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">张</div>
+                        <div>
+                            <div class="testimonial-name">张先生</div>
+                            <div class="testimonial-product">已购：无线降噪耳机</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="testimonial-text">第二次回购了，品质一如既往的好。客服态度也很好，有问题及时解决，非常满意的一次购物体验！</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">李</div>
+                        <div>
+                            <div class="testimonial-name">李女士</div>
+                            <div class="testimonial-product">已购：智能手表 Pro</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="testimonial-text">性价比超高！这个价位能买到这么好的产品真的很惊喜。做工精致，功能齐全，强烈推荐！</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">王</div>
+                        <div>
+                            <div class="testimonial-name">王同学</div>
+                            <div class="testimonial-product">已购：蓝牙音响 Mini</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ===== Footer ===== -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-col">
+                <h3>🛍️ 品质商城</h3>
+                <p style="font-size: 0.9rem; line-height: 1.7;">精选全球好物，为热爱生活的你提供最优质的购物体验。正品保障，七天无理由退换。</p>
+                <div class="footer-social">
+                    <a href="#">📱</a>
+                    <a href="#">💬</a>
+                    <a href="#">📺</a>
+                    <a href="#">📣</a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3>购物指南</h3>
+                <ul>
+                    <li><a href="#">购物流程</a></li>
+                    <li><a href="#">支付方式</a></li>
+                    <li><a href="#">配送说明</a></li>
+                    <li><a href="#">售后服务</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>服务保障</h3>
+                <ul>
+                    <li><a href="#">正品保障</a></li>
+                    <li><a href="#">七天退换</a></li>
+                    <li><a href="#">价格保护</a></li>
+                    <li><a href="#">隐私政策</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>联系我们</h3>
+                <ul>
+                    <li><a href="#">在线客服</a></li>
+                    <li><a href="#">客服热线：400-888-8888</a></li>
+                    <li><a href="#">服务时间：9:00 - 21:00</a></li>
+                    <li><a href="#">商务合作</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 品质商城 Q-PIN Mall. All rights reserved. | 用心精选 · 品质生活</p>
+            <p style="margin-top: 10px;"><a href="index.html" style="color: #a29bfe; text-decoration: none;">🎮 返回游戏大厅</a></p>
+        </div>
+    </footer>
+
+    <!-- ===== Toast ===== -->
+    <div class="toast" id="toast">
+        <span class="toast-icon" id="toastIcon">✅</span>
+        <div class="toast-text" id="toastText">
+            已加入购物车
+            <small id="toastSmall">商品名称</small>
+        </div>
+    </div>
+
+    <script>
+        // ===== Products Data =====
+        const featuredProducts = [
+            {
+                emoji: '📱',
+                name: '极光 Pro Max',
+                category: '手机数码',
+                desc: '6.8 英寸 OLED 全面屏，A18 处理器，4800万三摄系统，IP68 防水防尘，钛合金中框。',
+                price: 8999,
+                originalPrice: 9999,
+                rating: 4.9,
+                sales: '2.3万+',
+                discount: '热卖',
+                stock: '仅剩 128 件'
+            },
+            {
+                emoji: '💻',
+                name: '灵越 14 超薄本',
+                category: '电脑办公',
+                desc: '14 英寸 2.8K OLED 屏，13代 i7 处理器，16GB 内存，1TB SSD，超轻薄机身仅 1.2kg。',
+                price: 6999,
+                originalPrice: 8499,
+                rating: 4.8,
+                sales: '1.6万+',
+                discount: '-18%',
+                stock: '现货充足'
+            },
+            {
+                emoji: '🎧',
+                name: '降噪耳机 Pro',
+                category: '耳机音响',
+                desc: '自适应主动降噪 45dB，Hi-Res 金标认证，LDAC 高清编码，60小时续航，舒适佩戴。',
+                price: 1299,
+                originalPrice: 2599,
+                rating: 4.9,
+                sales: '3.8万+',
+                discount: '-50%',
+                stock: '热卖中'
+            },
+            {
+                emoji: '⌚',
+                name: '智能手表 Ultra',
+                category: '智能穿戴',
+                desc: '1.9 英寸 AMOLED 屏，钛合金表壳，双频 GPS，100+运动模式，14天超长续航。',
+                price: 2499,
+                originalPrice: 3299,
+                rating: 4.7,
+                sales: '1.2万+',
+                discount: '-24%',
+                stock: '限时优惠'
+            },
+            {
+                emoji: '📷',
+                name: '微单相机 α7V',
+                category: '摄影摄像',
+                desc: '3300万像素全画幅传感器，AI 智能对焦，8级防抖，4K 120fps 视频录制。',
+                price: 15999,
+                originalPrice: 18999,
+                rating: 4.9,
+                sales: '5800+',
+                discount: '-16%',
+                stock: '专业之选'
+            },
+            {
+                emoji: '🎮',
+                name: '游戏主机 S',
+                category: '游戏电竞',
+                desc: '4K 120fps 游戏性能，1TB 定制 SSD，光线追踪，支持 8K 输出，含双手柄套装。',
+                price: 3899,
+                originalPrice: 4599,
+                rating: 4.8,
+                sales: '4.5万+',
+                discount: '-15%',
+                stock: '爆款'
+            }
+        ];
+
+        const newProducts = [
+            {
+                emoji: '🏠',
+                name: '智能扫地机器人 X3',
+                category: '智能家居',
+                desc: 'LDS 激光导航+AI 视觉避障，8000Pa 强劲吸力，自动集尘自清洁基站，支持全屋规划。',
+                price: 2999,
+                originalPrice: 3999,
+                rating: 4.7,
+                sales: '8900+',
+                isNew: true,
+                stock: '新品首发'
+            },
+            {
+                emoji: '⌨️',
+                name: '机械键盘 87 键',
+                category: '电脑办公',
+                desc: '全键热插拔轴座，PBT 双色注塑键帽，RGB 背光，三模连接（有线/2.4G/蓝牙），Gasket 结构。',
+                price: 499,
+                originalPrice: 799,
+                rating: 4.8,
+                sales: '1.1万+',
+                isNew: true,
+                stock: '人气新品'
+            },
+            {
+                emoji: '🔊',
+                name: '蓝牙音响 Mini',
+                category: '耳机音响',
+                desc: 'IPX7 防水，30W 澎湃音质，20小时续航，TWS 串联立体声，便携挂扣设计。',
+                price: 299,
+                originalPrice: 499,
+                rating: 4.6,
+                sales: '2.7万+',
+                isNew: true,
+                stock: '热卖单品'
+            },
+            {
+                emoji: '📱',
+                name: '折叠屏 Flip 2',
+                category: '手机数码',
+                desc: '6.7 英寸折叠内屏 + 3.4 英寸灵动外屏，超薄铰链设计，IP48 防水，5000万主摄。',
+                price: 5999,
+                originalPrice: 6999,
+                rating: 4.8,
+                sales: '3200+',
+                isNew: true,
+                stock: '新品预约'
+            }
+        ];
+
+        // ===== Render Products =====
+        function createProductCard(product, isNew = false) {
+            const stars = '★'.repeat(Math.floor(product.rating)) + (product.rating % 1 >= 0.5 ? '★' : '☆');
+            const starsFull = stars.padEnd(5, '☆');
+            
+            return `
+                <div class="product-card" onclick="showToast('${product.emoji}', '${product.name}', '¥${product.price.toLocaleString()}')">
+                    <div class="product-image" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
+                        <span class="emoji">${product.emoji}</span>
+                        ${product.discount ? `<span class="discount-badge">${product.discount}</span>` : ''}
+                        ${isNew || product.isNew ? `<span class="new-badge">🆕 新品</span>` : ''}
+                        <span class="stock-badge">${product.stock}</span>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">${product.category}</div>
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-desc">${product.desc}</div>
+                        <div class="rating">
+                            ${starsFull}
+                            <span class="score">${product.rating} (${product.sales})</span>
+                        </div>
+                        <div class="product-footer">
+                            <div class="product-price">
+                                <span class="price-current"><span class="symbol">¥</span>${product.price.toLocaleString()}</span>
+                                ${product.originalPrice ? `<span class="price-original">¥${product.originalPrice.toLocaleString()}</span>` : ''}
+                            </div>
+                            <button class="add-to-cart" onclick="event.stopPropagation(); addToCart(this, '${product.emoji}', '${product.name}', '${product.price.toLocaleString()}')">+</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render featured products
+        document.getElementById('productGrid').innerHTML = featuredProducts.map(p => createProductCard(p)).join('');
+
+        // Render new products
+        document.getElementById('newProductsGrid').innerHTML = newProducts.map(p => createProductCard(p, true)).join('');
+
+        // ===== Add to Cart =====
+        let cartCount = 0;
+
+        function addToCart(btn, emoji, name, price) {
+            cartCount++;
+            document.querySelector('.cart-badge').textContent = cartCount;
+            
+            btn.classList.add('added');
+            btn.textContent = '✓';
+            
+            setTimeout(() => {
+                btn.classList.remove('added');
+                btn.textContent = '+';
+            }, 1000);
+
+            showToast(emoji, '已加入购物车 🎉', `${name} · ¥${price}`);
+        }
+
+        // ===== Toast =====
+        function showToast(icon, title, desc) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastIcon').textContent = icon;
+            document.getElementById('toastText').innerHTML = `${title}<small>${desc}</small>`;
+            toast.classList.add('show');
+            
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // ===== Header scroll effect =====
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('header');
+            header.classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        // ===== Mobile Menu =====
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('open');
+        }
+
+        function closeMobileMenu(e) {
+            if (e.target === e.currentTarget) {
+                toggleMobileMenu();
+            }
+        }
+
+        // ===== Category filter =====
+        document.querySelectorAll('.category-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // ===== Smooth scroll =====
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

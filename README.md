@@ -1,7 +1,15 @@
 # e2e-test-repo-1762864480649
 A temporary repo for E2E testing.
 
-## 游戏列表
+## 🛍️ 品质商城
+
+- **[立即逛逛 →](shop.html)** — 精选好物，品质生活
+
+  电商展示页面，包含商品展示、价格、描述、分类筛选、购物车等功能。
+
+---
+
+## 🎮 游戏列表
 
 ### 五子棋 (Gobang/Gomoku)
 纯 Web 实现，单文件 HTML/CSS/JS 游戏。
