@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magazine — Web PPT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --clr-bg: #0a0a0a;
+            --clr-surface: #111111;
+            --clr-accent: #e63946;
+            --clr-accent2: #f4a261;
+            --clr-text: #f1faee;
+            --clr-muted: #a8a8a8;
+            --clr-border: #2a2a2a;
+            --font-display: 'Playfair Display', 'Noto Serif SC', serif;
+            --font-body: 'Inter', 'Noto Sans SC', sans-serif;
+            --slide-padding: clamp(2rem, 5vw, 5rem);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--clr-bg);
+            color: var(--clr-text);
+            line-height: 1.6;
+        }
+
+        /* ===== SLIDE BASE ===== */
+        .slide {
+            min-height: 100vh;
+            scroll-snap-align: start;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--slide-padding);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-inner {
+            max-width: 1200px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ===== NAV DOTS ===== */
+        .nav-dots {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .nav-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid var(--clr-muted);
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-dot:hover, .nav-dot.active {
+            background: var(--clr-accent);
+            border-color: var(--clr-accent);
+            transform: scale(1.3);
+        }
+
+        /* ===== SLIDE 1: COVER ===== */
+        .slide-cover {
+            background: var(--clr-bg);
+        }
+
+        .slide-cover::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(230, 57, 70, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 30%, rgba(244, 162, 97, 0.08) 0%, transparent 50%);
+        }
+
+        .cover-content {
+            text-align: center;
+        }
+
+        .cover-tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--clr-accent);
+            border: 1px solid var(--clr-accent);
+            padding: 0.4rem 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .cover-title {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 8vw, 7rem);
+            font-weight: 900;
+            line-height: 1.05;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .cover-title .accent {
+            color: var(--clr-accent);
+            font-style: italic;
+        }
+
+        .cover-subtitle {
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            font-weight: 300;
+            color: var(--clr-muted);
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .cover-meta {
+            font-size: 0.85rem;
+            color: var(--clr-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .cover-meta span {
+            margin: 0 0.8rem;
+        }
+
+        .cover-meta span::before {
+            content: '·';
+            margin-right: 0.8rem;
+            color: var(--clr-accent);
+        }
+
+        .cover-meta span:first-child::before {
+            content: '';
+            margin: 0;
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--clr-muted);
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            animation: pulse-down 2s infinite;
+        }
+
+        .scroll-hint::after {
+            content: '';
+            width: 1px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--clr-accent), transparent);
+        }
+
+        @keyframes pulse-down {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        /* ===== SLIDE 2: AGENDA ===== */
+        .slide-agenda {
+            background: var(--clr-surface);
+        }
+
+        .slide-agenda::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--clr-accent), var(--clr-accent2));
+        }
+
+        .section-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--clr-accent);
+            margin-bottom: 3rem;
+        }
+
+        .agenda-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .agenda-item {
+            padding: 2rem;
+            border: 1px solid var(--clr-border);
+            position: relative;
+            transition: all 0.4s ease;
+        }
+
+        .agenda-item:hover {
+            border-color: var(--clr-accent);
+            transform: translateY(-4px);
+        }
+
+        .agenda-number {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--clr-border);
+            line-height: 1;
+            margin-bottom: 1rem;
+            transition: color 0.4s ease;
+        }
+
+        .agenda-item:hover .agenda-number {
+            color: var(--clr-accent);
+        }
+
+        .agenda-item h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .agenda-item p {
+            font-size: 0.9rem;
+            color: var(--clr-muted);
+            font-weight: 300;
+        }
+
+        /* ===== SLIDE 3: FEATURE HIGHLIGHT ===== */
+        .slide-feature {
+            background: var(--clr-bg);
+        }
+
+        .feature-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .feature-visual {
+            aspect-ratio: 4/3;
+            background: var(--clr-surface);
+            border: 1px solid var(--clr-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-visual::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(230,57,70,0.15), rgba(244,162,97,0.1));
+        }
+
+        .feature-visual .mock-ui {
+            position: relative;
+            z-index: 1;
+            padding: 2rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .mock-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: var(--clr-border);
+        }
+
+        .mock-bar.w80 { width: 80%; }
+        .mock-bar.w60 { width: 60%; }
+        .mock-bar.w40 { width: 40%; }
+        .mock-bar.accent { background: var(--clr-accent); }
+        .mock-bar.accent2 { background: var(--clr-accent2); }
+
+        .mock-block {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .mock-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--clr-border);
+            border-radius: 4px;
+        }
+
+        .feature-text h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-text h2 .accent { color: var(--clr-accent); }
+
+        .feature-text p {
+            font-size: 1.05rem;
+            color: var(--clr-muted);
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+            max-width: 480px;
+        }
+
+        .feature-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.95rem;
+        }
+
+        .feature-list li::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--clr-accent);
+            flex-shrink: 0;
+        }
+
+        /* ===== SLIDE 4: DATA / METRICS ===== */
+        .slide-data {
+            background: var(--clr-surface);
+        }
+
+        .data-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .data-header h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+        }
+
+        .data-header p {
+            color: var(--clr-muted);
+            font-weight: 300;
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 2.5rem 1.5rem;
+            border: 1px solid var(--clr-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--clr-accent), var(--clr-accent2));
+        }
+
+        .metric-value {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 900;
+            color: var(--clr-accent);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--clr-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .chart-placeholder {
+            height: 200px;
+            border: 1px solid var(--clr-border);
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding: 1.5rem;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(to top, var(--clr-accent), var(--clr-accent2));
+            border-radius: 2px 2px 0 0;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .chart-bar:hover { opacity: 1; }
+
+        /* ===== SLIDE 5: QUOTE ===== */
+        .slide-quote {
+            background: var(--clr-bg);
+            text-align: center;
+        }
+
+        .slide-quote::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(230,57,70,0.06) 0%, transparent 70%);
+        }
+
+        .quote-mark {
+            font-family: var(--font-display);
+            font-size: 8rem;
+            color: var(--clr-accent);
+            line-height: 0.5;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+        }
+
+        .quote-text {
+            font-family: var(--font-display);
+            font-size: clamp(1.5rem, 3.5vw, 2.8rem);
+            font-weight: 700;
+            font-style: italic;
+            line-height: 1.4;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+
+        .quote-author {
+            font-size: 0.9rem;
+            color: var(--clr-muted);
+            letter-spacing: 0.1em;
+        }
+
+        /* ===== SLIDE 6: TIMELINE ===== */
+        .slide-timeline {
+            background: var(--clr-surface);
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 3rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--clr-border);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 3rem;
+            padding-left: 2rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -3rem;
+            top: 0.5rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--clr-bg);
+            border: 2px solid var(--clr-accent);
+            z-index: 1;
+        }
+
+        .timeline-date {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--clr-accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-item h3 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-item p {
+            font-size: 0.95rem;
+            color: var(--clr-muted);
+            font-weight: 300;
+            max-width: 500px;
+        }
+
+        /* ===== SLIDE 7: TEAM ===== */
+        .slide-team {
+            background: var(--clr-bg);
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .team-card {
+            text-align: center;
+            padding: 2rem 1rem;
+            border: 1px solid var(--clr-border);
+            transition: all 0.3s ease;
+        }
+
+        .team-card:hover {
+            border-color: var(--clr-accent2);
+        }
+
+        .team-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 1.2rem;
+            background: linear-gradient(135deg, var(--clr-accent), var(--clr-accent2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: white;
+        }
+
+        .team-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+
+        .team-card .role {
+            font-size: 0.8rem;
+            color: var(--clr-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-card p {
+            font-size: 0.85rem;
+            color: var(--clr-muted);
+            font-weight: 300;
+        }
+
+        /* ===== SLIDE 8: CTA / END ===== */
+        .slide-cta {
+            background: var(--clr-bg);
+            text-align: center;
+        }
+
+        .slide-cta::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 30% 60%, rgba(230, 57, 70, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 40%, rgba(244, 162, 97, 0.08) 0%, transparent 50%);
+        }
+
+        .cta-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+
+        .cta-title .accent { color: var(--clr-accent); }
+
+        .cta-subtitle {
+            font-size: 1.1rem;
+            color: var(--clr-muted);
+            font-weight: 300;
+            margin-bottom: 2.5rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 3rem;
+            background: var(--clr-accent);
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.05em;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            background: var(--clr-accent2);
+            transform: translateY(-2px);
+        }
+
+        .cta-links {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .cta-links a {
+            color: var(--clr-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+
+        .cta-links a:hover { color: var(--clr-accent); }
+
+        /* ===== PAGE NUMBERS ===== */
+        .page-num {
+            position: absolute;
+            bottom: 2rem;
+            right: var(--slide-padding);
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            color: var(--clr-muted);
+        }
+
+        .page-num::before {
+            content: '— ';
+            color: var(--clr-accent);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .feature-layout {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .metrics-row {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-dots {
+                right: 1rem;
+            }
+
+            .cta-links {
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV DOTS -->
+<nav class="nav-dots" aria-label="Slide navigation">
+    <a class="nav-dot active" href="#slide-1" title="Cover"></a>
+    <a class="nav-dot" href="#slide-2" title="Agenda"></a>
+    <a class="nav-dot" href="#slide-3" title="Feature"></a>
+    <a class="nav-dot" href="#slide-4" title="Data"></a>
+    <a class="nav-dot" href="#slide-5" title="Quote"></a>
+    <a class="nav-dot" href="#slide-6" title="Timeline"></a>
+    <a class="nav-dot" href="#slide-7" title="Team"></a>
+    <a class="nav-dot" href="#slide-8" title="CTA"></a>
+</nav>
+
+<!-- SLIDE 1: COVER -->
+<section class="slide slide-cover" id="slide-1">
+    <div class="slide-inner cover-content">
+        <div class="cover-tag">Design & Technology</div>
+        <h1 class="cover-title">The Future<br>of <span class="accent">Digital</span><br>Experience</h1>
+        <p class="cover-subtitle">探索数字体验的前沿趋势 —— 从设计系统到交互创新，重新定义人与技术的连接方式</p>
+        <div class="cover-meta">
+            <span>2026</span>
+            <span>Studio Name</span>
+            <span>Confidential</span>
+        </div>
+    </div>
+    <div class="scroll-hint">Scroll</div>
+    <span class="page-num">01</span>
+</section>
+
+<!-- SLIDE 2: AGENDA -->
+<section class="slide slide-agenda" id="slide-2">
+    <div class="slide-inner">
+        <div class="section-label">Agenda</div>
+        <div class="agenda-grid">
+            <div class="agenda-item">
+                <div class="agenda-number">01</div>
+                <h3>Design Systems</h3>
+                <p>构建可扩展的设计语言与组件库，统一品牌表达</p>
+            </div>
+            <div class="agenda-item">
+                <div class="agenda-number">02</div>
+                <h3>Interaction Patterns</h3>
+                <p>从手势到语音，探索多模态交互的新范式</p>
+            </div>
+            <div class="agenda-item">
+                <div class="agenda-number">03</div>
+                <h3>Performance</h3>
+                <p>毫秒级响应背后的架构优化与工程实践</p>
+            </div>
+            <div class="agenda-item">
+                <div class="agenda-number">04</div>
+                <h3>AI Integration</h3>
+                <p>智能驱动的个性化体验与自适应界面</p>
+            </div>
+        </div>
+    </div>
+    <span class="page-num">02</span>
+</section>
+
+<!-- SLIDE 3: FEATURE -->
+<section class="slide slide-feature" id="slide-3">
+    <div class="slide-inner feature-layout">
+        <div class="feature-visual">
+            <div class="mock-ui">
+                <div class="mock-bar w60 accent"></div>
+                <div class="mock-bar w80"></div>
+                <div class="mock-bar w40 accent2"></div>
+                <div class="mock-block">
+                    <div class="mock-card"></div>
+                    <div class="mock-card"></div>
+                    <div class="mock-card"></div>
+                    <div class="mock-card"></div>
+                </div>
+            </div>
+        </div>
+        <div class="feature-text">
+            <div class="section-label">Core Feature</div>
+            <h2>Build with<br><span class="accent">Precision</span></h2>
+            <p>每一个像素都有意义。我们的设计系统以原子化组件为基础，通过一致的间距、色彩和排版规则，确保每个界面都精确传达品牌意图。</p>
+            <ul class="feature-list">
+                <li>Token-based 色彩与间距系统</li>
+                <li>响应式组件自适应所有断点</li>
+                <li>无障碍优先 (WCAG 2.1 AA)</li>
+                <li>暗黑模式原生支持</li>
+            </ul>
+        </div>
+    </div>
+    <span class="page-num">03</span>
+</section>
+
+<!-- SLIDE 4: DATA -->
+<section class="slide slide-data" id="slide-4">
+    <div class="slide-inner">
+        <div class="data-header">
+            <div class="section-label">Impact</div>
+            <h2>Numbers Speak</h2>
+            <p>过去一年关键指标变化</p>
+        </div>
+        <div class="metrics-row">
+            <div class="metric-card">
+                <div class="metric-value">94%</div>
+                <div class="metric-label">用户满意度</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">3.2×</div>
+                <div class="metric-label">转化率提升</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">-47%</div>
+                <div class="metric-label">加载时间降低</div>
+            </div>
+        </div>
+        <div class="chart-placeholder">
+            <div class="chart-bar" style="height: 30%"></div>
+            <div class="chart-bar" style="height: 45%"></div>
+            <div class="chart-bar" style="height: 35%"></div>
+            <div class="chart-bar" style="height: 60%"></div>
+            <div class="chart-bar" style="height: 50%"></div>
+            <div class="chart-bar" style="height: 75%"></div>
+            <div class="chart-bar" style="height: 65%"></div>
+            <div class="chart-bar" style="height: 80%"></div>
+            <div class="chart-bar" style="height: 70%"></div>
+            <div class="chart-bar" style="height: 90%"></div>
+            <div class="chart-bar" style="height: 85%"></div>
+            <div class="chart-bar" style="height: 100%"></div>
+        </div>
+    </div>
+    <span class="page-num">04</span>
+</section>
+
+<!-- SLIDE 5: QUOTE -->
+<section class="slide slide-quote" id="slide-5">
+    <div class="slide-inner">
+        <div class="quote-mark">"</div>
+        <blockquote class="quote-text">
+            Good design is as little design as possible. Less, but better — because it concentrates on the essential aspects.
+        </blockquote>
+        <div class="quote-author">Dieter Rams — Industrial Designer</div>
+    </div>
+    <span class="page-num">05</span>
+</section>
+
+<!-- SLIDE 6: TIMELINE -->
+<section class="slide slide-timeline" id="slide-6">
+    <div class="slide-inner">
+        <div class="section-label">Roadmap</div>
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-date">Q1 2026</div>
+                <h3>Design System Foundation</h3>
+                <p>建立核心 token 体系，完成 50+ 基础组件库，支持 3 条产品线</p>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">Q2 2026</div>
+                <h3>Performance Overhaul</h3>
+                <p>Lighthouse 评分从 62 提升至 96，首屏加载时间降低 47%</p>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">Q3 2026</div>
+                <h3>AI-Powered Personalization</h3>
+                <p>上线智能推荐引擎，用户参与度提升 2.8×</p>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">Q4 2026</div>
+                <h3>Global Scale</h3>
+                <p>支持 12 种语言，多区域 CDN 部署，全球延迟 &lt; 100ms</p>
+            </div>
+        </div>
+    </div>
+    <span class="page-num">06</span>
+</section>
+
+<!-- SLIDE 7: TEAM -->
+<section class="slide slide-team" id="slide-7">
+    <div class="slide-inner">
+        <div class="section-label">Team</div>
+        <div class="team-grid">
+            <div class="team-card">
+                <div class="team-avatar">L</div>
+                <h3>Lin Chen</h3>
+                <div class="role">Design Lead</div>
+                <p>10年+ 设计系统经验，前 Google 设计师</p>
+            </div>
+            <div class="team-card">
+                <div class="team-avatar">W</div>
+                <h3>Wei Zhang</h3>
+                <div class="role">Engineering Lead</div>
+                <p>全栈架构师，专注前端性能优化</p>
+            </div>
+            <div class="team-card">
+                <div class="team-avatar">Y</div>
+                <h3>Yu Wang</h3>
+                <div class="role">UX Researcher</div>
+                <p>用户行为分析专家，数据驱动设计</p>
+            </div>
+            <div class="team-card">
+                <div class="team-avatar">X</div>
+                <h3>Xiao Liu</h3>
+                <div class="role">AI Engineer</div>
+                <p>ML 模型部署与个性化推荐系统</p>
+            </div>
+        </div>
+    </div>
+    <span class="page-num">07</span>
+</section>
+
+<!-- SLIDE 8: CTA -->
+<section class="slide slide-cta" id="slide-8">
+    <div class="slide-inner">
+        <h2 class="cta-title">Let's Build<br><span class="accent">Together</span></h2>
+        <p class="cta-subtitle">从概念到落地，我们一起创造令人瞩目的数字体验</p>
+        <button class="cta-button">Get Started</button>
+        <div class="cta-links">
+            <a href="#">Documentation</a>
+            <a href="#">GitHub</a>
+            <a href="#">Contact Us</a>
+        </div>
+    </div>
+    <span class="page-num">08</span>
+</section>
+
+<script>
+    // Intersection Observer for active dot
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.nav-dot');
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                const num = id.split('-')[1];
+                dots.forEach(d => d.classList.remove('active'));
+                const activeDot = document.querySelector(`.nav-dot[href="#slide-${num}"]`);
+                if (activeDot) activeDot.classList.add('active');
+            }
+        });
+    }, { threshold: 0.5 });
+
+    slides.forEach(slide => observer.observe(slide));
+
+    // Smooth scroll for dots
+    dots.forEach(dot => {
+        dot.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = document.querySelector(dot.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+
+    // Keyboard navigation
+    let currentSlide = 0;
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+            e.preventDefault();
+            currentSlide = Math.min(currentSlide + 1, slides.length - 1);
+            slides[currentSlide].scrollIntoView({ behavior: 'smooth' });
+        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+            e.preventDefault();
+            currentSlide = Math.max(currentSlide - 1, 0);
+            slides[currentSlide].scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+</script>
+
+</body>
+</html>
