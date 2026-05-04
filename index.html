@@ -1307,14 +1307,334 @@ function buildLevel8_4() {
   return createLevel(W, H, groundY, map, entities, 'castle');
 }
 
-// Build all level definitions
-LEVELS[0] = buildLevel1_1;
-LEVELS[1] = buildLevel4_1;
-LEVELS[2] = buildLevel8_1;
-LEVELS[3] = buildLevel8_4;
+// --- WORLD 1-2 (Underground with pipe warp to World 4) ---
+function buildLevel1_2() {
+  const W = 210, H = 15;
+  const groundY = 13;
+  const map = Array.from({ length: H }, () => new Array(W).fill(0));
+  // Ceiling (underground)
+  for (let x = 0; x < W; x++) { map[0][x] = T.BRICK_UNDERGROUND; map[1][x] = T.BRICK_UNDERGROUND; }
+  // Ground
+  for (let x = 0; x < W; x++) { map[13][x] = T.GROUND; map[14][x] = T.GROUND; }
+  // Gaps
+  const gaps = [[45,47],[90,92],[140,143]];
+  for (const [s, e] of gaps) for (let x = s; x <= e; x++) { map[13][x] = 0; map[14][x] = 0; }
+  const place = (x, y, t) => { if (x >= 0 && x < W && y >= 0 && y < H) map[y][x] = t; };
+  // Question blocks with mushroom
+  place(10, 9, T.QUESTION_MUSHROOM);
+  place(16, 9, T.BRICK_UNDERGROUND);
+  place(17, 9, T.QUESTION);
+  place(18, 9, T.BRICK_UNDERGROUND);
+  // Elevated platforms
+  for (let x = 25; x <= 28; x++) place(x, 8, T.BRICK_UNDERGROUND);
+  place(26, 8, T.QUESTION_COIN);
+  for (let x = 35; x <= 40; x++) place(x, 6, T.BRICK_UNDERGROUND);
+  // Pipe warp to World 4 (at end)
+  function placePipe(x, h) {
+    for (let i = 0; i < h; i++) {
+      const y = groundY - 1 - i;
+      if (i === h - 1) { place(x, y, T.PIPE_TL); place(x+1, y, T.PIPE_TR); }
+      else { place(x, y, T.PIPE_BL); place(x+1, y, T.PIPE_BR); }
+    }
+  }
+  placePipe(55, 2);
+  placePipe(70, 3);
+  placePipe(80, 4);
+  placePipe(105, 2);
+  // Hidden vine area (above ceiling, accessible via invisible block)
+  place(60, 4, T.INVISIBLE); // triggers vine when hit from below
+  // More blocks
+  for (let x = 100; x <= 108; x++) place(x, 9, T.BRICK_UNDERGROUND);
+  place(104, 9, T.QUESTION_MUSHROOM);
+  for (let x = 115; x <= 120; x++) place(x, 7, T.BRICK_UNDERGROUND);
+  // Stairs near flag
+  for (let i = 0; i < 8; i++) for (let j = 0; j <= i; j++) place(185 + i, groundY - 1 - j, T.HARD_BLOCK);
+  // Flag
+  place(193, 3, T.FLAG_TOP);
+  for (let y = 4; y <= groundY - 1; y++) place(193, y, T.FLAG_POLE);
+  const entities = [
+    { type: 'goomba', x: 12 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 14 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 20 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 22 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 30 * TILE, y: 11 * TILE },
+    { type: 'goomba', x: 50 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 52 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 60 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 62 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 64 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 75 * TILE, y: 11 * TILE },
+    { type: 'goomba', x: 85 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 87 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 110 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 112 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 125 * TILE, y: 11 * TILE },
+    { type: 'goomba', x: 150 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 155 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 160 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 170 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 175 * TILE, y: 12 * TILE },
+  ];
+  return createLevel(W, H, groundY, map, entities, 'underground');
+}
 
-// Level routing: 1-1 -> 1-2 (skip) -> 4-1 -> 4-2 (skip) -> 8-1 -> 8-2 (skip) -> 8-3 (skip) -> 8-4
-const LEVEL_ROUTE = [0, 1, 2, 3]; // simplified: 4 key levels
+// --- WORLD 4-2 (Underground with vine warp to World 8) ---
+function buildLevel4_2() {
+  const W = 220, H = 15;
+  const groundY = 13;
+  const map = Array.from({ length: H }, () => new Array(W).fill(0));
+  // Ceiling
+  for (let x = 0; x < W; x++) { map[0][x] = T.BRICK_UNDERGROUND; map[1][x] = T.BRICK_UNDERGROUND; }
+  // Ground with gaps
+  for (let x = 0; x < W; x++) { map[13][x] = T.GROUND; map[14][x] = T.GROUND; }
+  const gaps = [[50,52],[80,82],[120,123],[160,162]];
+  for (const [s, e] of gaps) for (let x = s; x <= e; x++) { map[13][x] = 0; map[14][x] = 0; }
+  const place = (x, y, t) => { if (x >= 0 && x < W && y >= 0 && y < H) map[y][x] = t; };
+  // Question blocks
+  place(12, 9, T.QUESTION_MUSHROOM);
+  for (let x = 18; x <= 22; x++) place(x, 9, T.BRICK_UNDERGROUND);
+  place(20, 9, T.QUESTION_COIN);
+  // Elevated platforms
+  for (let x = 30; x <= 35; x++) place(x, 7, T.BRICK_UNDERGROUND);
+  place(32, 7, T.QUESTION_COIN);
+  for (let x = 40; x <= 46; x++) place(x, 5, T.BRICK_UNDERGROUND);
+  // Pipes
+  function placePipe(x, h) {
+    for (let i = 0; i < h; i++) {
+      const y = groundY - 1 - i;
+      if (i === h - 1) { place(x, y, T.PIPE_TL); place(x+1, y, T.PIPE_TR); }
+      else { place(x, y, T.PIPE_BL); place(x+1, y, T.PIPE_BR); }
+    }
+  }
+  placePipe(55, 2);
+  placePipe(65, 3);
+  placePipe(95, 4);
+  placePipe(110, 2);
+  // Hidden vine area above ceiling
+  place(75, 4, T.INVISIBLE);
+  // More blocks
+  for (let x = 130; x <= 138; x++) place(x, 9, T.BRICK_UNDERGROUND);
+  place(134, 9, T.QUESTION_MUSHROOM);
+  for (let x = 145; x <= 150; x++) place(x, 6, T.BRICK_UNDERGROUND);
+  // Stairs
+  for (let i = 0; i < 5; i++) for (let j = 0; j <= i; j++) place(170 + i, groundY - 1 - j, T.HARD_BLOCK);
+  for (let i = 0; i < 5; i++) for (let j = 0; j <= i; j++) place(179 - i, groundY - 1 - j, T.HARD_BLOCK);
+  // End stairs and flag
+  for (let i = 0; i < 8; i++) for (let j = 0; j <= i; j++) place(195 + i, groundY - 1 - j, T.HARD_BLOCK);
+  place(203, 3, T.FLAG_TOP);
+  for (let y = 4; y <= groundY - 1; y++) place(203, y, T.FLAG_POLE);
+  const entities = [
+    { type: 'goomba', x: 14 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 16 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 20 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 22 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 28 * TILE, y: 11 * TILE },
+    { type: 'goomba', x: 40 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 42 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 60 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 62 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 70 * TILE, y: 11 * TILE },
+    { type: 'goomba', x: 85 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 87 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 89 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 100 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 105 * TILE, y: 11 * TILE },
+    { type: 'goomba', x: 115 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 117 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 135 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 137 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 148 * TILE, y: 11 * TILE },
+    { type: 'goomba', x: 155 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 158 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 165 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 168 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 175 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 180 * TILE, y: 12 * TILE },
+  ];
+  return createLevel(W, H, groundY, map, entities, 'underground');
+}
+
+// --- WORLD 8-2 (Night level with Bullet Bills) ---
+function buildLevel8_2() {
+  const W = 220, H = 15;
+  const groundY = 13;
+  const map = Array.from({ length: H }, () => new Array(W).fill(0));
+  for (let x = 0; x < W; x++) { map[13][x] = T.GROUND; map[14][x] = T.GROUND; }
+  // Gaps
+  const gaps = [[35,36],[70,71],[100,102],[130,131],[160,161]];
+  for (const [s, e] of gaps) for (let x = s; x <= e; x++) { map[13][x] = 0; map[14][x] = 0; }
+  const place = (x, y, t) => { if (x >= 0 && x < W && y >= 0 && y < H) map[y][x] = t; };
+  // Question blocks
+  place(10, 9, T.QUESTION_MUSHROOM);
+  place(15, 9, T.BRICK);
+  place(16, 9, T.QUESTION);
+  place(17, 9, T.BRICK);
+  place(20, 5, T.QUESTION_COIN);
+  // Pipes
+  function placePipe(x, h) {
+    for (let i = 0; i < h; i++) {
+      const y = groundY - 1 - i;
+      if (i === h - 1) { place(x, y, T.PIPE_TL); place(x+1, y, T.PIPE_TR); }
+      else { place(x, y, T.PIPE_BL); place(x+1, y, T.PIPE_BR); }
+    }
+  }
+  placePipe(25, 2);
+  placePipe(45, 3);
+  placePipe(55, 4);
+  placePipe(85, 2);
+  placePipe(115, 3);
+  placePipe(145, 2);
+  // Elevated platforms
+  for (let x = 60; x <= 65; x++) place(x, 7, T.BRICK);
+  for (let x = 75; x <= 80; x++) place(x, 5, T.BRICK);
+  place(77, 5, T.QUESTION_COIN);
+  // More blocks
+  for (let x = 105; x <= 112; x++) place(x, 9, T.BRICK);
+  place(108, 9, T.QUESTION_MUSHROOM);
+  for (let x = 120; x <= 125; x++) place(x, 7, T.BRICK);
+  // Stairs
+  for (let i = 0; i < 6; i++) for (let j = 0; j <= i; j++) place(150 + i, groundY - 1 - j, T.HARD_BLOCK);
+  for (let i = 0; i < 6; i++) for (let j = 0; j <= i; j++) place(165 - i, groundY - 1 - j, T.HARD_BLOCK);
+  // End
+  for (let i = 0; i < 8; i++) for (let j = 0; j <= i; j++) place(195 + i, groundY - 1 - j, T.HARD_BLOCK);
+  place(203, 3, T.FLAG_TOP);
+  for (let y = 4; y <= groundY - 1; y++) place(203, y, T.FLAG_POLE);
+  // Entities: goombas, koopas, and BULLET BILLS
+  const entities = [
+    { type: 'goomba', x: 12 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 14 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 22 * TILE, y: 11 * TILE },
+    { type: 'goomba', x: 30 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 32 * TILE, y: 12 * TILE },
+    { type: 'bullet_bill', x: 50 * TILE, y: 6 * TILE, dir: -1 },
+    { type: 'goomba', x: 55 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 58 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 65 * TILE, y: 11 * TILE },
+    { type: 'bullet_bill', x: 80 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'goomba', x: 90 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 92 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 94 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 98 * TILE, y: 11 * TILE },
+    { type: 'bullet_bill', x: 110 * TILE, y: 7 * TILE, dir: -1 },
+    { type: 'goomba', x: 120 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 122 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 135 * TILE, y: 11 * TILE },
+    { type: 'bullet_bill', x: 150 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'goomba', x: 155 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 158 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 170 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 175 * TILE, y: 12 * TILE },
+    { type: 'bullet_bill', x: 185 * TILE, y: 6 * TILE, dir: -1 },
+    { type: 'goomba', x: 188 * TILE, y: 12 * TILE },
+  ];
+  return createLevel(W, H, groundY, map, entities, 'night');
+}
+
+// --- WORLD 8-3 (Night bridge level) ---
+function buildLevel8_3() {
+  const W = 200, H = 15;
+  const groundY = 13;
+  const map = Array.from({ length: H }, () => new Array(W).fill(0));
+  // Ground with many gaps (bridge level)
+  for (let x = 0; x < W; x++) {
+    if ((x >= 0 && x < 15) || (x >= 20 && x < 30) || (x >= 35 && x < 45) ||
+        (x >= 50 && x < 60) || (x >= 65 && x < 75) || (x >= 80 && x < 90) ||
+        (x >= 95 && x < 105) || (x >= 110 && x < 120) || (x >= 125 && x < 135) ||
+        (x >= 140 && x < 150) || (x >= 155 && x < 165) || (x >= 170 && x < W)) {
+      map[13][x] = T.GROUND;
+      map[14][x] = T.GROUND;
+    }
+  }
+  // Water in gaps
+  for (let x = 15; x <= 19; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 30; x <= 34; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 45; x <= 49; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 60; x <= 64; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 75; x <= 79; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 90; x <= 94; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 105; x <= 109; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 120; x <= 124; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 135; x <= 139; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 150; x <= 154; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  for (let x = 165; x <= 169; x++) { map[13][x] = T.WATER; map[14][x] = T.WATER; }
+  const place = (x, y, t) => { if (x >= 0 && x < W && y >= 0 && y < H) map[y][x] = t; };
+  // Question block with mushroom
+  place(8, 9, T.QUESTION_MUSHROOM);
+  // Bridges (elevated platforms between water)
+  for (let x = 15; x <= 19; x++) place(x, 9, T.HARD_BLOCK);
+  for (let x = 35; x <= 39; x++) place(x, 9, T.HARD_BLOCK);
+  place(37, 9, T.QUESTION_COIN);
+  for (let x = 55; x <= 59; x++) place(x, 9, T.HARD_BLOCK);
+  for (let x = 70; x <= 74; x++) place(x, 9, T.HARD_BLOCK);
+  for (let x = 90; x <= 94; x++) place(x, 9, T.HARD_BLOCK);
+  place(92, 9, T.QUESTION_COIN);
+  for (let x = 110; x <= 114; x++) place(x, 9, T.HARD_BLOCK);
+  for (let x = 130; x <= 134; x++) place(x, 9, T.HARD_BLOCK);
+  for (let x = 150; x <= 154; x++) place(x, 9, T.HARD_BLOCK);
+  for (let x = 165; x <= 169; x++) place(x, 9, T.HARD_BLOCK);
+  // Floating platforms above water
+  place(17, 6, T.BRICK);
+  place(18, 6, T.BRICK);
+  place(47, 6, T.BRICK);
+  place(77, 6, T.BRICK);
+  place(78, 6, T.QUESTION_COIN);
+  place(79, 6, T.BRICK);
+  place(107, 6, T.BRICK);
+  place(108, 6, T.BRICK);
+  place(137, 6, T.BRICK);
+  place(138, 6, T.BRICK);
+  place(167, 6, T.QUESTION_MUSHROOM);
+  // Bullet Bill cannons
+  place(25, 10, T.HARD_BLOCK);
+  place(40, 10, T.HARD_BLOCK);
+  place(55, 10, T.HARD_BLOCK);
+  place(85, 10, T.HARD_BLOCK);
+  place(100, 10, T.HARD_BLOCK);
+  place(115, 10, T.HARD_BLOCK);
+  place(145, 10, T.HARD_BLOCK);
+  // End stairs and flag
+  for (let i = 0; i < 8; i++) for (let j = 0; j <= i; j++) place(180 + i, groundY - 1 - j, T.HARD_BLOCK);
+  place(188, 3, T.FLAG_TOP);
+  for (let y = 4; y <= groundY - 1; y++) place(188, y, T.FLAG_POLE);
+  // Entities
+  const entities = [
+    { type: 'goomba', x: 5 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 7 * TILE, y: 12 * TILE },
+    { type: 'bullet_bill', x: 22 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'koopa', x: 28 * TILE, y: 12 * TILE },
+    { type: 'bullet_bill', x: 38 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'goomba', x: 43 * TILE, y: 12 * TILE },
+    { type: 'goomba', x: 53 * TILE, y: 12 * TILE },
+    { type: 'bullet_bill', x: 58 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'koopa', x: 68 * TILE, y: 12 * TILE },
+    { type: 'bullet_bill', x: 82 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'goomba', x: 92 * TILE, y: 8 * TILE },
+    { type: 'goomba', x: 93 * TILE, y: 8 * TILE },
+    { type: 'bullet_bill', x: 98 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'koopa', x: 103 * TILE, y: 12 * TILE },
+    { type: 'bullet_bill', x: 112 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'goomba', x: 128 * TILE, y: 12 * TILE },
+    { type: 'bullet_bill', x: 142 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'goomba', x: 148 * TILE, y: 12 * TILE },
+    { type: 'koopa', x: 158 * TILE, y: 12 * TILE },
+    { type: 'bullet_bill', x: 175 * TILE, y: 5 * TILE, dir: -1 },
+    { type: 'goomba', x: 178 * TILE, y: 12 * TILE },
+  ];
+  return createLevel(W, H, groundY, map, entities, 'night');
+}
+
+// Build all level definitions - Full speedrun route: 1-1, 1-2, 4-1, 4-2, 8-1, 8-2, 8-3, 8-4
+LEVELS[0] = buildLevel1_1;
+LEVELS[1] = buildLevel1_2;
+LEVELS[2] = buildLevel4_1;
+LEVELS[3] = buildLevel4_2;
+LEVELS[4] = buildLevel8_1;
+LEVELS[5] = buildLevel8_2;
+LEVELS[6] = buildLevel8_3;
+LEVELS[7] = buildLevel8_4;
+
+// Level routing: complete speedrun route
+const LEVEL_ROUTE = [0, 1, 2, 3, 4, 5, 6, 7]; // 1-1, 1-2, 4-1, 4-2, 8-1, 8-2, 8-3, 8-4
 
 // ============================================================
 // 8. CAMERA
@@ -1563,6 +1883,18 @@ const TileRenderer = {
     } else if (level.setting === 'underground') {
       ctx.fillStyle = C.SKY_UNDERGROUND;
       ctx.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+    } else if (level.setting === 'night') {
+      // Dark night sky with stars
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+      // Draw stars
+      ctx.fillStyle = '#FFF';
+      for (let i = 0; i < 30; i++) {
+        const sx = (i * 97 + 13) % CONFIG.WIDTH;
+        const sy = (i * 53 + 7) % (CONFIG.HEIGHT - 80) + 10;
+        const twinkle = Math.sin(Date.now() / 300 + i) > 0.3 ? 2 : 1;
+        ctx.fillRect(sx, sy, twinkle, twinkle);
+      }
     } else {
       ctx.fillStyle = C.SKY;
       ctx.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
@@ -2209,6 +2541,158 @@ class Bowser {
 }
 
 // ============================================================
+// 12b. ADDITIONAL ENEMIES - Bullet Bill & Piranha Plant
+// ============================================================
+
+// Bullet Bill - flying projectile fired from cannons
+class BulletBill {
+  constructor(x, y, dir) {
+    this.x = x; this.y = y;
+    this.vx = (dir || -1) * 1.5;
+    this.vy = 0;
+    this.w = 16; this.h = 10;
+    this.dead = false;
+    this.life = 300; // frames before self-destruct
+    this.dir = dir || -1;
+    this.type = 'bullet_bill';
+  }
+
+  update(level) {
+    this.life--;
+    if (this.life <= 0) { this.dead = true; return; }
+
+    this.x += this.vx;
+
+    // Wall collision - destroy on impact
+    const checkX = this.vx > 0 ? this.x + this.w : this.x - 1;
+    const tx = Math.floor(checkX / TILE);
+    const ty = Math.floor((this.y + this.h / 2) / TILE);
+    if (tx >= 0 && tx < level.width && ty >= 0 && ty < level.height && isSolid(level.tiles[ty][tx])) {
+      this.dead = true;
+      spawnParticles(this.x + 8, this.y + 5, '#555', 5, 2, 15);
+      return;
+    }
+
+    // Fall off screen
+    if (this.y > CONFIG.HEIGHT + 32 || this.x < Game.camera.x - 32 || this.x > Game.camera.x + CONFIG.WIDTH + 64) {
+      this.dead = true;
+    }
+  }
+
+  draw(camX) {
+    const sx = Math.floor(this.x - camX);
+    const sy = Math.floor(this.y);
+    // Bullet Bill body (black bullet shape)
+    ctx.fillStyle = '#222';
+    ctx.fillRect(sx + 2, sy + 1, 12, 8);
+    // Eyes
+    ctx.fillStyle = '#FFF';
+    const eyeX = this.dir < 0 ? sx + 3 : sx + 10;
+    ctx.fillRect(eyeX, sy + 3, 3, 3);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(eyeX + (this.dir < 0 ? 0 : 1), sy + 4, 1, 1);
+    // Wings/fins
+    ctx.fillStyle = '#555';
+    const wingX = this.dir < 0 ? sx + 13 : sx - 1;
+    ctx.fillRect(wingX, sy + 2, 3, 6);
+    ctx.fillStyle = '#FCB8A0';
+    ctx.fillRect(sx + 4, sy + 5, 8, 2);
+  }
+}
+
+// Piranha Plant - enemy that emerges from pipes
+class PiranhaPlant {
+  constructor(x, y) {
+    this.x = x; this.y = y;
+    this.baseY = y;
+    this.w = 14; this.h = 24;
+    this.dead = false;
+    this.type = 'piranha';
+    this.state = 'emerging'; // emerging, active, retreating, hidden
+    this.timer = 0;
+    this.emergeAmount = 0;
+    this.maxEmerge = 20;
+    this.hideTimer = 120; // frames before retreating
+    this.hiddenTimer = 180; // frames before re-emerging
+    this.animFrame = 0;
+  }
+
+  update(level) {
+    this.timer++;
+    this.animFrame = Math.floor(this.timer / 10) % 2;
+
+    switch (this.state) {
+      case 'hidden':
+        if (this.timer >= this.hiddenTimer) {
+          this.state = 'emerging';
+          this.emergeAmount = 0;
+          this.timer = 0;
+        }
+        break;
+      case 'emerging':
+        this.emergeAmount += 1;
+        if (this.emergeAmount >= this.maxEmerge) {
+          this.state = 'active';
+          this.timer = 0;
+        }
+        break;
+      case 'active':
+        if (this.timer >= this.hideTimer) {
+          this.state = 'retreating';
+          this.timer = 0;
+        }
+        break;
+      case 'retreating':
+        this.emergeAmount -= 1;
+        if (this.emergeAmount <= 0) {
+          this.state = 'hidden';
+          this.emergeAmount = 0;
+          this.timer = 0;
+        }
+        break;
+    }
+
+    // Deactivate when Mario is close (NES behavior)
+    if (Game.mario) {
+      const dist = Math.abs(Game.mario.x - this.x);
+      if (dist < TILE * 2 && this.state === 'emerging') {
+        this.state = 'hidden';
+        this.emergeAmount = 0;
+        this.timer = 0;
+      }
+    }
+  }
+
+  draw(camX) {
+    if (this.state === 'hidden') return;
+    const sx = Math.floor(this.x - camX);
+    const sy = Math.floor(this.y - this.emergeAmount);
+
+    // Stem
+    ctx.fillStyle = '#00A800';
+    ctx.fillRect(sx + 3, sy + 12, 8, this.emergeAmount + 12);
+    ctx.fillStyle = '#80D800';
+    ctx.fillRect(sx + 4, sy + 12, 2, this.emergeAmount + 12);
+
+    // Head (mouth)
+    const mouthOpen = this.animFrame === 0;
+    ctx.fillStyle = '#00A800';
+    ctx.fillRect(sx, sy, 14, 14);
+    ctx.fillStyle = '#FFF';
+    // Teeth
+    ctx.fillRect(sx + 2, mouthOpen ? sy + 4 : sy + 5, 3, 3);
+    ctx.fillRect(sx + 9, mouthOpen ? sy + 4 : sy + 5, 3, 3);
+    // Eyes
+    ctx.fillStyle = '#000';
+    ctx.fillRect(sx + 2, sy + 2, 3, 3);
+    ctx.fillRect(sx + 9, sy + 2, 3, 3);
+    // Spots
+    ctx.fillStyle = '#005800';
+    ctx.fillRect(sx + 5, sy + 6, 4, 2);
+  }
+}
+
+// ============================================================
 // 13. ITEMS
 // ============================================================
 class Mushroom {
@@ -2357,11 +2841,13 @@ const Game = {
         case 'goomba': this.enemies.push(new Goomba(e.x, e.y)); break;
         case 'koopa': this.enemies.push(new Koopa(e.x, e.y)); break;
         case 'bowser': this.enemies.push(new Bowser(e.x, e.y)); break;
+        case 'bullet_bill': this.enemies.push(new BulletBill(e.x, e.y, e.dir)); break;
+        case 'piranha': this.enemies.push(new PiranhaPlant(e.x, e.y)); break;
       }
     }
 
-    // World names
-    const names = ['1-1', '4-1', '8-1', '8-4'];
+    // World names - full 8-level speedrun route
+    const names = ['1-1', '1-2', '4-1', '4-2', '8-1', '8-2', '8-3', '8-4'];
     this.worldName = names[index] || `${index + 1}-1`;
 
     // Clear particles and popups
@@ -2474,6 +2960,8 @@ const Game = {
               case 'goomba': this.enemies.push(new Goomba(e.x, e.y)); break;
               case 'koopa': this.enemies.push(new Koopa(e.x, e.y)); break;
               case 'bowser': this.enemies.push(new Bowser(e.x, e.y)); break;
+              case 'bullet_bill': this.enemies.push(new BulletBill(e.x, e.y, e.dir)); break;
+              case 'piranha': this.enemies.push(new PiranhaPlant(e.x, e.y)); break;
             }
           }
           this.flagReached = false;
@@ -2554,7 +3042,7 @@ const Game = {
     if (m.dead || m.invincible > 0 && m.starPower <= 0) return;
 
     for (const e of this.enemies) {
-      if (e.dead || e.type === 'bowser') continue;
+      if (e.dead || e.type === 'bowser' || e.type === 'bullet_bill') continue;
       if (!this.overlaps(m, e)) continue;
 
       if (e.type === 'koopa' && e.inShell && !e.shellSliding) continue;
@@ -2571,6 +3059,16 @@ const Game = {
           m.vy = -4;
           m.score += 100;
           spawnScore(e.x + 7, e.y - 5, '100');
+        } else if (e.type === 'piranha') {
+          if (e.emergeAmount > 4) {
+            e.dead = true;
+            m.vy = -4;
+            m.score += 200;
+            spawnScore(e.x + 7, e.y - 5, '200');
+            Audio.play('stomp');
+          } else {
+            continue; // can't stomp when hidden
+          }
         }
       } else {
         // Hit by enemy
@@ -2589,6 +3087,20 @@ const Game = {
         } else {
           m.shrink();
         }
+      }
+    }
+
+    // Bullet Bill collision (can't stomp, always hurts)
+    for (const e of this.enemies) {
+      if (e.dead || e.type !== 'bullet_bill') continue;
+      if (!this.overlaps(m, e)) continue;
+      if (m.starPower > 0) {
+        e.dead = true;
+        m.score += 200;
+        spawnScore(e.x + 8, e.y - 5, '200');
+        Audio.play('stomp');
+      } else {
+        m.shrink();
       }
     }
 
@@ -2751,27 +3263,32 @@ const Game = {
     ctx.fillStyle = '#D82800';
     ctx.font = 'bold 16px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SUPER', CONFIG.WIDTH / 2, 60);
-    ctx.fillText('MARIO BROS', CONFIG.WIDTH / 2, 80);
+    ctx.fillText('SUPER', CONFIG.WIDTH / 2, 55);
+    ctx.fillText('MARIO BROS', CONFIG.WIDTH / 2, 73);
 
     ctx.fillStyle = CONFIG.COLORS.HUD_WHITE;
-    ctx.font = '8px monospace';
-    ctx.fillText('© Web Version', CONFIG.WIDTH / 2, 100);
+    ctx.font = '7px monospace';
+    ctx.fillText('© Web Edition — 8 Stage Speedrun Route', CONFIG.WIDTH / 2, 95);
+
+    // Level preview
+    ctx.fillStyle = '#FCBC70';
+    ctx.font = '6px monospace';
+    ctx.fillText('1-1 → 1-2 → 4-1 → 4-2 → 8-1 → 8-2 → 8-3 → 8-4', CONFIG.WIDTH / 2, 108);
 
     // Mario sprite
-    Sprites.drawSprite('mario_small', CONFIG.WIDTH / 2 - 16, 130, 0, 1, 2);
+    Sprites.drawSprite('mario_small', CONFIG.WIDTH / 2 - 16, 125, 0, 1, 2);
 
     // Prompt
     if (Math.floor(Date.now() / 500) % 2 === 0) {
       ctx.fillStyle = CONFIG.COLORS.HUD_WHITE;
       ctx.font = '7px monospace';
-      ctx.fillText('PRESS START OR JUMP', CONFIG.WIDTH / 2, 185);
+      ctx.fillText('PRESS START OR JUMP', CONFIG.WIDTH / 2, 180);
     }
 
     ctx.fillStyle = CONFIG.COLORS.HUD_WHITE;
     ctx.font = '6px monospace';
-    ctx.fillText('ARROWS: Move | Z/SPACE: Jump | X/SHIFT: Run', CONFIG.WIDTH / 2, 200);
-    ctx.fillText('M: Mute', CONFIG.WIDTH / 2, 210);
+    ctx.fillText('←→/AD: Move | Z/SPACE: Jump | X/SHIFT: Run', CONFIG.WIDTH / 2, 195);
+    ctx.fillText('↓/S: Crouch | M: Mute | ENTER: Start/Pause', CONFIG.WIDTH / 2, 205);
 
     ctx.textAlign = 'left';
   },
